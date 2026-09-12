@@ -101,18 +101,22 @@ final class AlarmStoreTests: XCTestCase {
         let enabled = makeAlarm(task: "Only one")
         store.add(enabled)
 
-        spyReset()
+        // The store holds the spy it was built with, so measure the delta rather
+        // than swapping in a fresh spy it would never see.
+        let scheduledBefore = spy.scheduled.count
+        let cancelAllBefore = spy.cancelAllCount
+
         store.rescheduleAll()
 
-        XCTAssertEqual(spy.cancelAllCount, 1)
-        XCTAssertEqual(spy.scheduled.count, 1)
-        XCTAssertEqual(spy.scheduled.first?.alarm.id, enabled.id)
+        let newlyScheduled = Array(spy.scheduled.dropFirst(scheduledBefore))
+        XCTAssertEqual(spy.cancelAllCount, cancelAllBefore + 1)
+        XCTAssertEqual(newlyScheduled.count, 1, "Only the enabled alarm should be re-armed")
+        XCTAssertEqual(newlyScheduled.first?.alarm.id, enabled.id)
     }
 
     func testLockScreenPreferenceIsPassedToTheScheduler() {
         let store = makeStore()
         store.settings.showOnLockScreen = false
-        spyReset()
 
         store.add(makeAlarm())
 
@@ -256,10 +260,6 @@ final class AlarmStoreTests: XCTestCase {
     }
 
     // MARK: Helpers
-
-    private func spyReset() {
-        spy = SpyScheduler()
-    }
 
     private func makeAlarm(task: String = "Test",
                            hour: Int = 7,

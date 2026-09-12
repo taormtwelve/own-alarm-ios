@@ -92,12 +92,17 @@ final class AlarmFlowUITests: XCTestCase {
     func testTheVolumeSliderIsReachableAndAdjustable() {
         app.staticTexts["Morning run"].tap()
 
-        let slider = app.sliders["Alarm volume"]
-        XCTAssertTrue(slider.waitForExistence(timeout: 5))
-        slider.adjust(toNormalizedSliderPosition: 0.5)
+        // Query the readout by identifier: the list behind the sheet still carries
+        // its own "85%" label, so matching on text alone proves nothing.
+        let readout = app.staticTexts["volumeReadout"]
+        XCTAssertTrue(readout.waitForExistence(timeout: 5))
+        let before = readout.label
 
-        // Any change is enough; the exact percentage depends on slider geometry.
-        XCTAssertFalse(app.staticTexts["85%"].exists, "Volume should have moved off 85%")
+        let slider = app.sliders["Alarm volume"]
+        XCTAssertTrue(slider.exists)
+        slider.adjust(toNormalizedSliderPosition: 0.25)
+
+        XCTAssertNotEqual(readout.label, before, "Moving the slider should change the readout")
     }
 
     // MARK: Sounds tab

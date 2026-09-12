@@ -144,6 +144,7 @@ struct EditAlarmView: View {
                     .font(Typo.display(38, relativeTo: .largeTitle))
                     .monospacedDigit()
                     .foregroundStyle(Tokens.accentText)
+                    .accessibilityIdentifier("volumeReadout")
             }
 
             VolumeSlider(volume: $alarm.volume)
