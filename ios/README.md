@@ -62,9 +62,12 @@ Two paths, because iOS has two:
   rides on the notification:
   `UNNotificationSound.criticalSoundNamed(_:withAudioVolume:)`. That API is the whole
   reason the feature is possible; it is also why Critical Alerts matters.
-- **App in the foreground** — `AlarmPlayer` uses `AVAudioSession(.playback)` (which
-  ignores the Silent switch) and `AVAudioPlayer.setVolume(_:fadeDuration:)` for the
-  ramp.
+- **App in the foreground** — 100% means the iPhone's maximum, not "whatever the
+  volume buttons are at". `SystemVolume` sets the device level to the alarm's
+  percentage while it plays and restores the user's own level afterwards;
+  `AlarmPlayer` runs at full scale on top, under `AVAudioSession(.playback)` (which
+  ignores the Silent switch), and ramps with `setVolume(_:fadeDuration:)`. Every
+  volume slider plays its tone live while dragged.
 
 ### Screens → files
 
@@ -121,6 +124,15 @@ The mockups were fixed 390×844 frames. None of that survived into the code:
 - **Fade-in while terminated.** A notification sound plays at one fixed volume —
   `fadeInSeconds` only ramps for a foreground alarm. A background fade would mean
   chaining several notifications at rising volumes, which is doable but noisy.
+- **Ringing on the Lock Screen needs iOS 26.** There, alarms go through AlarmKit:
+  full screen, sounding until stopped, through Silent and Focus. AlarmKit has no
+  volume parameter, so each task's level is baked into a scaled copy of its sound
+  (`ScaledSound`) and plays relative to the phone's alarm level. On iOS 16–25 the
+  app falls back to notifications, which play once (30 s at most) and stay silent
+  in Silent mode without the Critical Alerts entitlement.
+- **System volume is set through `MPVolumeView`.** iOS has no public API for it;
+  alarm apps rely on this undocumented route to make 100% mean the device maximum.
+  It works today, but Apple could close it — worth a note to App Review.
 - **Snooze is a fresh notification**, not a pause. Cancelling it is handled, but the
   user tapping Snooze from the Lock Screen relies on the action handler running
   promptly.

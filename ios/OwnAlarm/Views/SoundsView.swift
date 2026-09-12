@@ -48,7 +48,7 @@ struct SoundsView: View {
                         .font(Typo.sectionLabel)
                         .tracking(1.1)
                         .foregroundStyle(Tokens.accentLabel)
-                    Text("Plays through the alarm channel, not the media one")
+                    Text("Drag to hear it live · 100% is your iPhone's maximum")
                         .font(Typo.caption)
                         .foregroundStyle(Tokens.textMuted)
                         .fixedSize(horizontal: false, vertical: true)
@@ -74,7 +74,14 @@ struct SoundsView: View {
                 .accessibilityLabel(player.playingToneID == nil ? "Play test tone" : "Stop test tone")
             }
 
-            VolumeSlider(volume: $testLevel)
+            VolumeSlider(volume: $testLevel) { editing in
+                if editing {
+                    player.beginScrub(AlarmTone.tone(id: testToneID, in: store.tones), at: testLevel)
+                } else {
+                    player.endScrub()
+                }
+            }
+            .onChange(of: testLevel) { player.scrub(to: $0) }
 
             HStack {
                 Text("Test level")

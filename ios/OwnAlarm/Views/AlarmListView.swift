@@ -78,17 +78,12 @@ private struct AlarmRow: View {
     private var tone: AlarmTone { store.tone(for: alarm) }
 
     var body: some View {
-        // At ordinary text sizes the toggle sits beside the content; once the text
-        // grows past a point the toggle drops underneath rather than crushing it.
-        ViewThatFits(in: .horizontal) {
-            HStack(alignment: .center, spacing: 14) {
-                details
-                toggle
-            }
-            VStack(alignment: .leading, spacing: 12) {
-                details
-                toggle
-            }
+        // The switch always sits on the right, at every text size; the details
+        // column gives way and wraps instead.
+        HStack(alignment: .center, spacing: 14) {
+            details
+            toggle
+                .fixedSize()
         }
         .padding(16)
         .cardSurface()

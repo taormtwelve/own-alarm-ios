@@ -3,6 +3,7 @@ import UIKit
 
 struct SettingsView: View {
     @EnvironmentObject private var store: AlarmStore
+    @EnvironmentObject private var player: AlarmPlayer
     @State private var criticalAlertsGranted: Bool?
 
     var body: some View {
@@ -39,7 +40,16 @@ struct SettingsView: View {
                                         .monospacedDigit()
                                         .foregroundStyle(Tokens.textPrimary)
                                 }
-                                VolumeSlider(volume: $store.settings.defaults.volume)
+                                VolumeSlider(volume: $store.settings.defaults.volume) { editing in
+                                    if editing {
+                                        let tone = AlarmTone.tone(id: store.settings.defaults.toneID,
+                                                                  in: store.tones)
+                                        player.beginScrub(tone, at: store.settings.defaults.volume)
+                                    } else {
+                                        player.endScrub()
+                                    }
+                                }
+                                .onChange(of: store.settings.defaults.volume) { player.scrub(to: $0) }
                             }
                             .padding(16)
 

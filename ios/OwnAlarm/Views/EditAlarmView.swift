@@ -2,6 +2,7 @@ import SwiftUI
 
 struct EditAlarmView: View {
     @EnvironmentObject private var store: AlarmStore
+    @EnvironmentObject private var player: AlarmPlayer
     @Environment(\.dismiss) private var dismiss
 
     @State private var alarm: Alarm
@@ -134,7 +135,7 @@ struct EditAlarmView: View {
                         .font(Typo.sectionLabel)
                         .tracking(1.1)
                         .foregroundStyle(Tokens.accentLabel)
-                    Text("Independent of your ringer volume")
+                    Text("100% is your iPhone's maximum volume")
                         .font(Typo.caption)
                         .foregroundStyle(Tokens.textMuted)
                         .fixedSize(horizontal: false, vertical: true)
@@ -147,7 +148,16 @@ struct EditAlarmView: View {
                     .accessibilityIdentifier("volumeReadout")
             }
 
-            VolumeSlider(volume: $alarm.volume)
+            // Plays the tone while dragging, so the level is set by ear.
+            VolumeSlider(volume: $alarm.volume) { editing in
+                if editing {
+                    player.beginScrub(store.tone(for: alarm), at: alarm.volume)
+                } else {
+                    player.endScrub()
+                }
+            }
+            .onChange(of: alarm.volume) { player.scrub(to: $0) }
+            .onDisappear { player.stop() }
 
             HStack {
                 Text("Whisper").font(Typo.caption).foregroundStyle(Tokens.textFaint)
@@ -254,6 +264,8 @@ struct EditAlarmView: View {
     // MARK: Actions
 
     private func save() {
+        // Saving an alarm means you want it: an edited alarm comes back switched on.
+        alarm.isEnabled = true
         let parts = Calendar.current.dateComponents([.hour, .minute], from: time)
         alarm.hour = parts.hour ?? alarm.hour
         alarm.minute = parts.minute ?? alarm.minute

@@ -90,6 +90,10 @@ targets:
         NSUserNotificationsUsageDescription: >-
           OwnAlarm uses notifications to ring your alarms at the volume you set for
           each task, even when the app is closed.
+        # AlarmKit (iOS 26+): real alarms on the Lock Screen that ring through Silent.
+        NSAlarmKitUsageDescription: >-
+          OwnAlarm rings your alarms on the Lock Screen and through Silent mode,
+          each at the volume you set for its task.
         ITSAppUsesNonExemptEncryption: false
 
   # Unit tests: the store's behaviour against a spy scheduler, and the notification

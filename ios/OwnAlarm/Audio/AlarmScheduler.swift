@@ -124,7 +124,10 @@ final class AlarmScheduler: AlarmScheduling {
             // The alarm's own level, independent of the ringer.
             content.sound = .criticalSoundNamed(soundName, withAudioVolume: Float(alarm.volume))
         } else {
-            content.sound = UNNotificationSound(named: soundName)
+            // A normal notification sound follows the ringer, so the task's level is
+            // baked into the file instead: a 30% task gets a file 30% as loud.
+            let name = ScaledSound.fileName(for: tone, volume: alarm.volume) ?? tone.fileName
+            content.sound = UNNotificationSound(named: UNNotificationSoundName(rawValue: name))
         }
 
         if !showOnLockScreen {

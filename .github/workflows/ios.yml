@@ -34,6 +34,21 @@ jobs:
           echo "--- available simulators ---"
           xcrun simctl list devices available | head -40
 
+      # AlarmKit — what makes alarms ring on the Lock Screen — ships in the iOS 26
+      # SDK. The code compiles without it (guarded by canImport), so an older Xcode
+      # would silently build an app that only posts notifications. Pick the newest
+      # Xcode on the runner and say so loudly if it is still too old.
+      - name: Use the newest Xcode
+        run: |
+          XCODE=$(ls -d /Applications/Xcode_*.app | sort -V | tail -1)
+          sudo xcode-select -s "$XCODE"
+          xcodebuild -version
+          SDK=$(xcrun --sdk iphoneos --show-sdk-version)
+          echo "iOS SDK $SDK"
+          if [ "${SDK%%.*}" -lt 26 ]; then
+            echo "::warning::iOS SDK $SDK has no AlarmKit; Lock Screen ringing will be compiled out"
+          fi
+
       - name: Install XcodeGen
         run: brew install xcodegen
 

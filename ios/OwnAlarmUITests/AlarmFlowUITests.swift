@@ -81,6 +81,22 @@ final class AlarmFlowUITests: XCTestCase {
         XCTAssertEqual(app.descendants(matching: .any).matching(identifier: "alarmRow").count, before)
     }
 
+    // MARK: Saving
+
+    func testSavingAnEditedAlarmTurnsItOn() {
+        // The sample night alarm starts switched off.
+        let toggle = app.switches["Wind down & charge phone alarm"]
+        XCTAssertTrue(toggle.waitForExistence(timeout: 10))
+        XCTAssertEqual(toggle.value as? String, "0")
+
+        app.staticTexts["Wind down & charge phone"].tap()
+        XCTAssertTrue(app.buttons["Save"].waitForExistence(timeout: 5))
+        app.buttons["Save"].tap()
+
+        XCTAssertTrue(toggle.waitForExistence(timeout: 5))
+        XCTAssertEqual(toggle.value as? String, "1", "Saving an edit should switch the alarm on")
+    }
+
     // MARK: Deleting
 
     func testSwipingLeftRevealsDeleteAndRemovesTheAlarm() {

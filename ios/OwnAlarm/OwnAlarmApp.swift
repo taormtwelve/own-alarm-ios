@@ -26,9 +26,19 @@ struct OwnAlarmApp: App {
                 .environmentObject(player)
                 .task {
                     AlarmScheduler.registerCategories()
-                    _ = await AlarmScheduler.requestAuthorization()
                     notifications.store = store
                     UNUserNotificationCenter.current().delegate = notifications
+
+                    // UI tests run without system permission prompts over the app.
+                    if !ProcessInfo.processInfo.arguments.contains("-uitesting") {
+                        _ = await AlarmScheduler.requestAuthorization()
+                        #if canImport(AlarmKit)
+                        if #available(iOS 26.0, *) {
+                            // Real alarms: full screen on the Lock Screen, through Silent.
+                            await AlarmKitScheduler.requestAuthorization()
+                        }
+                        #endif
+                    }
                     store.rescheduleAll()
                 }
                 .onChange(of: scenePhase) { phase in

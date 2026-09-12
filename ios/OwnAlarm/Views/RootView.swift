@@ -23,5 +23,7 @@ struct RootView: View {
         .fullScreenCover(item: $store.ringing) { alarm in
             RingingView(alarm: alarm)
         }
+        // Lets the app set the device volume (100% = maximum) without the HUD.
+        .hostsSystemVolume()
     }
 }

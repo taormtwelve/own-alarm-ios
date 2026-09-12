@@ -23,7 +23,7 @@ final class AlarmStore: ObservableObject {
     /// get their own storage instead of trampling the real app's data.
     /// `seed` fills an empty store on first launch; the real app passes nothing,
     /// so a new user starts with no alarms they did not set themselves.
-    init(scheduler: AlarmScheduling = AlarmScheduler(),
+    init(scheduler: AlarmScheduling = AlarmScheduler.makeDefault(),
          fileURL: URL? = nil,
          defaults: UserDefaults = .standard,
          seed: [Alarm] = []) {
@@ -38,7 +38,7 @@ final class AlarmStore: ObservableObject {
 
     /// A store backed by a throwaway directory. Used when the app launches under
     /// `-uitesting` so the UI suite sees a known state every run.
-    static func ephemeral(scheduler: AlarmScheduling = AlarmScheduler(),
+    static func ephemeral(scheduler: AlarmScheduling = AlarmScheduler.makeDefault(),
                           seed: [Alarm] = Alarm.starter) -> AlarmStore {
         let folder = URL(fileURLWithPath: NSTemporaryDirectory())
             .appendingPathComponent("OwnAlarmTests-\(UUID().uuidString)", isDirectory: true)

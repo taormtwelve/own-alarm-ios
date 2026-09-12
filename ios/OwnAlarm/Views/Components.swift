@@ -43,14 +43,15 @@ struct VolumeMeter: View {
 /// VoiceOver's adjustable trait and Switch Control all keep working.
 struct VolumeSlider: View {
     @Binding var volume: Double
+    /// `true` when a drag starts, `false` when it ends — the hook for playing the
+    /// tone live while the level is being set.
+    var onEditingChanged: (Bool) -> Void = { _ in }
 
     var body: some View {
         Slider(value: $volume, in: 0...1, step: 0.01) {
             Text("Alarm volume")
-        } minimumValueLabel: {
-            Text("").accessibilityHidden(true)
-        } maximumValueLabel: {
-            Text("").accessibilityHidden(true)
+        } onEditingChanged: { editing in
+            onEditingChanged(editing)
         }
         .tint(Tokens.accentFill)
         .frame(minHeight: Metrics.minTapTarget)
