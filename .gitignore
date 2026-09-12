@@ -1,0 +1,28 @@
+# Xcode — the project is generated from ios/project.yml by XcodeGen, never committed
+*.xcodeproj/
+*.xcworkspace/
+xcuserdata/
+DerivedData/
+ios/build/
+ios/build-sim/
+ios/Payload/
+*.ipa
+*.dSYM.zip
+*.dSYM
+
+# Swift Package Manager
+.build/
+.swiftpm/
+Package.resolved
+
+# macOS / Windows cruft
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Node (only used to generate the design contact sheet and the tones)
+node_modules/
+
+# Design: keep the source artboards and the canvas manifest, drop the build output
+design/ownalarm-screens.html
+design/all-screens.html

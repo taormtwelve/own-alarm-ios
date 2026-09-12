@@ -1,0 +1,70 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,600;12..96,700&family=Instrument+Sans:wght@400;500;600;700&display=swap">
+  <style>
+    body { margin: 0; font-family: 'Instrument Sans', system-ui, -apple-system, sans-serif; -webkit-font-smoothing: antialiased; }
+    a { color: #FFB03A; } a:hover { color: #FFC670; }
+    .num { font-family: 'Bricolage Grotesque', 'Helvetica Neue', sans-serif; font-variant-numeric: tabular-nums; }
+  </style>
+</helmet>
+
+<div style="width: 390px; height: 844px; background: radial-gradient(120% 62% at 50% 34%, #2A1C0C 0%, #16110C 58%, #0D0B09 100%); color: #F7F3EE; display: flex; flex-direction: column; align-items: center; overflow: hidden;">
+
+  <div style="height: 92px; flex-shrink: 0;"></div>
+
+  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#8A8279" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0;"><rect x="4.5" y="10.5" width="15" height="10.5" rx="3"></rect><path d="M8.2 10.5V7.8a3.8 3.8 0 017.6 0v2.7"></path></svg>
+
+  <div style="height: 14px; flex-shrink: 0;"></div>
+
+  <div class="num" style="font-size: 84px; font-weight: 600; letter-spacing: -0.04em; line-height: 1; flex-shrink: 0;">06:45</div>
+
+  <div style="height: 10px; flex-shrink: 0;"></div>
+
+  <div style="font-size: 15px; font-weight: 500; color: #9A928A; flex-shrink: 0;">Friday 12 September</div>
+
+  <div style="flex-grow: 1;"></div>
+
+  <div style="width: 100%; padding: 0 16px 46px 16px; box-sizing: border-box; flex-shrink: 0;">
+    <div style="background: #1C1917; border: 1px solid #3A2C18; border-radius: 26px; padding: 16px; display: flex; flex-direction: column; gap: 12px;">
+
+      <div style="display: flex; align-items: center; gap: 9px;">
+        <div style="width: 24px; height: 24px; border-radius: 8px; background: #FFB03A; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#12100E" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="13.5" r="7.5"></circle><path d="M12 10v3.5l2.3 1.5"></path><path d="M4.6 4.8L7.2 2.6M19.4 4.8L16.8 2.6"></path></svg>
+        </div>
+        <span style="font-size: 11px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: #C79A55; flex-grow: 1;">OwnAlarm</span>
+        <span style="font-size: 12px; color: #8A8279;">now</span>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 4px;">
+        <span style="font-size: 19px; font-weight: 700; letter-spacing: -0.02em;">Morning run</span>
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#FFB03A" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9.5h3.5L12 5.5v13L7.5 14.5H4z"></path><path d="M16 9.2a4 4 0 010 5.6"></path><path d="M18.8 6.6a7.6 7.6 0 010 10.8"></path></svg>
+          <span class="num" style="font-size: 13px; font-weight: 600; color: #FFB03A;">85%</span>
+          <span style="width: 3px; height: 3px; border-radius: 50%; background: #4A443E;"></span>
+          <span style="font-size: 13px; color: #9A928A;">Siren &middot; overriding Silent</span>
+        </div>
+      </div>
+
+      <div style="display: flex; gap: 10px;">
+        <div style="flex-grow: 1; height: 52px; border-radius: 18px; background: #332D28; display: flex; align-items: center; justify-content: center;">
+          <span style="font-size: 15px; font-weight: 600; color: #C9C0B7;">Snooze</span>
+        </div>
+        <div style="flex-grow: 1; height: 52px; border-radius: 18px; background: #FFB03A; display: flex; align-items: center; justify-content: center;">
+          <span style="font-size: 15px; font-weight: 700; color: #12100E;">Stop</span>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+</x-dc>
+</body>
+</html>

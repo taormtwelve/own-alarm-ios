@@ -1,0 +1,64 @@
+{
+  "artboards": [
+    { "file": "MainLight.dc.html", "x": 0, "y": 0, "w": 390, "h": 844, "title": "Alarms" },
+    { "file": "EditAlarmLight.dc.html", "x": 490, "y": 0, "w": 390, "h": 844, "title": "Edit alarm" },
+    { "file": "SoundSheetLight.dc.html", "x": 980, "y": 0, "w": 390, "h": 844, "title": "Sound & loudness" },
+    { "file": "RingingLight.dc.html", "x": 1470, "y": 0, "w": 390, "h": 844, "title": "Ringing — in app" },
+    { "file": "LockScreenLight.dc.html", "x": 1960, "y": 0, "w": 390, "h": 844, "title": "Ringing — Lock Screen" },
+    { "file": "SoundsLight.dc.html", "x": 2450, "y": 0, "w": 390, "h": 844, "title": "Sounds tab" },
+    { "file": "SettingsLight.dc.html", "x": 2940, "y": 0, "w": 390, "h": 844, "title": "Settings tab" },
+
+    { "file": "Main.dc.html", "x": 0, "y": 1104, "w": 390, "h": 844, "title": "Alarms — dark" },
+    { "file": "EditAlarm.dc.html", "x": 490, "y": 1104, "w": 390, "h": 844, "title": "Edit alarm — dark" },
+    { "file": "SoundSheet.dc.html", "x": 980, "y": 1104, "w": 390, "h": 844, "title": "Sound & loudness — dark" },
+    { "file": "Ringing.dc.html", "x": 1470, "y": 1104, "w": 390, "h": 844, "title": "Ringing — in app — dark" },
+    { "file": "LockScreen.dc.html", "x": 1960, "y": 1104, "w": 390, "h": 844, "title": "Ringing — Lock Screen — dark" },
+    { "file": "Sounds.dc.html", "x": 2450, "y": 1104, "w": 390, "h": 844, "title": "Sounds tab — dark" },
+    { "file": "Settings.dc.html", "x": 2940, "y": 1104, "w": 390, "h": 844, "title": "Settings tab — dark" }
+  ],
+  "annotations": [
+    {
+      "id": "volume-model",
+      "x": 0,
+      "y": -200,
+      "w": 390,
+      "text": "Volume belongs to the task, not the phone.\nEvery alarm stores its own 0-100% level, its own fade-in, and whether it overrides Silent. The list shows that level as a meter so you can scan it at a glance."
+    },
+    {
+      "id": "clock-note",
+      "x": 490,
+      "y": -200,
+      "w": 830,
+      "text": "24-hour is the default.\nSettings > Clock > Time format switches the whole app between 24-hour and AM/PM — the picker loses its AM/PM wheel in 24-hour mode, and every time on the list, the ringing screen and the Lock Screen follows the same setting. Worth deciding: should first launch read iOS's own region setting instead of hard-defaulting to 24-hour?"
+    },
+    {
+      "id": "ringing-note",
+      "x": 1470,
+      "y": -200,
+      "w": 830,
+      "text": "Two ways an alarm can arrive.\nSettings > Show on Lock Screen is the switch. On, it fires as a full-width Lock Screen alert with Stop and Snooze right there. Off, it only takes over inside the app. The wallpaper and the big clock on the Lock Screen artboard are the system's — only the card is ours."
+    },
+    {
+      "id": "tabs-note",
+      "x": 2450,
+      "y": -200,
+      "w": 830,
+      "text": "Sounds can come from iOS.\nBoth the Sounds tab and the per-alarm picker open the system sound library alongside your own imports. Worth checking early: iOS only exposes the standard tone library to apps in limited ways, so this row may need to become a bundled set plus Music/Files import rather than a true system browser."
+    },
+    {
+      "id": "row-light",
+      "x": -440,
+      "y": 300,
+      "w": 360,
+      "text": "Light — default\nWarm paper neutrals. Amber deepens for text and icons so it holds contrast on white; fills stay bright with near-black ink on top."
+    },
+    {
+      "id": "row-dark",
+      "x": -440,
+      "y": 1404,
+      "w": 360,
+      "text": "Dark\nSame layout, opt-in from Settings > Appearance. Worth keeping sharp: this is what you actually see when an alarm goes off at 6am."
+    }
+  ],
+  "launch": { "view": "canvas" }
+}

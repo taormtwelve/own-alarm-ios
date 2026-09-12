@@ -1,0 +1,71 @@
+# XcodeGen spec.
+#
+# This exists so nobody needs a Mac to *create* the Xcode project. The macOS build
+# runner generates `OwnAlarm.xcodeproj` from this file on every build, which means
+# the project file is never committed and never drifts.
+#
+#   brew install xcodegen && xcodegen generate
+
+name: OwnAlarm
+
+options:
+  bundleIdPrefix: com.ownalarm
+  deploymentTarget:
+    iOS: "16.0"
+  createIntermediateGroups: true
+  groupSortPosition: top
+
+settings:
+  base:
+    SWIFT_VERSION: "5.9"
+    MARKETING_VERSION: "1.0"
+    CURRENT_PROJECT_VERSION: "1"
+    # iPhone and iPad — the layouts adapt, so there is no reason to exclude tablets.
+    TARGETED_DEVICE_FAMILY: "1,2"
+    SWIFT_STRICT_CONCURRENCY: minimal
+
+targets:
+  OwnAlarm:
+    type: application
+    platform: iOS
+
+    sources:
+      - path: OwnAlarm
+        excludes:
+          - "**/.DS_Store"
+
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.ownalarm.app
+        PRODUCT_NAME: OwnAlarm
+        GENERATE_INFOPLIST_FILE: NO
+        ENABLE_USER_SCRIPT_SANDBOXING: NO
+        # Left blank on purpose: CI builds unsigned, and Sideloadly re-signs with
+        # your own Apple ID afterwards.
+        DEVELOPMENT_TEAM: ""
+        CODE_SIGN_STYLE: Manual
+
+    info:
+      path: OwnAlarm/Info.plist
+      properties:
+        CFBundleDisplayName: OwnAlarm
+        CFBundleShortVersionString: "$(MARKETING_VERSION)"
+        CFBundleVersion: "$(CURRENT_PROJECT_VERSION)"
+        UILaunchScreen:
+          UIColorName: ""
+        UISupportedInterfaceOrientations:
+          - UIInterfaceOrientationPortrait
+          - UIInterfaceOrientationLandscapeLeft
+          - UIInterfaceOrientationLandscapeRight
+        UISupportedInterfaceOrientations~ipad:
+          - UIInterfaceOrientationPortrait
+          - UIInterfaceOrientationPortraitUpsideDown
+          - UIInterfaceOrientationLandscapeLeft
+          - UIInterfaceOrientationLandscapeRight
+        # Keeps a foreground alarm ringing if the screen locks mid-alarm.
+        UIBackgroundModes:
+          - audio
+        NSUserNotificationsUsageDescription: >-
+          OwnAlarm uses notifications to ring your alarms at the volume you set for
+          each task, even when the app is closed.
+        ITSAppUsesNonExemptEncryption: false

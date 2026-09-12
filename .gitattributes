@@ -1,0 +1,3 @@
+# Keep the repo LF; CI runs on macOS and Linux.
+* text=auto eol=lf
+*.wav binary

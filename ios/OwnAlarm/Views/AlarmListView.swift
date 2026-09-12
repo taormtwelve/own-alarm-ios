@@ -1,0 +1,224 @@
+import SwiftUI
+
+struct AlarmListView: View {
+    @EnvironmentObject private var store: AlarmStore
+    @State private var editing: Alarm?
+    @State private var isCreating = false
+
+    var body: some View {
+        NavigationStack {
+            ScrollView {
+                LazyVStack(spacing: 12) {
+                    if let next = store.nextAlarm {
+                        NextAlarmBanner(alarm: next.alarm, date: next.date)
+                            .padding(.bottom, 6)
+                    }
+
+                    ForEach(store.sortedAlarms) { alarm in
+                        AlarmRow(alarm: alarm)
+                            .onTapGesture { editing = alarm }
+                            .contextMenu {
+                                Button(role: .destructive) {
+                                    store.delete(alarm)
+                                } label: {
+                                    Label("Delete", systemImage: "trash")
+                                }
+                            }
+                    }
+
+                    if store.alarms.isEmpty {
+                        EmptyAlarms { isCreating = true }
+                    }
+                }
+                .padding(.horizontal, Metrics.gutter)
+                .padding(.vertical, 8)
+                .readableWidth()
+            }
+            .background(Tokens.background)
+            .scrollContentBackground(.hidden)
+            .navigationTitle("Alarms")
+            .navigationBarTitleDisplayMode(.large)
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button {
+                        isCreating = true
+                    } label: {
+                        Image(systemName: "plus")
+                            .font(.system(size: 17, weight: .bold))
+                            .frame(width: Metrics.minTapTarget, height: Metrics.minTapTarget)
+                    }
+                    .accessibilityLabel("New alarm")
+                }
+            }
+            .sheet(item: $editing) { alarm in
+                EditAlarmView(alarm: alarm, isNew: false)
+            }
+            .sheet(isPresented: $isCreating) {
+                EditAlarmView(alarm: Alarm.newAlarm(from: store.settings.defaults), isNew: true)
+            }
+        }
+    }
+}
+
+// MARK: - Row
+
+private struct AlarmRow: View {
+    @EnvironmentObject private var store: AlarmStore
+    let alarm: Alarm
+
+    private var tone: AlarmTone { store.tone(for: alarm) }
+
+    var body: some View {
+        // At ordinary text sizes the toggle sits beside the content; once the text
+        // grows past a point the toggle drops underneath rather than crushing it.
+        ViewThatFits(in: .horizontal) {
+            HStack(alignment: .center, spacing: 14) {
+                details
+                toggle
+            }
+            VStack(alignment: .leading, spacing: 12) {
+                details
+                toggle
+            }
+        }
+        .padding(16)
+        .cardSurface()
+        .opacity(alarm.isEnabled ? 1 : 0.55)
+        .accessibilityElement(children: .combine)
+    }
+
+    private var details: some View {
+        VStack(alignment: .leading, spacing: 7) {
+            HStack(alignment: .firstTextBaseline, spacing: 7) {
+                Text(TimeText.string(hour: alarm.hour, minute: alarm.minute,
+                                     format: store.settings.timeFormat))
+                    .font(Typo.display(30, relativeTo: .largeTitle))
+                    .monospacedDigit()
+                    .foregroundStyle(alarm.isEnabled ? Tokens.textPrimary : Tokens.textMuted)
+
+                Circle()
+                    .fill(Tokens.textFaint.opacity(0.5))
+                    .frame(width: 3, height: 3)
+
+                Text(alarm.repeatSummary)
+                    .font(Typo.caption)
+                    .foregroundStyle(Tokens.textTertiary)
+            }
+
+            Text(alarm.task.isEmpty ? "Alarm" : alarm.task)
+                .font(Typo.body(15, relativeTo: .subheadline, weight: .semibold))
+                .foregroundStyle(alarm.isEnabled ? Tokens.textPrimary : Tokens.textMuted)
+                .fixedSize(horizontal: false, vertical: true)
+
+            HStack(spacing: 9) {
+                VolumeMeter(volume: alarm.volume, isDimmed: !alarm.isEnabled)
+                Text("\(alarm.volumePercent)%")
+                    .font(Typo.caption)
+                    .fontWeight(.semibold)
+                    .monospacedDigit()
+                    .foregroundStyle(alarm.isEnabled ? Tokens.accentText : Tokens.textMuted)
+                Text(summary)
+                    .font(Typo.caption)
+                    .foregroundStyle(Tokens.textFaint)
+                    .lineLimit(1)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private var summary: String {
+        alarm.fadeInSeconds > 0
+            ? "\(tone.name) · ramp \(alarm.fadeInSeconds)s"
+            : "\(tone.name) · no ramp"
+    }
+
+    private var toggle: some View {
+        Toggle("", isOn: Binding(
+            get: { alarm.isEnabled },
+            set: { store.setEnabled($0, for: alarm) }
+        ))
+        .toggleStyle(.alarm)
+        .labelsHidden()
+        .accessibilityLabel("\(alarm.task) alarm")
+    }
+}
+
+// MARK: - Next alarm banner
+
+private struct NextAlarmBanner: View {
+    @EnvironmentObject private var store: AlarmStore
+    let alarm: Alarm
+    let date: Date
+
+    var body: some View {
+        HStack(spacing: 14) {
+            Image(systemName: "alarm.fill")
+                .font(.system(size: 18, weight: .semibold))
+                .foregroundStyle(Tokens.inkOnAccent)
+                .frame(width: 38, height: 38)
+                .background(Tokens.accentFill)
+                .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+
+            VStack(alignment: .leading, spacing: 3) {
+                Text("Next alarm")
+                    .font(Typo.sectionLabel)
+                    .tracking(1.1)
+                    .foregroundStyle(Tokens.accentLabel)
+                Text("\(alarm.task) · \(TimeText.relative(to: date))")
+                    .font(Typo.body(14, relativeTo: .subheadline, weight: .semibold))
+                    .foregroundStyle(Tokens.textPrimary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+
+            VStack(alignment: .trailing, spacing: 1) {
+                Text("\(alarm.volumePercent)%")
+                    .font(Typo.display(19, relativeTo: .headline))
+                    .monospacedDigit()
+                    .foregroundStyle(Tokens.accentText)
+                Text(descriptor)
+                    .font(Typo.caption)
+                    .foregroundStyle(Tokens.textMuted)
+            }
+        }
+        .padding(14)
+        .cardSurface(radius: 18, tinted: true)
+        .accessibilityElement(children: .combine)
+    }
+
+    private var descriptor: String {
+        switch alarm.volume {
+        case ..<0.25: return "whisper"
+        case ..<0.5: return "gentle"
+        case ..<0.75: return "room"
+        default: return "loud"
+        }
+    }
+}
+
+// MARK: - Empty state
+
+private struct EmptyAlarms: View {
+    let create: () -> Void
+
+    var body: some View {
+        VStack(spacing: 14) {
+            Image(systemName: "alarm")
+                .font(.system(size: 34, weight: .light))
+                .foregroundStyle(Tokens.textFaint)
+            Text("No alarms yet")
+                .font(Typo.body(17, relativeTo: .headline, weight: .semibold))
+                .foregroundStyle(Tokens.textPrimary)
+            Text("Every alarm you add keeps its own volume, so a medication reminder can stay quiet while a wake-up is loud.")
+                .font(Typo.caption)
+                .foregroundStyle(Tokens.textMuted)
+                .multilineTextAlignment(.center)
+                .fixedSize(horizontal: false, vertical: true)
+            PrimaryButton(title: "Add an alarm", systemImage: "plus", action: create)
+                .padding(.top, 4)
+        }
+        .padding(28)
+        .frame(maxWidth: .infinity)
+        .cardSurface()
+    }
+}

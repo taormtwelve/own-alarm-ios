@@ -1,0 +1,51 @@
+# GitLab equivalent of .github/workflows/ios.yml
+#
+# Note: macOS runners on GitLab.com require a paid tier and consume CI minutes at a
+# multiplier. On the Free tier this pipeline will not find a macOS runner — the
+# `core-tests` job still works, `build-ipa` will not.
+#
+# A self-hosted runner on any Mac (`tags: [macos]`) works on any tier.
+
+stages:
+  - test
+  - build
+
+core-tests:
+  stage: test
+  image: swift:5.9
+  script:
+    - swift test --package-path ios
+
+build-ipa:
+  stage: build
+  tags:
+    - saas-macos-medium-m1      # or your own runner's tag
+  image: macos-14-xcode-15
+  before_script:
+    - brew install xcodegen
+  script:
+    - cd ios
+    - xcodegen generate
+    # Unsigned: no certificates in CI. Sideloadly signs it on your machine.
+    - |
+      xcodebuild \
+        -project OwnAlarm.xcodeproj \
+        -scheme OwnAlarm \
+        -configuration Release \
+        -sdk iphoneos \
+        -derivedDataPath build \
+        CODE_SIGN_IDENTITY="" \
+        CODE_SIGNING_REQUIRED=NO \
+        CODE_SIGNING_ALLOWED=NO \
+        build
+    - mkdir -p Payload
+    - cp -R build/Build/Products/Release-iphoneos/OwnAlarm.app Payload/
+    - zip -qry OwnAlarm-unsigned.ipa Payload
+  artifacts:
+    name: OwnAlarm-unsigned-ipa
+    paths:
+      - ios/OwnAlarm-unsigned.ipa
+    expire_in: 30 days
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
+    - if: $CI_PIPELINE_SOURCE == "web"

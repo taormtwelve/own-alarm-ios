@@ -1,0 +1,126 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,600;12..96,700&family=Instrument+Sans:wght@400;500;600;700&display=swap">
+  <style>
+    body { margin: 0; font-family: 'Instrument Sans', system-ui, -apple-system, sans-serif; -webkit-font-smoothing: antialiased; }
+    a { color: #FFB03A; } a:hover { color: #FFC670; }
+    .num { font-family: 'Bricolage Grotesque', 'Helvetica Neue', sans-serif; font-variant-numeric: tabular-nums; }
+  </style>
+</helmet>
+
+<div style="width: 390px; height: 844px; background: #12100E; color: #F7F3EE; display: flex; flex-direction: column; overflow: hidden;">
+
+  <div style="height: 56px; flex-shrink: 0;"></div>
+
+  <div style="display: flex; align-items: center; justify-content: space-between; padding: 0 20px 12px 20px; flex-shrink: 0;">
+    <span style="font-size: 15px; color: #9A928A; width: 60px;">Cancel</span>
+    <span style="font-size: 16px; font-weight: 600; letter-spacing: -0.01em;">Morning run</span>
+    <span style="font-size: 15px; font-weight: 700; color: #FFB03A; width: 60px; text-align: right;">Save</span>
+  </div>
+
+  <div style="position: relative; height: 182px; flex-shrink: 0; margin: 0 20px;">
+    <div style="position: absolute; left: 0; right: 0; top: 69px; height: 44px; border-radius: 12px; background: #1C1917;"></div>
+    <div style="position: relative; display: flex; align-items: center; justify-content: center; gap: 4px; height: 182px;">
+      <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 0; width: 82px;">
+        <div class="num" style="font-size: 20px; color: #3E3934; height: 34px; line-height: 34px;">04</div>
+        <div class="num" style="font-size: 24px; color: #5F574F; height: 35px; line-height: 35px;">05</div>
+        <div class="num" style="font-size: 30px; color: #F7F3EE; height: 44px; line-height: 44px; font-weight: 600;">06</div>
+        <div class="num" style="font-size: 24px; color: #5F574F; height: 35px; line-height: 35px;">07</div>
+        <div class="num" style="font-size: 20px; color: #3E3934; height: 34px; line-height: 34px;">08</div>
+      </div>
+      <div class="num" style="font-size: 28px; color: #F7F3EE; font-weight: 600; padding-bottom: 4px;">:</div>
+      <div style="display: flex; flex-direction: column; align-items: flex-start; gap: 0; width: 82px;">
+        <div class="num" style="font-size: 20px; color: #3E3934; height: 34px; line-height: 34px;">15</div>
+        <div class="num" style="font-size: 24px; color: #5F574F; height: 35px; line-height: 35px;">30</div>
+        <div class="num" style="font-size: 30px; color: #F7F3EE; height: 44px; line-height: 44px; font-weight: 600;">45</div>
+        <div class="num" style="font-size: 24px; color: #5F574F; height: 35px; line-height: 35px;">50</div>
+        <div class="num" style="font-size: 20px; color: #3E3934; height: 34px; line-height: 34px;">55</div>
+      </div>
+    </div>
+  </div>
+
+  <div style="margin: 18px 20px 0 20px; background: #1C1917; border: 1px solid #2A2724; border-radius: 20px; display: flex; flex-direction: column; flex-shrink: 0;">
+    <div style="display: flex; align-items: center; gap: 12px; height: 56px; padding: 0 16px; border-bottom: 1px solid #262220;">
+      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#8A8279" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6.5h13M4 12h16M4 17.5h9"></path></svg>
+      <span style="font-size: 15px; color: #C9C0B7; flex-grow: 1;">Task</span>
+      <span style="font-size: 15px; font-weight: 600;">Morning run</span>
+    </div>
+    <div style="display: flex; align-items: center; gap: 12px; height: 56px; padding: 0 16px; border-bottom: 1px solid #262220;">
+      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#8A8279" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 2.5l3.5 3.5L17 9.5"></path><path d="M3.5 6H20"></path><path d="M7 21.5L3.5 18 7 14.5"></path><path d="M20.5 18H4"></path></svg>
+      <span style="font-size: 15px; color: #C9C0B7; flex-grow: 1;">Repeat</span>
+      <span style="font-size: 15px; font-weight: 600;">Mon &ndash; Fri</span>
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#5F574F" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"></path></svg>
+    </div>
+    <div style="display: flex; align-items: center; gap: 12px; height: 56px; padding: 0 16px;">
+      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#8A8279" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10v4M8 7v10M12 4.5v15M16 8v8M20 11v2"></path></svg>
+      <span style="font-size: 15px; color: #C9C0B7; flex-grow: 1;">Sound</span>
+      <span style="font-size: 15px; font-weight: 600;">Siren</span>
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#5F574F" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"></path></svg>
+    </div>
+  </div>
+
+  <div style="margin: 16px 20px 0 20px; background: #1C1917; border: 1px solid #3A2C18; border-radius: 22px; padding: 18px; display: flex; flex-direction: column; gap: 14px; flex-shrink: 0;">
+
+    <div style="display: flex; align-items: flex-end; justify-content: space-between;">
+      <div style="display: flex; flex-direction: column; gap: 3px;">
+        <div style="font-size: 10px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #C79A55;">Volume for this task</div>
+        <div style="font-size: 12px; color: #8A8279;">Independent of your ringer volume</div>
+      </div>
+      <div class="num" style="font-size: 38px; font-weight: 600; color: #FFB03A; letter-spacing: -0.03em; line-height: 0.95;">85%</div>
+    </div>
+
+    <div style="display: flex; align-items: center; height: 30px;">
+      <div style="width: 218px; height: 8px; border-radius: 4px; background: #FFB03A; flex-shrink: 0;"></div>
+      <div style="width: 30px; height: 30px; border-radius: 50%; background: #FFFFFF; margin: 0 -9px; flex-shrink: 0; box-shadow: 0 2px 10px rgba(0,0,0,0.45);"></div>
+      <div style="flex-grow: 1; height: 8px; border-radius: 4px; background: #332D28;"></div>
+    </div>
+
+    <div style="display: flex; align-items: center; justify-content: space-between; margin-top: -6px;">
+      <span style="font-size: 11px; color: #6E665F;">Whisper</span>
+      <span style="font-size: 11px; color: #6E665F;">Room</span>
+      <span style="font-size: 11px; color: #6E665F;">Wake the dead</span>
+    </div>
+
+    <div style="height: 1px; background: #2A2724;"></div>
+
+    <div style="display: flex; align-items: center; gap: 12px;">
+      <div style="flex-grow: 1; display: flex; flex-direction: column; gap: 2px;">
+        <span style="font-size: 14px; font-weight: 600;">Fade in</span>
+        <span style="font-size: 12px; color: #8A8279;">Starts at 20%, reaches 85% over 30s</span>
+      </div>
+      <div style="width: 51px; height: 31px; border-radius: 16px; background: #332D28; display: flex; align-items: center; justify-content: flex-start; padding: 2px; box-sizing: border-box; flex-shrink: 0;">
+        <span style="width: 27px; height: 27px; border-radius: 50%; background: #6E665F;"></span>
+      </div>
+    </div>
+
+    <div style="display: flex; align-items: center; gap: 12px;">
+      <div style="flex-grow: 1; display: flex; flex-direction: column; gap: 2px;">
+        <span style="font-size: 14px; font-weight: 600;">Override Silent &amp; Focus</span>
+        <span style="font-size: 12px; color: #8A8279;">Rings even when the phone is muted</span>
+      </div>
+      <div style="width: 51px; height: 31px; border-radius: 16px; background: #FFB03A; display: flex; align-items: center; justify-content: flex-end; padding: 2px; box-sizing: border-box; flex-shrink: 0;">
+        <span style="width: 27px; height: 27px; border-radius: 50%; background: #FFFFFF;"></span>
+      </div>
+    </div>
+
+  </div>
+
+  <div style="margin: 14px 20px 0 20px; background: #1C1917; border: 1px solid #2A2724; border-radius: 20px; display: flex; align-items: center; gap: 12px; height: 56px; padding: 0 16px; flex-shrink: 0;">
+    <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#8A8279" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12.5" r="8"></circle><path d="M12 8.5v4l2.6 1.7"></path></svg>
+    <span style="font-size: 15px; color: #C9C0B7; flex-grow: 1;">Snooze</span>
+    <span style="font-size: 15px; font-weight: 600;">9 min &middot; +10% each time</span>
+  </div>
+
+  <div style="flex-grow: 1;"></div>
+
+</div>
+</x-dc>
+</body>
+</html>

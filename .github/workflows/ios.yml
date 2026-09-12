@@ -1,0 +1,81 @@
+name: Build OwnAlarm
+
+# Builds the iOS app on GitHub's free macOS runners, so no Mac is needed locally.
+# The artifact is an UNSIGNED .ipa — you sign it on your own machine with your own
+# Apple ID (see ios/BUILD.md), which keeps certificates out of this repository.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  core-tests:
+    name: Model tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: swift-actions/setup-swift@v2
+        with:
+          swift-version: "5.9"
+      - name: Run the platform-independent suite
+        run: swift test --package-path ios
+
+  app:
+    name: Build unsigned .ipa
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install XcodeGen
+        run: brew install xcodegen
+
+      - name: Generate the Xcode project
+        working-directory: ios
+        run: xcodegen generate
+
+      # Unsigned: no certificates, no provisioning profiles, nothing secret in CI.
+      - name: Build
+        working-directory: ios
+        run: |
+          set -o pipefail
+          xcodebuild \
+            -project OwnAlarm.xcodeproj \
+            -scheme OwnAlarm \
+            -configuration Release \
+            -sdk iphoneos \
+            -derivedDataPath build \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGNING_ALLOWED=NO \
+            build
+
+      # An .ipa is just a zip with the .app inside a folder called Payload.
+      - name: Package .ipa
+        working-directory: ios
+        run: |
+          mkdir -p Payload
+          cp -R build/Build/Products/Release-iphoneos/OwnAlarm.app Payload/
+          zip -qry OwnAlarm-unsigned.ipa Payload
+          ls -lh OwnAlarm-unsigned.ipa
+
+      - name: Upload
+        uses: actions/upload-artifact@v4
+        with:
+          name: OwnAlarm-unsigned-ipa
+          path: ios/OwnAlarm-unsigned.ipa
+          retention-days: 30
+
+      # Catches SwiftUI mistakes the unsigned device build would miss.
+      - name: Build for Simulator
+        working-directory: ios
+        run: |
+          set -o pipefail
+          xcodebuild \
+            -project OwnAlarm.xcodeproj \
+            -scheme OwnAlarm \
+            -configuration Debug \
+            -destination 'platform=iOS Simulator,name=iPhone 15' \
+            -derivedDataPath build-sim \
+            build
