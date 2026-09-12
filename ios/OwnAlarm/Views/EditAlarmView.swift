@@ -196,18 +196,21 @@ struct EditAlarmView: View {
                 .foregroundStyle(Tokens.textSecondary)
             }
 
-            Toggle(isOn: $alarm.overridesSilent) {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("Override Silent & Focus")
-                        .font(Typo.body(14, relativeTo: .subheadline, weight: .semibold))
-                        .foregroundStyle(Tokens.textPrimary)
-                    Text("Rings even when the phone is muted")
-                        .font(Typo.caption)
-                        .foregroundStyle(Tokens.textMuted)
-                        .fixedSize(horizontal: false, vertical: true)
+            // On iOS 26+ every alarm rings through Silent, so there is nothing to choose.
+            if !RingPermission.alwaysRingsThroughSilent {
+                Toggle(isOn: $alarm.overridesSilent) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Override Silent & Focus")
+                            .font(Typo.body(14, relativeTo: .subheadline, weight: .semibold))
+                            .foregroundStyle(Tokens.textPrimary)
+                        Text("Rings even when the phone is muted")
+                            .font(Typo.caption)
+                            .foregroundStyle(Tokens.textMuted)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
                 }
+                .toggleStyle(.alarm)
             }
-            .toggleStyle(.alarm)
         }
         .padding(18)
         .cardSurface(radius: 22)

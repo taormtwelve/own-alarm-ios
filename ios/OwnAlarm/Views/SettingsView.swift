@@ -84,13 +84,16 @@ struct SettingsView: View {
                                     .labelsHidden()
                             }
 
-                            SettingsRow(
-                                title: "Override Silent & Focus",
-                                subtitle: "Applied to new alarms"
-                            ) {
-                                Toggle("", isOn: $store.settings.defaults.overridesSilent)
-                                    .toggleStyle(.alarm)
-                                    .labelsHidden()
+                            // Hidden on iOS 26+, where every alarm rings through Silent.
+                            if !RingPermission.alwaysRingsThroughSilent {
+                                SettingsRow(
+                                    title: "Override Silent & Focus",
+                                    subtitle: "Applied to new alarms"
+                                ) {
+                                    Toggle("", isOn: $store.settings.defaults.overridesSilent)
+                                        .toggleStyle(.alarm)
+                                        .labelsHidden()
+                                }
                             }
 
                             SettingsRow(
