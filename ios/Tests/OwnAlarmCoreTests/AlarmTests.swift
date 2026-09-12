@@ -216,6 +216,21 @@ final class AlarmTests: XCTestCase {
         XCTAssertTrue(alarm.isEnabled)
     }
 
+    func testFactoryDefaultsAreHalfVolumeWithATwentySecondFade() {
+        let defaults = AlarmDefaults()
+        XCTAssertEqual(defaults.volume, 0.5, accuracy: 0.0001)
+        XCTAssertEqual(defaults.fadeInSeconds, 20)
+    }
+
+    func testSwitchingFadeBackOnNeverLandsOnZero() {
+        var defaults = AlarmDefaults()
+        defaults.fadeInSeconds = 0          // the user's last alarm had no fade
+        XCTAssertEqual(defaults.fadeInWhenSwitchedOn, AlarmDefaults.standardFadeInSeconds)
+
+        defaults.fadeInSeconds = 45
+        XCTAssertEqual(defaults.fadeInWhenSwitchedOn, 45)
+    }
+
     // MARK: Weekdays
 
     func testLocaleOrderedCoversEveryDayExactlyOnce() {

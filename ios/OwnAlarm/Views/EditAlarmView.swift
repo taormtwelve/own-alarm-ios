@@ -171,7 +171,7 @@ struct EditAlarmView: View {
 
             Toggle(isOn: Binding(
                 get: { alarm.fadeInSeconds > 0 },
-                set: { alarm.fadeInSeconds = $0 ? store.settings.defaults.fadeInSeconds : 0 }
+                set: { alarm.fadeInSeconds = $0 ? store.settings.defaults.fadeInWhenSwitchedOn : 0 }
             )) {
                 VStack(alignment: .leading, spacing: 2) {
                     Text("Fade in")
@@ -275,7 +275,7 @@ struct EditAlarmView: View {
         if alarm.task.trimmingCharacters(in: .whitespaces).isEmpty {
             alarm.task = "Alarm"
         }
-        if isNew { store.add(alarm) } else { store.update(alarm) }
+        store.save(alarm, isNew: isNew)
         dismiss()
     }
 

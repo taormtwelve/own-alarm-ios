@@ -61,14 +61,25 @@ enum ThemePreference: String, Codable, CaseIterable, Identifiable {
     #endif
 }
 
-/// What a freshly created alarm starts from.
+/// What a freshly created alarm starts from: half volume and a 20 s fade at first,
+/// then whatever the user last saved — `AlarmStore.save` copies each saved alarm's
+/// volume, sound, snooze and fade-in back into these.
 struct AlarmDefaults: Codable, Equatable {
-    var volume: Double = 0.70
-    var fadeInSeconds: Int = 30
+    /// The fade used when none has been remembered.
+    static let standardFadeInSeconds = 20
+
+    var volume: Double = 0.50
+    var fadeInSeconds: Int = AlarmDefaults.standardFadeInSeconds
     var overridesSilent: Bool = true
     var toneID: String = "marimba"
     var snoozeMinutes: Int = 9
     var louderAfterSnooze: Bool = true
+
+    /// Fade length when the user switches fade-in on. The remembered value can be
+    /// 0 — their last alarm had no fade — which would leave the switch stuck off.
+    var fadeInWhenSwitchedOn: Int {
+        fadeInSeconds > 0 ? fadeInSeconds : Self.standardFadeInSeconds
+    }
 }
 
 struct AppSettings: Codable, Equatable {
