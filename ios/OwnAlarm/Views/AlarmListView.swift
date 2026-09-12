@@ -88,6 +88,9 @@ private struct AlarmRow: View {
         .padding(16)
         .cardSurface()
         .opacity(alarm.isEnabled ? 1 : 0.55)
+        // One container per row. Without it SwiftUI copies the identifier onto every
+        // child — texts, meter, switch — and "alarmRow" matches seven times per alarm.
+        .accessibilityElement(children: .contain)
         .accessibilityIdentifier("alarmRow")
     }
 

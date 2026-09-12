@@ -103,7 +103,9 @@ final class AlarmFlowUITests: XCTestCase {
         let rows = app.descendants(matching: .any).matching(identifier: "alarmRow")
         XCTAssertTrue(rows.firstMatch.waitForExistence(timeout: 10))
         let before = rows.count
+        XCTAssertEqual(before, 4, "One element per alarm — the four sample alarms")
 
+        // Rows sort by time, so the first is the 06:45 Morning run.
         rows.firstMatch.swipeLeft()
         let delete = app.buttons["Delete"]
         XCTAssertTrue(delete.waitForExistence(timeout: 5), "Swiping left should reveal Delete")
@@ -111,6 +113,7 @@ final class AlarmFlowUITests: XCTestCase {
 
         expectation(for: NSPredicate(format: "count == %d", before - 1), evaluatedWith: rows)
         waitForExpectations(timeout: 5)
+        XCTAssertFalse(app.staticTexts["Morning run"].exists, "The swiped alarm should be gone")
     }
 
     // MARK: First launch
