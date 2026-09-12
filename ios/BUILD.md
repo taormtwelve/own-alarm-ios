@@ -45,6 +45,12 @@ there is no `.xcodeproj` in the repo and why you never needed a Mac to create on
 When it finishes, download **OwnAlarm-unsigned-ipa** from the run's Artifacts
 section. Unzip it; inside is `OwnAlarm-unsigned.ipa`.
 
+**Branches:** `dev` builds and tests every push. `prod` is the deploy branch —
+merging `dev` into `prod` runs the same pipeline and, only if every test passes,
+publishes a **GitHub Release** with the `.ipa` attached. For a tested build, take
+it from the repo's **Releases** page rather than from a dev run's artifacts; release
+files do not expire after 30 days.
+
 ## Step 3 — Install it on your iPhone
 
 The .ipa is unsigned, so it needs your Apple ID attached before iOS will run it.

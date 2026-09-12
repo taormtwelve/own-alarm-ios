@@ -1,14 +1,28 @@
 name: Build OwnAlarm
 
-# Builds the iOS app on GitHub's macOS runners, so no Mac is needed locally.
-# The artifact is an UNSIGNED .ipa — you sign it on your own machine with your own
-# Apple ID (see ios/BUILD.md), which keeps certificates out of this repository.
+# Two pipelines in one file:
+#   dev  — every push: model tests, device build, unit + UI tests, .ipa artifact.
+#   prod — the same, then a GitHub Release with the .ipa attached. Merging dev into
+#          prod is the deploy, and nothing is released unless every test passed.
+#
+# The .ipa is UNSIGNED — you sign it on your own machine with your own Apple ID (see
+# ios/BUILD.md), which keeps certificates out of this repository.
 
 on:
   push:
-    branches: [main, dev]
+    branches: [dev, prod]
   pull_request:
+    branches: [dev, prod]
   workflow_dispatch:
+
+permissions:
+  contents: read
+
+# A newer push to dev makes the older run pointless — cancel it and save macOS
+# minutes, which bill at a multiple. Deploys to prod are never cancelled mid-way.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/prod' }}
 
 jobs:
   core-tests:
@@ -177,3 +191,31 @@ jobs:
             ios/xcodebuild-test.log
             ios/TestResults.xcresult
           retention-days: 7
+
+  # The deploy. Only for pushes to prod, and only once both jobs above — model
+  # tests, device build, unit and UI tests — have passed.
+  release:
+    name: Deploy to GitHub Releases
+    needs: [core-tests, app]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/prod'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v5
+        with:
+          name: OwnAlarm-unsigned-ipa
+
+      - name: Publish release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: build-${{ github.run_number }}
+        run: |
+          FILE="OwnAlarm-${TAG}-unsigned.ipa"
+          mv OwnAlarm-unsigned.ipa "$FILE"
+          gh release create "$TAG" "$FILE" \
+            --repo "${{ github.repository }}" \
+            --target "${{ github.sha }}" \
+            --title "OwnAlarm ${TAG}" \
+            --notes "Deployed from prod at ${{ github.sha }}. Unsigned: install with Sideloadly using your own Apple ID (see ios/BUILD.md)."
+          echo "Released $FILE as $TAG" >> "$GITHUB_STEP_SUMMARY"
