@@ -195,35 +195,19 @@ struct ToneRow: View {
 
 // MARK: - Other sources
 
-/// Two-up chooser: the iOS sound library, or the reader's own audio.
+/// Adds the reader's own audio from Music or Files.
 struct SourceChoices: View {
     @State private var showingImporter = false
     @EnvironmentObject private var store: AlarmStore
 
     var body: some View {
-        // Side by side normally; stacked once the labels need the width.
-        ViewThatFits(in: .horizontal) {
-            HStack(spacing: 8) { systemTile; importTile }
-            VStack(spacing: 8) { systemTile; importTile }
-        }
-        .fileImporter(
+        importTile.fileImporter(
             isPresented: $showingImporter,
             allowedContentTypes: [.audio],
             allowsMultipleSelection: false
         ) { result in
             if case let .success(urls) = result, let url = urls.first {
                 importTone(from: url)
-            }
-        }
-    }
-
-    private var systemTile: some View {
-        SourceTile(systemImage: "iphone", title: "iOS system sounds") {
-            // The standard tone library is not exposed to third-party apps; this
-            // opens Settings so the reader can see what is available, and the
-            // bundled set above is what actually ships.
-            if let url = URL(string: UIApplication.openSettingsURLString) {
-                UIApplication.shared.open(url)
             }
         }
     }

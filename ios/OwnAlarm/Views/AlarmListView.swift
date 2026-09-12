@@ -10,11 +10,6 @@ struct AlarmListView: View {
             // A List rather than a ScrollView: `.swipeActions` only exists on list
             // rows, and it brings full-swipe delete and VoiceOver actions with it.
             List {
-                if let next = store.nextAlarm {
-                    NextAlarmBanner(alarm: next.alarm, date: next.date)
-                        .listCardRow(bottom: 12)
-                }
-
                 ForEach(store.sortedAlarms) { alarm in
                     AlarmRow(alarm: alarm)
                         .contentShape(Rectangle())
@@ -147,59 +142,6 @@ private struct AlarmRow: View {
         .toggleStyle(.alarm)
         .labelsHidden()
         .accessibilityLabel("\(alarm.task) alarm")
-    }
-}
-
-// MARK: - Next alarm banner
-
-private struct NextAlarmBanner: View {
-    @EnvironmentObject private var store: AlarmStore
-    let alarm: Alarm
-    let date: Date
-
-    var body: some View {
-        HStack(spacing: 14) {
-            Image(systemName: "alarm.fill")
-                .font(.system(size: 18, weight: .semibold))
-                .foregroundStyle(Tokens.inkOnAccent)
-                .frame(width: 38, height: 38)
-                .background(Tokens.accentFill)
-                .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-
-            VStack(alignment: .leading, spacing: 3) {
-                Text("Next alarm")
-                    .font(Typo.sectionLabel)
-                    .tracking(1.1)
-                    .foregroundStyle(Tokens.accentLabel)
-                Text("\(alarm.task) · \(TimeText.relative(to: date))")
-                    .font(Typo.body(14, relativeTo: .subheadline, weight: .semibold))
-                    .foregroundStyle(Tokens.textPrimary)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-
-            VStack(alignment: .trailing, spacing: 1) {
-                Text("\(alarm.volumePercent)%")
-                    .font(Typo.display(19, relativeTo: .headline))
-                    .monospacedDigit()
-                    .foregroundStyle(Tokens.accentText)
-                Text(descriptor)
-                    .font(Typo.caption)
-                    .foregroundStyle(Tokens.textMuted)
-            }
-        }
-        .padding(14)
-        .cardSurface(radius: 18, tinted: true)
-        .accessibilityElement(children: .combine)
-    }
-
-    private var descriptor: String {
-        switch alarm.volume {
-        case ..<0.25: return "whisper"
-        case ..<0.5: return "gentle"
-        case ..<0.75: return "room"
-        default: return "loud"
-        }
     }
 }
 

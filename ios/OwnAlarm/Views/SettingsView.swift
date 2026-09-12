@@ -106,7 +106,7 @@ struct SettingsView: View {
                                 openSettings()
                             } label: {
                                 SettingsRow(
-                                    title: "Critical Alerts permission",
+                                    title: RingPermission.name,
                                     subtitle: permissionExplanation,
                                     showsDivider: false
                                 ) {
@@ -135,7 +135,7 @@ struct SettingsView: View {
             .background(Tokens.background)
             .navigationTitle("Settings")
             .task {
-                criticalAlertsGranted = await AlarmScheduler.criticalAlertsGranted()
+                criticalAlertsGranted = await RingPermission.isGranted()
             }
             .onChange(of: store.settings.showOnLockScreen) { _ in
                 store.rescheduleAll()

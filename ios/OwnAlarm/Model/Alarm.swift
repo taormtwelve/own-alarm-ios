@@ -128,11 +128,16 @@ struct Alarm: Identifiable, Codable, Equatable {
         return repeatDays.sorted().map(\.shortSymbol).joined(separator: ", ")
     }
 
-    static func newAlarm(from defaults: AlarmDefaults) -> Alarm {
-        Alarm(
+    /// A new alarm opens on the current time — the picker starts at "now" and the
+    /// user scrolls forward — carrying the defaults from Settings.
+    static func newAlarm(from defaults: AlarmDefaults,
+                         at now: Date = Date(),
+                         calendar: Calendar = .current) -> Alarm {
+        let parts = calendar.dateComponents([.hour, .minute], from: now)
+        return Alarm(
             task: "",
-            hour: 7,
-            minute: 0,
+            hour: parts.hour ?? 7,
+            minute: parts.minute ?? 0,
             repeatDays: [],
             volume: defaults.volume,
             fadeInSeconds: defaults.fadeInSeconds,

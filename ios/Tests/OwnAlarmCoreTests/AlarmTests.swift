@@ -192,6 +192,30 @@ final class AlarmTests: XCTestCase {
         XCTAssertEqual(TimeText.relative(to: now.addingTimeInterval(-500), from: now), "in 0m")
     }
 
+    // MARK: New alarms
+
+    func testNewAlarmStartsAtTheCurrentTime() {
+        let now = reference().addingTimeInterval(37 * 60)   // 08:37
+        let alarm = Alarm.newAlarm(from: AlarmDefaults(), at: now, calendar: calendar)
+        XCTAssertEqual(alarm.hour, 8)
+        XCTAssertEqual(alarm.minute, 37)
+    }
+
+    func testNewAlarmCarriesTheDefaults() {
+        var defaults = AlarmDefaults()
+        defaults.volume = 0.42
+        defaults.toneID = "whisper"
+        defaults.snoozeMinutes = 5
+
+        let alarm = Alarm.newAlarm(from: defaults, at: reference(), calendar: calendar)
+
+        XCTAssertEqual(alarm.volume, 0.42, accuracy: 0.0001)
+        XCTAssertEqual(alarm.toneID, "whisper")
+        XCTAssertEqual(alarm.snoozeMinutes, 5)
+        XCTAssertTrue(alarm.repeatDays.isEmpty)
+        XCTAssertTrue(alarm.isEnabled)
+    }
+
     // MARK: Weekdays
 
     func testLocaleOrderedCoversEveryDayExactlyOnce() {

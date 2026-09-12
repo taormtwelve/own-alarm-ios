@@ -151,3 +151,27 @@ private extension Weekday {
     }
 }
 #endif
+
+/// The permission that lets an alarm ring on the Lock Screen and through Silent:
+/// AlarmKit's on iOS 26 and later, Critical Alerts before that.
+///
+/// Both are requested on first launch. Critical Alerts only ever shows a prompt for
+/// apps Apple has approved for the entitlement; for everyone else iOS skips the
+/// question silently, which is why iOS 26's AlarmKit is the route that matters.
+enum RingPermission {
+    static var name: String {
+        #if canImport(AlarmKit)
+        if #available(iOS 26.0, *) { return "Alarms permission" }
+        #endif
+        return "Critical Alerts permission"
+    }
+
+    static func isGranted() async -> Bool {
+        #if canImport(AlarmKit)
+        if #available(iOS 26.0, *) {
+            return AlarmManager.shared.authorizationState == .authorized
+        }
+        #endif
+        return await AlarmScheduler.criticalAlertsGranted()
+    }
+}

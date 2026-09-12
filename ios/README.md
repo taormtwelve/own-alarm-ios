@@ -117,10 +117,8 @@ The mockups were fixed 390×844 frames. None of that survived into the code:
   the locale, not from an API we control, so `EditAlarmView` hands it a locale with
   the matching hour cycle. It works, but it is a workaround; a custom two-wheel
   picker would be the durable fix if the setting matters a lot.
-- **"iOS system sounds" is not a browser.** Apple does not expose the standard tone
-  library to third-party apps. That tile opens Settings; what actually ships is the
-  bundled set plus Music/Files import. The design promised more than the platform
-  allows, and the code does not pretend otherwise.
+- **No iOS system sounds.** Apple does not expose the standard tone library to
+  third-party apps, so the app ships its own tones plus Music/Files import.
 - **Fade-in while terminated.** A notification sound plays at one fixed volume —
   `fadeInSeconds` only ramps for a foreground alarm. A background fade would mean
   chaining several notifications at rising volumes, which is doable but noisy.
