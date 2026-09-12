@@ -58,6 +58,8 @@ targets:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.ownalarm.app
         PRODUCT_NAME: OwnAlarm
+        # Single 1024px source; Xcode derives every home-screen size from it.
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         GENERATE_INFOPLIST_FILE: NO
         ENABLE_USER_SCRIPT_SANDBOXING: NO
         # Left blank on purpose: CI builds unsigned, and Sideloadly re-signs with
