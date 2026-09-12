@@ -165,13 +165,15 @@ final class AlarmFlowUITests: XCTestCase {
 
     // MARK: Settings
 
-    func testSettingsExposesTheDefaultsAndTheThemeSwitch() {
+    func testSettingsShowsClockLockScreenAndThemeControls() {
         app.tabBars.buttons["Settings"].tap()
 
         XCTAssertTrue(app.staticTexts["Time format"].waitForExistence(timeout: 10))
         XCTAssertTrue(app.staticTexts["Show on Lock Screen"].exists)
         XCTAssertTrue(app.buttons["Dark"].exists)
         XCTAssertTrue(app.buttons["Light"].exists)
+        // New-alarm defaults are learned from saved alarms, not set here.
+        XCTAssertFalse(app.staticTexts["NEW ALARM DEFAULTS"].exists)
     }
 
     func testTurningOffLockScreenAlertsSticksAcrossTabs() {

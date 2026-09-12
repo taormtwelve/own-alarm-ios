@@ -159,6 +159,16 @@ private extension Weekday {
 /// apps Apple has approved for the entitlement; for everyone else iOS skips the
 /// question silently, which is why iOS 26's AlarmKit is the route that matters.
 enum RingPermission {
+    /// True where every alarm rings through Silent and Focus on its own (AlarmKit,
+    /// iOS 26+). A per-alarm "override Silent" choice means nothing there, so the
+    /// switch for it is hidden.
+    static var alwaysRingsThroughSilent: Bool {
+        #if canImport(AlarmKit)
+        if #available(iOS 26.0, *) { return true }
+        #endif
+        return false
+    }
+
     static var name: String {
         #if canImport(AlarmKit)
         if #available(iOS 26.0, *) { return "Alarms permission" }

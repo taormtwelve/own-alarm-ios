@@ -70,6 +70,56 @@ final class AlarmStoreTests: XCTestCase {
         XCTAssertEqual(store.sortedAlarms.map(\.task), ["Early", "Noon", "Late"])
     }
 
+    // MARK: Remembering choices
+
+    func testSavingAnAlarmRemembersItsChoicesForTheNextOne() {
+        let store = makeStore()
+        var alarm = makeAlarm(volume: 0.42, toneID: "whisper")
+        alarm.snoozeMinutes = 5
+        alarm.fadeInSeconds = 15
+
+        store.save(alarm, isNew: true)
+
+        let next = Alarm.newAlarm(from: store.settings.defaults)
+        XCTAssertEqual(next.volume, 0.42, accuracy: 0.0001)
+        XCTAssertEqual(next.toneID, "whisper")
+        XCTAssertEqual(next.snoozeMinutes, 5)
+        XCTAssertEqual(next.fadeInSeconds, 15)
+    }
+
+    func testEditingAnAlarmAlsoUpdatesWhatIsRemembered() {
+        let store = makeStore()
+        var alarm = makeAlarm(volume: 0.8)
+        store.save(alarm, isNew: true)
+
+        alarm.volume = 0.25
+        store.save(alarm, isNew: false)
+
+        XCTAssertEqual(store.settings.defaults.volume, 0.25, accuracy: 0.0001)
+    }
+
+    func testTogglingAnAlarmDoesNotChangeWhatIsRemembered() {
+        let store = makeStore()
+        store.add(makeAlarm(volume: 0.9))
+        let before = store.settings.defaults
+
+        store.setEnabled(false, for: store.alarms[0])
+
+        XCTAssertEqual(store.settings.defaults, before)
+    }
+
+    func testRememberedChoicesSurviveARelaunch() {
+        let url = folder.appendingPathComponent("alarms.json")
+        let suite = UserDefaults(suiteName: UUID().uuidString)!
+
+        let first = AlarmStore(scheduler: spy, fileURL: url, defaults: suite)
+        first.save(makeAlarm(volume: 0.33, toneID: "marimba"), isNew: true)
+
+        let second = AlarmStore(scheduler: SpyScheduler(), fileURL: url, defaults: suite)
+        XCTAssertEqual(second.settings.defaults.volume, 0.33, accuracy: 0.0001)
+        XCTAssertEqual(second.settings.defaults.toneID, "marimba")
+    }
+
     // MARK: Scheduling side effects
 
     func testAddingAnAlarmSchedulesIt() {

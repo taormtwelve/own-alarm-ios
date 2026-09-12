@@ -3,7 +3,6 @@ import UIKit
 
 struct SettingsView: View {
     @EnvironmentObject private var store: AlarmStore
-    @EnvironmentObject private var player: AlarmPlayer
     @State private var criticalAlertsGranted: Bool?
 
     var body: some View {
@@ -26,53 +25,6 @@ struct SettingsView: View {
                         }
                     }
 
-                    section("New alarm defaults") {
-                        CardGroup {
-                            VStack(alignment: .leading, spacing: 10) {
-                                HStack {
-                                    Text("Volume")
-                                        .font(Typo.rowLabel)
-                                        .foregroundStyle(Tokens.textSecondary)
-                                    Spacer()
-                                    VolumeMeter(volume: store.settings.defaults.volume, barCount: 5)
-                                    Text("\(Int((store.settings.defaults.volume * 100).rounded()))%")
-                                        .font(Typo.rowValue)
-                                        .monospacedDigit()
-                                        .foregroundStyle(Tokens.textPrimary)
-                                }
-                                VolumeSlider(volume: $store.settings.defaults.volume) { editing in
-                                    if editing {
-                                        let tone = AlarmTone.tone(id: store.settings.defaults.toneID,
-                                                                  in: store.tones)
-                                        player.beginScrub(tone, at: store.settings.defaults.volume)
-                                    } else {
-                                        player.endScrub()
-                                    }
-                                }
-                                .onChange(of: store.settings.defaults.volume) { player.scrub(to: $0) }
-                            }
-                            .padding(16)
-
-                            Rectangle().fill(Tokens.divider).frame(height: 1).padding(.leading, 16)
-
-                            SettingsRow(title: "Fade in") {
-                                Stepper("\(store.settings.defaults.fadeInSeconds) s",
-                                        value: $store.settings.defaults.fadeInSeconds,
-                                        in: 0...120, step: 5)
-                                    .font(Typo.rowValue)
-                                    .fixedSize()
-                            }
-
-                            SettingsRow(title: "Snooze", showsDivider: false) {
-                                Stepper("\(store.settings.defaults.snoozeMinutes) min",
-                                        value: $store.settings.defaults.snoozeMinutes,
-                                        in: 0...30)
-                                    .font(Typo.rowValue)
-                                    .fixedSize()
-                            }
-                        }
-                    }
-
                     section("When an alarm rings") {
                         CardGroup {
                             SettingsRow(
@@ -84,13 +36,16 @@ struct SettingsView: View {
                                     .labelsHidden()
                             }
 
-                            SettingsRow(
-                                title: "Override Silent & Focus",
-                                subtitle: "Applied to new alarms"
-                            ) {
-                                Toggle("", isOn: $store.settings.defaults.overridesSilent)
-                                    .toggleStyle(.alarm)
-                                    .labelsHidden()
+                            // Hidden on iOS 26+, where every alarm rings through Silent.
+                            if !RingPermission.alwaysRingsThroughSilent {
+                                SettingsRow(
+                                    title: "Override Silent & Focus",
+                                    subtitle: "Applied to new alarms"
+                                ) {
+                                    Toggle("", isOn: $store.settings.defaults.overridesSilent)
+                                        .toggleStyle(.alarm)
+                                        .labelsHidden()
+                                }
                             }
 
                             SettingsRow(

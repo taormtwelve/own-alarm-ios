@@ -89,6 +89,21 @@ final class AlarmStore: ObservableObject {
         reschedule(alarm)
     }
 
+    /// Saving from the editor. Stores the alarm, then remembers its volume, sound,
+    /// snooze and fade-in as the starting point for the next new alarm, so a routine
+    /// is set up once rather than re-dialled every time. Switching an alarm on or off
+    /// goes through `setEnabled` and deliberately does not count.
+    func save(_ alarm: Alarm, isNew: Bool) {
+        if isNew { add(alarm) } else { update(alarm) }
+
+        var remembered = settings.defaults
+        remembered.volume = alarm.volume
+        remembered.toneID = alarm.toneID
+        remembered.snoozeMinutes = alarm.snoozeMinutes
+        remembered.fadeInSeconds = alarm.fadeInSeconds
+        settings.defaults = remembered   // one write, one persist
+    }
+
     func delete(_ alarm: Alarm) {
         alarms.removeAll { $0.id == alarm.id }
         persist()

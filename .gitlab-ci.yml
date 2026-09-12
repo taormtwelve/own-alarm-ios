@@ -6,6 +6,12 @@
 #
 # A self-hosted runner on any Mac (`tags: [macos]`) works on any tier.
 
+# Pipelines run only for prod (or when started by hand from the web UI).
+workflow:
+  rules:
+    - if: $CI_COMMIT_BRANCH == "prod"
+    - if: $CI_PIPELINE_SOURCE == "web"
+
 stages:
   - test
   - build
@@ -47,6 +53,5 @@ build-ipa:
       - ios/OwnAlarm-unsigned.ipa
     expire_in: 30 days
   rules:
-    - if: $CI_COMMIT_BRANCH == "dev"
     - if: $CI_COMMIT_BRANCH == "prod"
     - if: $CI_PIPELINE_SOURCE == "web"

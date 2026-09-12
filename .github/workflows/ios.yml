@@ -1,18 +1,16 @@
 name: Build OwnAlarm
 
-# Two pipelines in one file:
-#   dev  — every push: model tests, device build, unit + UI tests, .ipa artifact.
-#   prod — the same, then a GitHub Release with the .ipa attached. Merging dev into
-#          prod is the deploy, and nothing is released unless every test passed.
+# Runs only for prod. Merging dev into prod is the deploy: model tests, device build,
+# unit + UI tests, then a GitHub Release with the .ipa attached — and nothing is
+# released unless every test passed. Pushes to dev build nothing.
 #
 # The .ipa is UNSIGNED — you sign it on your own machine with your own Apple ID (see
 # ios/BUILD.md), which keeps certificates out of this repository.
 
 on:
   push:
-    branches: [dev, prod]
-  pull_request:
-    branches: [dev, prod]
+    branches: [prod]
+  # Manual runs from the Actions tab, on any branch, when you want one.
   workflow_dispatch:
 
 permissions:
