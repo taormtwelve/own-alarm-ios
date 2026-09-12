@@ -15,14 +15,33 @@ final class AlarmStore: ObservableObject {
 
     private let scheduler: AlarmScheduling
     private let fileURL: URL
+    private let defaults: UserDefaults
     private let settingsKey = "ownalarm.settings"
 
-    init(scheduler: AlarmScheduling = AlarmScheduler()) {
+    /// `fileURL` and `defaults` are injectable so tests — and UI-test launches —
+    /// get their own storage instead of trampling the real app's data.
+    init(scheduler: AlarmScheduling = AlarmScheduler(),
+         fileURL: URL? = nil,
+         defaults: UserDefaults = .standard) {
         self.scheduler = scheduler
-        self.fileURL = FileManager.default
+        self.defaults = defaults
+        self.fileURL = fileURL ?? FileManager.default
             .urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
             .appendingPathComponent("alarms.json")
         load()
+    }
+
+    /// A store backed by a throwaway directory, seeded with the starter alarms.
+    /// Used when the app launches under `-uitesting` so the UI suite sees a known
+    /// list every run.
+    static func ephemeral(scheduler: AlarmScheduling = AlarmScheduler()) -> AlarmStore {
+        let folder = URL(fileURLWithPath: NSTemporaryDirectory())
+            .appendingPathComponent("OwnAlarmTests-\(UUID().uuidString)", isDirectory: true)
+        try? FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        let suite = UserDefaults(suiteName: "ownalarm.ephemeral.\(UUID().uuidString)") ?? .standard
+        return AlarmStore(scheduler: scheduler,
+                          fileURL: folder.appendingPathComponent("alarms.json"),
+                          defaults: suite)
     }
 
     // MARK: Derived
@@ -127,7 +146,7 @@ final class AlarmStore: ObservableObject {
     // MARK: Persistence
 
     private func load() {
-        if let data = UserDefaults.standard.data(forKey: settingsKey),
+        if let data = defaults.data(forKey: settingsKey),
            let decoded = try? JSONDecoder().decode(AppSettings.self, from: data) {
             settings = decoded
         }
@@ -152,6 +171,6 @@ final class AlarmStore: ObservableObject {
 
     private func persistSettings() {
         guard let data = try? JSONEncoder().encode(settings) else { return }
-        UserDefaults.standard.set(data, forKey: settingsKey)
+        defaults.set(data, forKey: settingsKey)
     }
 }

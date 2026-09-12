@@ -111,7 +111,7 @@ final class AlarmScheduler: AlarmScheduling {
 
     // MARK: Content
 
-    private func content(for alarm: Alarm, tone: AlarmTone, showOnLockScreen: Bool) -> UNNotificationContent {
+    func content(for alarm: Alarm, tone: AlarmTone, showOnLockScreen: Bool) -> UNNotificationContent {
         let content = UNMutableNotificationContent()
         content.title = alarm.task.isEmpty ? "Alarm" : alarm.task
         content.body = "\(alarm.volumePercent)% · \(tone.name)"

@@ -3,7 +3,11 @@ import UserNotifications
 
 @main
 struct OwnAlarmApp: App {
-    @StateObject private var store = AlarmStore()
+    // Under UI test the app gets throwaway storage seeded with the starter alarms,
+    // so the suite sees the same list every run and never touches real data.
+    @StateObject private var store = ProcessInfo.processInfo.arguments.contains("-uitesting")
+        ? AlarmStore.ephemeral()
+        : AlarmStore()
     @StateObject private var player = AlarmPlayer()
     private let notifications = NotificationRouter()
 

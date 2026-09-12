@@ -31,8 +31,16 @@ schemes:
     build:
       targets:
         OwnAlarm: all
+        OwnAlarmTests: [test]
+        OwnAlarmUITests: [test]
     run:
       config: Debug
+    test:
+      config: Debug
+      gatherCoverageData: true
+      targets:
+        - OwnAlarmTests
+        - OwnAlarmUITests
     archive:
       config: Release
 
@@ -81,3 +89,31 @@ targets:
           OwnAlarm uses notifications to ring your alarms at the volume you set for
           each task, even when the app is closed.
         ITSAppUsesNonExemptEncryption: false
+
+  # Unit tests: the store's behaviour against a spy scheduler, and the notification
+  # content where per-task volume actually lives.
+  OwnAlarmTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources:
+      - OwnAlarmTests
+    dependencies:
+      - target: OwnAlarm
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.ownalarm.app.tests
+        GENERATE_INFOPLIST_FILE: YES
+
+  # UI tests: drives the real app in the Simulator.
+  OwnAlarmUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    sources:
+      - OwnAlarmUITests
+    dependencies:
+      - target: OwnAlarm
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.ownalarm.app.uitests
+        GENERATE_INFOPLIST_FILE: YES
+        TEST_TARGET_NAME: OwnAlarm

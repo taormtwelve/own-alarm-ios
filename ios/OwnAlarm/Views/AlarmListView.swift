@@ -84,7 +84,7 @@ private struct AlarmRow: View {
         .padding(16)
         .cardSurface()
         .opacity(alarm.isEnabled ? 1 : 0.55)
-        .accessibilityElement(children: .combine)
+        .accessibilityIdentifier("alarmRow")
     }
 
     private var details: some View {
