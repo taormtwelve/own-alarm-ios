@@ -24,6 +24,18 @@ settings:
     TARGETED_DEVICE_FAMILY: "1,2"
     SWIFT_STRICT_CONCURRENCY: minimal
 
+# An explicit shared scheme. Without one in `xcshareddata`, `xcodebuild -scheme`
+# cannot find anything to build on a freshly generated project.
+schemes:
+  OwnAlarm:
+    build:
+      targets:
+        OwnAlarm: all
+    run:
+      config: Debug
+    archive:
+      config: Release
+
 targets:
   OwnAlarm:
     type: application
