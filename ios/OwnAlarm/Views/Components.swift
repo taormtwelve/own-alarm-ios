@@ -173,6 +173,20 @@ extension ToggleStyle where Self == SwitchToggleStyle {
     static var alarm: SwitchToggleStyle { SwitchToggleStyle(tint: Tokens.accentFill) }
 }
 
+// MARK: - List rows as cards
+
+extension View {
+    /// Strips List chrome — separators, row background, default insets — so a row
+    /// renders as one of our cards while keeping List behaviour like swipe actions.
+    func listCardRow(bottom: CGFloat = 6) -> some View {
+        self
+            .listRowInsets(EdgeInsets(top: 6, leading: Metrics.gutter,
+                                      bottom: bottom, trailing: Metrics.gutter))
+            .listRowSeparator(.hidden)
+            .listRowBackground(Color.clear)
+    }
+}
+
 // MARK: - Primary button
 
 struct PrimaryButton: View {

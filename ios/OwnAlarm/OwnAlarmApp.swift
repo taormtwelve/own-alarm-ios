@@ -3,11 +3,17 @@ import UserNotifications
 
 @main
 struct OwnAlarmApp: App {
-    // Under UI test the app gets throwaway storage seeded with the starter alarms,
-    // so the suite sees the same list every run and never touches real data.
-    @StateObject private var store = ProcessInfo.processInfo.arguments.contains("-uitesting")
-        ? AlarmStore.ephemeral()
-        : AlarmStore()
+    @StateObject private var store = OwnAlarmApp.makeStore()
+
+    /// Real launches start with no alarms. Under UI test the app gets throwaway
+    /// storage — seeded with sample alarms, or empty with `-emptyStore` — so the
+    /// suite sees the same state every run and never touches real data.
+    @MainActor
+    private static func makeStore() -> AlarmStore {
+        let args = ProcessInfo.processInfo.arguments
+        guard args.contains("-uitesting") else { return AlarmStore() }
+        return .ephemeral(seed: args.contains("-emptyStore") ? [] : Alarm.starter)
+    }
     @StateObject private var player = AlarmPlayer()
     private let notifications = NotificationRouter()
 

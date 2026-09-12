@@ -81,6 +81,34 @@ final class AlarmFlowUITests: XCTestCase {
         XCTAssertEqual(app.descendants(matching: .any).matching(identifier: "alarmRow").count, before)
     }
 
+    // MARK: Deleting
+
+    func testSwipingLeftRevealsDeleteAndRemovesTheAlarm() {
+        let rows = app.descendants(matching: .any).matching(identifier: "alarmRow")
+        XCTAssertTrue(rows.firstMatch.waitForExistence(timeout: 10))
+        let before = rows.count
+
+        rows.firstMatch.swipeLeft()
+        let delete = app.buttons["Delete"]
+        XCTAssertTrue(delete.waitForExistence(timeout: 5), "Swiping left should reveal Delete")
+        delete.tap()
+
+        expectation(for: NSPredicate(format: "count == %d", before - 1), evaluatedWith: rows)
+        waitForExpectations(timeout: 5)
+    }
+
+    // MARK: First launch
+
+    func testFirstLaunchShowsTheEmptyStateNotSampleAlarms() {
+        app.terminate()
+        app.launchArguments = ["-uitesting", "-emptyStore"]
+        app.launch()
+
+        XCTAssertTrue(app.staticTexts["No alarms yet"].waitForExistence(timeout: 10))
+        XCTAssertEqual(app.descendants(matching: .any).matching(identifier: "alarmRow").count, 0)
+        XCTAssertTrue(app.buttons["Add an alarm"].exists)
+    }
+
     // MARK: Editing
 
     func testOpeningAnAlarmShowsItsVolume() {

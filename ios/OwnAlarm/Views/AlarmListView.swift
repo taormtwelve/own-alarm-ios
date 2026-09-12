@@ -7,35 +7,44 @@ struct AlarmListView: View {
 
     var body: some View {
         NavigationStack {
-            ScrollView {
-                LazyVStack(spacing: 12) {
-                    if let next = store.nextAlarm {
-                        NextAlarmBanner(alarm: next.alarm, date: next.date)
-                            .padding(.bottom, 6)
-                    }
-
-                    ForEach(store.sortedAlarms) { alarm in
-                        AlarmRow(alarm: alarm)
-                            .onTapGesture { editing = alarm }
-                            .contextMenu {
-                                Button(role: .destructive) {
-                                    store.delete(alarm)
-                                } label: {
-                                    Label("Delete", systemImage: "trash")
-                                }
-                            }
-                    }
-
-                    if store.alarms.isEmpty {
-                        EmptyAlarms { isCreating = true }
-                    }
+            // A List rather than a ScrollView: `.swipeActions` only exists on list
+            // rows, and it brings full-swipe delete and VoiceOver actions with it.
+            List {
+                if let next = store.nextAlarm {
+                    NextAlarmBanner(alarm: next.alarm, date: next.date)
+                        .listCardRow(bottom: 12)
                 }
-                .padding(.horizontal, Metrics.gutter)
-                .padding(.vertical, 8)
-                .readableWidth()
+
+                ForEach(store.sortedAlarms) { alarm in
+                    AlarmRow(alarm: alarm)
+                        .contentShape(Rectangle())
+                        .onTapGesture { editing = alarm }
+                        .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                            Button(role: .destructive) {
+                                store.delete(alarm)
+                            } label: {
+                                Label("Delete", systemImage: "trash")
+                            }
+                        }
+                        .contextMenu {
+                            Button(role: .destructive) {
+                                store.delete(alarm)
+                            } label: {
+                                Label("Delete", systemImage: "trash")
+                            }
+                        }
+                        .listCardRow()
+                }
+
+                if store.alarms.isEmpty {
+                    EmptyAlarms { isCreating = true }
+                        .listCardRow()
+                }
             }
-            .background(Tokens.background)
+            .listStyle(.plain)
             .scrollContentBackground(.hidden)
+            .readableWidth()
+            .background(Tokens.background)
             .navigationTitle("Alarms")
             .navigationBarTitleDisplayMode(.large)
             .toolbar {

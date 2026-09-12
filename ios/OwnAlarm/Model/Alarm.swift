@@ -147,7 +147,8 @@ struct Alarm: Identifiable, Codable, Equatable {
 // MARK: - Sample content
 
 extension Alarm {
-    /// Seeded on first launch so the list is never an empty grey rectangle.
+    /// Sample alarms for UI tests and previews. Never given to real users — a new
+    /// install starts empty.
     static let starter: [Alarm] = [
         Alarm(task: "Morning run", hour: 6, minute: 45,
               repeatDays: [.monday, .tuesday, .wednesday, .thursday, .friday],

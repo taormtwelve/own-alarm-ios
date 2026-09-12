@@ -16,32 +16,38 @@ final class AlarmStore: ObservableObject {
     private let scheduler: AlarmScheduling
     private let fileURL: URL
     private let defaults: UserDefaults
+    private let seed: [Alarm]
     private let settingsKey = "ownalarm.settings"
 
     /// `fileURL` and `defaults` are injectable so tests — and UI-test launches —
     /// get their own storage instead of trampling the real app's data.
+    /// `seed` fills an empty store on first launch; the real app passes nothing,
+    /// so a new user starts with no alarms they did not set themselves.
     init(scheduler: AlarmScheduling = AlarmScheduler(),
          fileURL: URL? = nil,
-         defaults: UserDefaults = .standard) {
+         defaults: UserDefaults = .standard,
+         seed: [Alarm] = []) {
         self.scheduler = scheduler
         self.defaults = defaults
+        self.seed = seed
         self.fileURL = fileURL ?? FileManager.default
             .urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
             .appendingPathComponent("alarms.json")
         load()
     }
 
-    /// A store backed by a throwaway directory, seeded with the starter alarms.
-    /// Used when the app launches under `-uitesting` so the UI suite sees a known
-    /// list every run.
-    static func ephemeral(scheduler: AlarmScheduling = AlarmScheduler()) -> AlarmStore {
+    /// A store backed by a throwaway directory. Used when the app launches under
+    /// `-uitesting` so the UI suite sees a known state every run.
+    static func ephemeral(scheduler: AlarmScheduling = AlarmScheduler(),
+                          seed: [Alarm] = Alarm.starter) -> AlarmStore {
         let folder = URL(fileURLWithPath: NSTemporaryDirectory())
             .appendingPathComponent("OwnAlarmTests-\(UUID().uuidString)", isDirectory: true)
         try? FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         let suite = UserDefaults(suiteName: "ownalarm.ephemeral.\(UUID().uuidString)") ?? .standard
         return AlarmStore(scheduler: scheduler,
                           fileURL: folder.appendingPathComponent("alarms.json"),
-                          defaults: suite)
+                          defaults: suite,
+                          seed: seed)
     }
 
     // MARK: Derived
@@ -153,8 +159,10 @@ final class AlarmStore: ObservableObject {
 
         guard let data = try? Data(contentsOf: fileURL),
               let decoded = try? JSONDecoder().decode([Alarm].self, from: data) else {
-            alarms = Alarm.starter
-            persist()
+            // First launch: empty for real users, who add their own. Only tests
+            // and UI-test launches pass a seed.
+            alarms = seed
+            if !seed.isEmpty { persist() }
             return
         }
         alarms = decoded

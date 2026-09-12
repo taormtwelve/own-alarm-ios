@@ -48,16 +48,26 @@ final class AlarmStoreTests: XCTestCase {
 
     // MARK: First run
 
-    func testFirstRunSeedsStarterAlarms() {
-        let store = makeStore()
+    func testFirstRunStartsEmpty() {
+        XCTAssertTrue(makeStore().alarms.isEmpty,
+                      "A new user should not find alarms they did not set")
+    }
+
+    func testASeedIsOnlyUsedWhenAskedFor() {
+        let store = AlarmStore(scheduler: spy,
+                               fileURL: folder.appendingPathComponent("seeded.json"),
+                               defaults: UserDefaults(suiteName: UUID().uuidString)!,
+                               seed: Alarm.starter)
         XCTAssertEqual(store.alarms.count, Alarm.starter.count)
-        XCTAssertFalse(store.alarms.isEmpty)
     }
 
     func testAlarmsAreSortedByTimeOfDay() {
         let store = makeStore()
-        let times = store.sortedAlarms.map { $0.hour * 60 + $0.minute }
-        XCTAssertEqual(times, times.sorted())
+        store.add(makeAlarm(task: "Late", hour: 22, minute: 0))
+        store.add(makeAlarm(task: "Early", hour: 6, minute: 45))
+        store.add(makeAlarm(task: "Noon", hour: 13, minute: 15))
+
+        XCTAssertEqual(store.sortedAlarms.map(\.task), ["Early", "Noon", "Late"])
     }
 
     // MARK: Scheduling side effects
