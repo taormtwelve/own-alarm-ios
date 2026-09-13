@@ -121,6 +121,8 @@ private struct LibraryRow: View {
                     .frame(width: 40, height: 40)
                     .background(Tokens.track)
                     .clipShape(RoundedRectangle(cornerRadius: 13, style: .continuous))
+                    // Decorative: without this VoiceOver reads "Play" before every name.
+                    .accessibilityHidden(true)
 
                 VStack(alignment: .leading, spacing: 3) {
                     Text(tone.name)
