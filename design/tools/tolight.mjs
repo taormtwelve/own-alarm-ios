@@ -94,8 +94,16 @@ const iconPass = [
   ['stroke="#B0710A" stroke-width="10"', 'stroke="#E8940F" stroke-width="10"'],
 ];
 
-// Settings shows Appearance on Auto in both themes — the first-launch default — so
-// the twins carry the same selection and need no per-theme swap.
+// Settings shows Appearance with the theme being drawn selected: Dark on the dark
+// artboard, Light on its twin (the first-launch default). Applied after the colour
+// mapping, so the strings below are already in light colours.
+const settingsSwap = [
+  ['background: #FFFFFF; display: flex; align-items: center; justify-content: center;">\n      <span style="font-size: 14px; font-weight: 600;">Dark</span>',
+   'display: flex; align-items: center; justify-content: center;">\n      <span style="font-size: 14px; font-weight: 500; color: #7D746A;">Dark</span>'],
+  ['display: flex; align-items: center; justify-content: center;">\n      <span style="font-size: 14px; font-weight: 500; color: #7D746A;">Light</span>',
+   'background: #FFFFFF; display: flex; align-items: center; justify-content: center;">\n      <span style="font-size: 14px; font-weight: 600;">Light</span>'],
+];
+
 const files = ['Main', 'EditAlarm', 'SoundSheet', 'Ringing', 'LockScreen', 'Sounds', 'Settings'];
 
 const LIGHT = ['#FAF7F2', '#FFFFFF', '#F4EFE7', '#F1EAE0', '#F0EAE0', '#EFE9DF', '#E8E1D6', '#E7E0D5',
@@ -110,6 +118,13 @@ for (const name of files) {
   let s = readFileSync(join(DIR, `${name}.dc.html`), 'utf8');
   for (const [from, to] of shared) s = s.split(from).join(to);
   for (const [from, to] of iconPass) s = s.split(from).join(to);
+  if (name === 'Settings') {
+    for (const [from, to] of settingsSwap) {
+      const hits = s.split(from).length - 1;
+      if (hits !== 1) { console.error(`Settings: expected 1 match for the Appearance swap, found ${hits}`); problems++; }
+      s = s.split(from).join(to);
+    }
+  }
 
   const bad = [...new Set([...s.matchAll(/#[0-9A-F]{6}/g)].map((m) => m[0]).filter((c) => !allowed.has(c)))];
   if (bad.length) problems++;

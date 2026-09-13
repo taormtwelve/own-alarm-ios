@@ -64,14 +64,14 @@
       "x": -440,
       "y": 300,
       "w": 360,
-      "text": "Light\nWhen the phone is in light mode. Appearance is Auto on first launch, so the app follows the phone — as does the clock, which starts on Match device. Warm paper neutrals; amber deepens for text and icons so it holds contrast on white."
+      "text": "Light\nThe default: every first launch opens in Light, whatever mode the phone is in. The clock starts on Match device. Warm paper neutrals; amber deepens for text and icons so it holds contrast on white."
     },
     {
       "id": "row-dark",
       "x": -440,
       "y": 1520,
       "w": 360,
-      "text": "Dark\nWhen the phone is in dark mode. Same layout; either theme can be pinned in Settings › Appearance."
+      "text": "Dark\nChosen in Settings › Appearance (Dark, or Auto to follow the phone). Same layout."
     }
   ],
   "launch": { "view": "canvas" }
