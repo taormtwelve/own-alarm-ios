@@ -19,6 +19,7 @@ final class AlarmStore: ObservableObject {
     private let seed: [Alarm]
     private let settingsKey = AppSettings.storageKey
     private let tonesKey = "ownalarm.importedTones"
+    private let lightRestoredKey = "ownalarm.theme.lightRestored"
     /// The level each snoozed alarm last returned at, so "louder after each snooze"
     /// keeps climbing. Cleared when the alarm is stopped or changed.
     private let snoozeLevelsKey = "ownalarm.snoozeLevels"
@@ -207,6 +208,14 @@ final class AlarmStore: ObservableObject {
            let decoded = try? JSONDecoder().decode(AppSettings.self, from: data) {
             settings = decoded
         }
+        // One build shipped with Auto as the theme default and saved it on the
+        // first settings change. The user wants Light back, as the first release
+        // had it — so a saved Auto is put back to Light once. Choosing Auto in
+        // Settings after this sticks.
+        if settings.theme == .automatic, !defaults.bool(forKey: lightRestoredKey) {
+            settings.theme = .light
+        }
+        defaults.set(true, forKey: lightRestoredKey)
 
         if let data = defaults.data(forKey: tonesKey),
            let imported = try? JSONDecoder().decode([AlarmTone].self, from: data) {
