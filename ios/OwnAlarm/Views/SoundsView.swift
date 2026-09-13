@@ -49,7 +49,7 @@ struct SoundsView: View {
                         .font(Typo.sectionLabel)
                         .tracking(1.1)
                         .foregroundStyle(Tokens.accentLabel)
-                    Text("Drag to hear it live · at your Ringer & Alerts volume, just as it will ring")
+                    Text("Drag to hear it live")
                         .font(Typo.caption)
                         .foregroundStyle(Tokens.textMuted)
                         .fixedSize(horizontal: false, vertical: true)
