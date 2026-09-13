@@ -166,8 +166,6 @@ struct EditAlarmView: View {
             // Previews only: a ringing alarm's cover also makes this disappear.
             .onDisappear { player.stopPreviews() }
 
-            Divider().background(Tokens.border)
-
             Toggle(isOn: Binding(
                 get: { alarm.fadeInSeconds > 0 },
                 set: { alarm.fadeInSeconds = $0 ? store.settings.defaults.fadeInWhenSwitchedOn : 0 }
