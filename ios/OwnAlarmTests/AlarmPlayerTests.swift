@@ -134,6 +134,29 @@ final class AlarmPlayerTests: XCTestCase {
         XCTAssertEqual(phone.level, 0.3, accuracy: 0.001)
     }
 
+    // MARK: Silent switch
+
+    func testWhenAlertSoundsAreMutedThePreviewCarriesOnAsMedia() throws {
+        let phone = FakeVolume(0.3)
+        let player = AlarmPlayer(system: .fake(phone, defaults: UserDefaults(suiteName: UUID().uuidString)!))
+        defer { player.stop() }
+        player.beginScrub(siren, at: 0.6)
+        try XCTSkipIf(player.playingToneID == nil, "No audio output available on this machine")
+
+        player.playPreviewAsMedia()   // what a muted alert sound sets off
+
+        XCTAssertEqual(player.playingToneID, "siren", "Still previewing, now as media")
+        XCTAssertEqual(player.previewPercent, 60)
+        XCTAssertEqual(phone.level, 0.3, accuracy: 0.001, "Media volume is used as it is, never changed")
+
+        player.scrub(to: 0.3)
+        player.endScrub()
+        XCTAssertEqual(player.previewPercent, 30, "Dragging keeps working")
+
+        player.stop()
+        XCTAssertNil(player.playingToneID)
+    }
+
     func testARingingAlarmHoldsItsVolumeUntilStopped() throws {
         let phone = FakeVolume(0.3)
         let player = AlarmPlayer(system: .fake(phone, defaults: UserDefaults(suiteName: UUID().uuidString)!))

@@ -10,8 +10,9 @@ import Combine
 /// alert sounds. It plays at the Ringer & Alerts volume, as AlarmKit and alarm
 /// notifications do, so a level sounds the same while you choose it as when the
 /// alarm goes off, and 100% is the loudest your ringer volume plays. Media volume is
-/// never touched for a preview. Like every alert sound, previews are muted by the
-/// Silent switch.
+/// never touched for a preview. The Silent switch mutes alert sounds, and a muted
+/// one ends the instant it starts — so when that happens, the same copy plays as
+/// media instead, audible through Silent at whatever media volume the user has.
 ///
 /// An alarm ringing inside the app has to loop until stopped, fade in and ring
 /// through Silent, which a system sound cannot. It plays under
@@ -44,6 +45,9 @@ final class AlarmPlayer: ObservableObject {
     /// The system sound playing a preview, and the throwaway copy it plays.
     private var previewSound: SystemSoundID?
     private var previewFile: URL?
+    /// The same copy played as media, when alert sounds are muted.
+    private var previewPlayer: AVAudioPlayer?
+    private var previewActive: Bool { previewSound != nil || previewPlayer != nil }
     private var lastPreviewStart = Date.distantPast
     private var pendingStep: DispatchWorkItem?
     private var stopWork: DispatchWorkItem?
@@ -85,7 +89,7 @@ final class AlarmPlayer: ObservableObject {
         isScrubbing = true
         scrubTone = tone
         scrubLevel = volume
-        let alreadyPlaying = previewSound != nil && playingToneID == tone.id
+        let alreadyPlaying = previewActive && playingToneID == tone.id
             && previewPercent == ScaledSound.percent(volume)
         if !alreadyPlaying { playPreview(tone, at: volume) }
         scheduleIdleSilence()
@@ -95,7 +99,7 @@ final class AlarmPlayer: ObservableObject {
     func scrub(to volume: Double) {
         guard isScrubbing, let tone = scrubTone else { return }
         scrubLevel = volume
-        if previewSound == nil {
+        if !previewActive {
             // Went quiet after sitting still; the finger is moving again.
             playPreview(tone, at: volume)
         } else {
@@ -117,7 +121,7 @@ final class AlarmPlayer: ObservableObject {
     private func step(now: Bool = false) {
         pendingStep?.cancel()
         pendingStep = nil
-        guard let tone = scrubTone, previewSound != nil,
+        guard let tone = scrubTone, previewActive,
               ScaledSound.percent(scrubLevel) != previewPercent else { return }
         let wait = Self.scrubStepInterval - Date().timeIntervalSince(lastPreviewStart)
         if now || wait <= 0 {
@@ -187,21 +191,45 @@ final class AlarmPlayer: ObservableObject {
         previewPercent = ScaledSound.percent(volume)
         lastPreviewStart = Date()
         playingToneID = tone.id
-        loop(id)
+        loop(id, first: true)
     }
 
     /// A system sound plays once. While its preview is still the current one — an
     /// audition's few seconds, a drag in progress — it goes round again.
-    private func loop(_ id: SystemSoundID) {
+    private func loop(_ id: SystemSoundID, first: Bool = false) {
         let started = Date()
         AudioServicesPlaySystemSoundWithCompletion(id) { [weak self] in
             Task { @MainActor in
-                // A sound that ended at once never played (no audio output):
-                // going round again would only spin.
-                guard let self, self.previewSound == id,
-                      Date().timeIntervalSince(started) > 0.2 else { return }
-                self.loop(id)
+                guard let self, self.previewSound == id else { return }
+                if Date().timeIntervalSince(started) > 0.2 {
+                    self.loop(id)
+                } else if first {
+                    // Ended the instant it started: alert sounds are muted — the
+                    // Silent switch. Play the same copy as media so it is heard.
+                    self.playPreviewAsMedia()
+                }
             }
+        }
+    }
+
+    /// The preview's copy through `.playback`, which plays through Silent, mixed
+    /// with other audio and at the media volume as it is — never changed. If even
+    /// this cannot start, the preview stays as it was: silent, but still steppable.
+    /// Internal so tests can stand in for a muted alert sound.
+    func playPreviewAsMedia() {
+        guard let file = previewFile else { return }
+        do {
+            let session = AVAudioSession.sharedInstance()
+            try session.setCategory(.playback, mode: .default, options: [.mixWithOthers])
+            try session.setActive(true)
+            let media = try AVAudioPlayer(contentsOf: file)
+            media.numberOfLoops = -1
+            guard media.play() else { return }
+            if let id = previewSound { AudioServicesDisposeSystemSoundID(id) }
+            previewSound = nil
+            previewPlayer = media
+        } catch {
+            print("AlarmPlayer could not play the preview as media: \(error.localizedDescription)")
         }
     }
 
@@ -210,6 +238,8 @@ final class AlarmPlayer: ObservableObject {
     private func endPreview() {
         pendingStep?.cancel()
         pendingStep = nil
+        previewPlayer?.stop()
+        previewPlayer = nil
         if let id = previewSound { AudioServicesDisposeSystemSoundID(id) }
         if let file = previewFile { try? FileManager.default.removeItem(at: file) }
         previewSound = nil

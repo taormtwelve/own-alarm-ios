@@ -6,7 +6,7 @@ struct SoundsView: View {
     @EnvironmentObject private var store: AlarmStore
     @EnvironmentObject private var player: AlarmPlayer
 
-    @State private var testLevel: Double = 0.6
+    @State private var testLevel: Double = 0.5
     @State private var testToneID: String = AlarmTone.bundled.first?.id ?? "siren"
 
     var body: some View {
