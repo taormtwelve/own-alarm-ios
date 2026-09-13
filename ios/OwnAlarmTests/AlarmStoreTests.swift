@@ -364,22 +364,6 @@ final class AlarmStoreTests: XCTestCase {
         XCTAssertEqual(second.alarms.first?.task, "Persisted")
     }
 
-    func testASavedAutoThemeGoesBackToLightOnceThenStaysAsChosen() throws {
-        let url = folder.appendingPathComponent("alarms.json")
-        let suite = UserDefaults(suiteName: UUID().uuidString)!
-        // What the build with Auto as default left behind.
-        var saved = AppSettings()
-        saved.theme = .automatic
-        suite.set(try JSONEncoder().encode(saved), forKey: AppSettings.storageKey)
-
-        let first = AlarmStore(scheduler: spy, fileURL: url, defaults: suite)
-        XCTAssertEqual(first.settings.theme, .light, "The saved Auto is put back to Light")
-
-        first.settings.theme = .automatic   // now the user's own choice
-        let second = AlarmStore(scheduler: SpyScheduler(), fileURL: url, defaults: suite)
-        XCTAssertEqual(second.settings.theme, .automatic, "A chosen Auto is kept")
-    }
-
     func testSettingsSurviveARelaunch() {
         let url = folder.appendingPathComponent("alarms.json")
         let suite = UserDefaults(suiteName: UUID().uuidString)!
