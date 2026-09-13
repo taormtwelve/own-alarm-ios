@@ -22,7 +22,7 @@
       "x": 0,
       "y": -220,
       "w": 390,
-      "text": "Volume belongs to the task, not the phone.\nEvery alarm keeps its own level. While a level plays in the app — dragging a slider, previewing a tone, an alarm ringing on screen — the phone's volume is set to it and put back afterwards. Swipe left on a row to delete."
+      "text": "Volume belongs to the task, not the phone.\nEvery alarm keeps its own level, as a share of the Ringer & Alerts volume iOS rings alarms at. Dragging a slider or previewing a tone plays the very sound the alarm will ring with, at that same volume — what you hear is what wakes you. Swipe left on a row to delete."
     },
     {
       "id": "clock-note",
@@ -57,7 +57,7 @@
       "x": 2450,
       "y": -220,
       "w": 880,
-      "text": "Sounds and Settings.\nSounds auditions any tone at any level — drag to hear it live. Settings holds the clock, what happens when an alarm rings, and the theme. New-alarm defaults are learned from saved alarms rather than set here, and on iOS 26 every alarm rings through Silent, so the Override Silent switch is gone."
+      "text": "Sounds and Settings.\nSounds auditions any tone at any level — drag to hear it live, exactly as it will ring. Settings holds the clock, what happens when an alarm rings, and the theme. New-alarm defaults are learned from saved alarms rather than set here, and on iOS 26 every alarm rings through Silent, so the Override Silent switch is gone."
     },
     {
       "id": "row-light",
