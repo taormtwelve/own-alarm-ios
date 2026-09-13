@@ -136,10 +136,16 @@ struct EditAlarmView: View {
     private var volumeCard: some View {
         VStack(alignment: .leading, spacing: 14) {
             HStack(alignment: .lastTextBaseline) {
-                Text("Volume for this task")
-                    .font(Typo.sectionLabel)
-                    .tracking(1.1)
-                    .foregroundStyle(Tokens.accentLabel)
+                VStack(alignment: .leading, spacing: 3) {
+                    Text("Volume for this task")
+                        .font(Typo.sectionLabel)
+                        .tracking(1.1)
+                        .foregroundStyle(Tokens.accentLabel)
+                    Text("Only this alarm rings at this level — every other alarm keeps its own")
+                        .font(Typo.caption)
+                        .foregroundStyle(Tokens.textMuted)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
                 Spacer(minLength: 8)
                 Text("\(alarm.volumePercent)%")
                     .font(Typo.display(38, relativeTo: .largeTitle))
