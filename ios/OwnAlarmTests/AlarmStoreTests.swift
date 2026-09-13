@@ -8,7 +8,8 @@ final class SpyScheduler: AlarmScheduling {
     private(set) var snoozed: [(alarm: Alarm, tone: AlarmTone, minutes: Int)] = []
     private(set) var cancelled: [Alarm] = []
     private(set) var cancelledSnoozes: [Alarm] = []
-    private(set) var cancelAllCount = 0
+    private(set) var cancelledAll: [[Alarm]] = []
+    var cancelAllCount: Int { cancelledAll.count }
     var onFinished: ((UUID) -> Void)?
 
     func schedule(_ alarm: Alarm, tone: AlarmTone, showOnLockScreen: Bool) {
@@ -19,7 +20,7 @@ final class SpyScheduler: AlarmScheduling {
     }
     func cancel(_ alarm: Alarm) { cancelled.append(alarm) }
     func cancelSnooze(_ alarm: Alarm) { cancelledSnoozes.append(alarm) }
-    func cancelAll(_ alarms: [Alarm]) { cancelAllCount += 1 }
+    func cancelAll(_ alarms: [Alarm]) { cancelledAll.append(alarms) }
 }
 
 @MainActor
@@ -175,6 +176,8 @@ final class AlarmStoreTests: XCTestCase {
 
         let rearmed = spy.scheduled.dropFirst(scheduledBefore).map { $0.alarm.id }
         XCTAssertEqual(spy.cancelAllCount, cancelAllBefore + 1)
+        XCTAssertEqual(Set(spy.cancelledAll.last?.map(\.id) ?? []), [switchedOff.id, switchedOn.id],
+                       "Every alarm's old schedule is cleared, switched off or not")
         XCTAssertEqual(rearmed, [switchedOn.id], "Only the switched-on alarm is re-armed")
     }
 
@@ -325,9 +328,12 @@ final class AlarmStoreTests: XCTestCase {
         let tone = AlarmTone(id: "mine.m4a", name: "Mine", character: "Yours",
                              peak: 2, fileName: "mine.m4a", source: .imported)
         store.addImportedTone(tone)
+        let rearmsBefore = spy.cancelAllCount
         store.addImportedTone(tone)
 
         XCTAssertEqual(store.tones.filter { $0.id == tone.id }.count, 1)
+        XCTAssertEqual(spy.cancelAllCount, rearmsBefore + 1,
+                       "Re-importing a file re-arms alarms, so they ring the new recording")
     }
 
     func testImportedTonesSurviveARelaunch() {

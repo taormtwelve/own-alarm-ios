@@ -56,6 +56,30 @@ final class AlarmKitSchedulerTests: XCTestCase {
         XCTAssertEqual(spy.snoozed.last?.minutes, 5)
     }
 
+    func testReArmingAlsoClearsTheNotificationFallback() throws {
+        guard #available(iOS 26.0, *) else { throw XCTSkip("AlarmKit needs iOS 26") }
+        let spy = SpyScheduler()
+        let scheduler = AlarmKitScheduler(fallback: spy, defaults: freshDefaults())
+        let alarm = sample()
+
+        scheduler.cancelAll([alarm])
+
+        XCTAssertEqual(spy.cancelledAll.last?.map(\.id), [alarm.id])
+    }
+
+    func testAlarmsOnTheFallbackCanStillReportFinishing() throws {
+        guard #available(iOS 26.0, *) else { throw XCTSkip("AlarmKit needs iOS 26") }
+        let spy = SpyScheduler()
+        let scheduler = AlarmKitScheduler(fallback: spy, defaults: freshDefaults())
+        var finished: [UUID] = []
+        scheduler.onFinished = { finished.append($0) }
+        let id = UUID()
+
+        spy.onFinished?(id)   // a one-shot that rang as a notification
+
+        XCTAssertEqual(finished, [id], "Without AlarmKit permission, Once alarms must still switch off")
+    }
+
     private func freshDefaults() -> UserDefaults {
         UserDefaults(suiteName: UUID().uuidString)!
     }

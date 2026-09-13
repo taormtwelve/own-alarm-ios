@@ -48,6 +48,18 @@ final class ScaledSoundTests: XCTestCase {
         }
     }
 
+    func testDiscardingATonesCopiesLeavesOtherTonesAlone() throws {
+        let bell = AlarmTone.tone(id: "soft-bell", in: AlarmTone.bundled)
+        let sirenCopy = try XCTUnwrap(ScaledSound.fileName(for: siren, volume: 0.42))
+        let bellCopy = try XCTUnwrap(ScaledSound.fileName(for: bell, volume: 0.42))
+
+        ScaledSound.discardCopies(of: siren.id)
+
+        let exists = { FileManager.default.fileExists(atPath: ScaledSound.directory.appendingPathComponent($0).path) }
+        XCTAssertFalse(exists(sirenCopy), "A replaced tone's old copies must go")
+        XCTAssertTrue(exists(bellCopy), "Other tones keep theirs")
+    }
+
     // MARK: Helpers
 
     private func peak(of url: URL) throws -> Float {

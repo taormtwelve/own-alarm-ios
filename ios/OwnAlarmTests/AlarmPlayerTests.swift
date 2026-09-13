@@ -11,7 +11,8 @@ final class AlarmPlayerTests: XCTestCase {
 
     override func setUp() {
         super.setUp()
-        player = AlarmPlayer()
+        // A pretend phone volume: tests must never move the machine's real one.
+        player = AlarmPlayer(system: .fake(FakeVolume(0.5), defaults: UserDefaults(suiteName: UUID().uuidString)!))
     }
 
     override func tearDown() {

@@ -73,6 +73,23 @@ final class AlarmSchedulerTests: XCTestCase {
         scheduler.cancel(alarm)
     }
 
+    func testReArmingLeavesAPendingSnoozeAlone() async throws {
+        let center = UNUserNotificationCenter.current()
+        let scheduler = AlarmScheduler(defaults: UserDefaults(suiteName: UUID().uuidString)!)
+        let alarm = makeAlarm()
+        let snoozeID = "\(alarm.id.uuidString).snooze"
+        defer { scheduler.cancelSnooze(alarm) }
+
+        scheduler.scheduleSnooze(alarm, tone: tone, minutes: 9)
+        let before = await center.pendingNotificationRequests().map(\.identifier)
+        try XCTSkipUnless(before.contains(snoozeID), "Notifications are not allowed in this test host")
+
+        scheduler.cancelAll([alarm])   // what every launch and return to the app does
+
+        let after = await center.pendingNotificationRequests().map(\.identifier)
+        XCTAssertTrue(after.contains(snoozeID), "Opening the app must not delete a snooze")
+    }
+
     func testEveryBundledToneResolvesToAFileInTheBundle() {
         for tone in AlarmTone.bundled {
             let name = (tone.fileName as NSString).deletingPathExtension

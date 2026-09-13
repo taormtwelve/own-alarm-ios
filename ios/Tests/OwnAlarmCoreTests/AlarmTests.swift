@@ -99,11 +99,11 @@ final class AlarmTests: XCTestCase {
     }
 
     func testNextFireDateChoosesTheSoonestRepeatDay() throws {
-        // Every day repeating: the soonest must be strictly sooner than a single
-        // far-off day would give.
+        // Monday 08:00: of every day at 06:45, the soonest is Tuesday 06:45 — not the
+        // Sunday or Monday a wrong pick would give.
         let everyDay = makeAlarm(hour: 6, minute: 45, days: Set(Weekday.allCases))
         let next = try XCTUnwrap(everyDay.nextFireDate(after: reference(), calendar: calendar))
-        XCTAssertLessThanOrEqual(next.timeIntervalSince(reference()), 24 * 3600)
+        XCTAssertEqual(next.timeIntervalSince(reference()), 22 * 3600 + 45 * 60, accuracy: 1)
     }
 
     // MARK: Persistence
@@ -173,7 +173,8 @@ final class AlarmTests: XCTestCase {
         let text = TimeText.string(hour: 13, minute: 15, format: .twelveHour,
                                    locale: Locale(identifier: "en_US"), calendar: calendar)
         XCTAssertTrue(text.uppercased().contains("PM"), "got \(text)")
-        XCTAssertTrue(text.contains("1"), "got \(text)")
+        XCTAssertTrue(text.hasPrefix("1:15"), "got \(text)")
+        XCTAssertFalse(text.contains("13"), "got \(text)")
     }
 
     func testAutomaticFollowsTheLocale() {
