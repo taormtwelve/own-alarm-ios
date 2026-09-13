@@ -32,6 +32,19 @@ final class AlarmOptionsUITests: XCTestCase {
         XCTAssertTrue(app.buttons["Save"].waitForExistence(timeout: 5))
     }
 
+    // MARK: Repeat days
+
+    func testTheWholeWeekSitsOnOneLine() {
+        openMorningRun()
+
+        // Day pills are labelled with the short day names; nothing else in the
+        // editor or the list behind it uses those exact labels.
+        let days = app.buttons.matching(NSPredicate(format: "label IN %@", Calendar.current.shortWeekdaySymbols))
+        XCTAssertEqual(days.count, 7, "One pill per day")
+        let lines = Set((0..<days.count).map { Int(days.element(boundBy: $0).frame.midY.rounded()) })
+        XCTAssertEqual(lines.count, 1, "Sun–Sat should share one line, not wrap")
+    }
+
     // MARK: Snooze
 
     func testSnoozeSwitchShowsAndHidesTheLength() {

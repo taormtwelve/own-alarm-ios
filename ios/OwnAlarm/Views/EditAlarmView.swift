@@ -165,6 +165,7 @@ struct EditAlarmView: View {
             .onChange(of: alarm.volume) { player.scrub(to: $0) }
             // Previews only: a ringing alarm's cover also makes this disappear.
             .onDisappear { player.stopPreviews() }
+
             Divider().background(Tokens.border)
 
             Toggle(isOn: Binding(
