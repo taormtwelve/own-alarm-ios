@@ -154,6 +154,10 @@ final class AlarmPlayerTests: XCTestCase {
         XCTAssertEqual(player.previewPercent, 30, "As media the level turns at once, without a swap")
         player.endScrub()
 
+        player.beginScrub(siren, at: 0.7)   // a second touch while still playing as media
+        XCTAssertTrue(player.previewPlaysAsMedia, "Stays as media rather than starting over")
+        XCTAssertEqual(player.previewPercent, 70)
+
         player.stop()
         XCTAssertNil(player.playingToneID)
     }

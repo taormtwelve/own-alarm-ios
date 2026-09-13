@@ -102,7 +102,11 @@ final class AlarmPlayer: ObservableObject {
         scrubLevel = volume
         let alreadyPlaying = previewActive && playingToneID == tone.id
             && previewPercent == ScaledSound.percent(volume)
-        if !alreadyPlaying { playPreview(tone, at: volume) }
+        if previewPlaysAsMedia, playingToneID == tone.id {
+            step(now: true)   // already playing as media: the level just turns
+        } else if !alreadyPlaying {
+            playPreview(tone, at: volume)
+        }
         scheduleIdleSilence()
     }
 
