@@ -205,6 +205,27 @@ struct EditAlarmView: View {
                 .foregroundStyle(Tokens.textSecondary)
             }
 
+            Toggle(isOn: $alarm.vibrates) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Vibrate")
+                        .font(Typo.body(14, relativeTo: .subheadline, weight: .semibold))
+                        .foregroundStyle(Tokens.textPrimary)
+                    // Said up front, so a Lock Screen buzz with this off does not
+                    // look like a bug: iOS gives apps no vibration control there.
+                    Text("Buzzes while it rings · on the Lock Screen, iOS's Haptics setting decides")
+                        .font(Typo.caption)
+                        .foregroundStyle(Tokens.textMuted)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            }
+            .toggleStyle(.alarm)
+            // Switching it on buzzes once, so the choice can be felt; like any other
+            // control here, it also ends a slider preview.
+            .onChange(of: alarm.vibrates) { on in
+                player.stopPreviews()
+                if on { player.buzzOnce() }
+            }
+
             // On iOS 26+ every alarm rings through Silent, so there is nothing to choose.
             if !RingPermission.alwaysRingsThroughSilent {
                 Toggle(isOn: $alarm.overridesSilent) {

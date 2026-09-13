@@ -1,3 +1,4 @@
+import AudioToolbox
 import AVFoundation
 import Combine
 
@@ -10,6 +11,9 @@ import Combine
 /// control is touched, the tab changes, the app leaves the screen, the alarm is
 /// stopped — the user's own volume is put back. Previews play alongside other apps'
 /// audio rather than pausing it. `.playback` keeps sound coming through Silent.
+///
+/// A ringing alarm set to vibrate also buzzes, every `vibrationInterval`, until it
+/// is stopped. Previews never vibrate.
 @MainActor
 final class AlarmPlayer: ObservableObject {
     @Published private(set) var playingToneID: String?
@@ -19,16 +23,24 @@ final class AlarmPlayer: ObservableObject {
     /// reporting that it was let go, and the tone must not loop forever after that.
     static let scrubIdleTimeout: TimeInterval = 2
 
+    /// How often the phone buzzes while a vibrating alarm rings.
+    static let vibrationInterval: TimeInterval = 1.6
+
     private var player: AVAudioPlayer?
     private var stopWork: DispatchWorkItem?
     private var isScrubbing = false
     private var scrubTone: AlarmTone?
     /// True while an alarm — not a preview — is sounding.
     private var isRinging = false
+    private var vibrationTimer: Timer?
     private let system: SystemVolume
+    private let vibrate: () -> Void
 
-    init(system: SystemVolume = .shared) {
+    /// Tests pass their own `vibrate` to count buzzes; the app uses the real motor.
+    init(system: SystemVolume = .shared,
+         vibrate: @escaping () -> Void = { AudioServicesPlaySystemSound(kSystemSoundID_Vibrate) }) {
         self.system = system
+        self.vibrate = vibrate
     }
 
     // MARK: Audition
@@ -39,6 +51,11 @@ final class AlarmPlayer: ObservableObject {
         stopWork?.cancel()
         play(tone, level: volume, loops: 0, purpose: .preview)
         scheduleStop(after: seconds)
+    }
+
+    /// One buzz — what switching Vibrate on in the editor feels like.
+    func buzzOnce() {
+        vibrate()
     }
 
     // MARK: Live slider feedback
@@ -87,6 +104,8 @@ final class AlarmPlayer: ObservableObject {
              fadeFrom: alarm.fadeInSeconds > 0 ? Alarm.fadeInFloor : nil,
              fadeSeconds: TimeInterval(alarm.fadeInSeconds))
         isRinging = true
+        // Independent of the sound: an alarm that cannot play still buzzes.
+        if alarm.vibrates { startVibrating() }
     }
 
     // MARK: Stopping
@@ -111,6 +130,8 @@ final class AlarmPlayer: ObservableObject {
         isScrubbing = false
         scrubTone = nil
         isRinging = false
+        vibrationTimer?.invalidate()
+        vibrationTimer = nil
         silence()
     }
 
@@ -166,6 +187,15 @@ final class AlarmPlayer: ObservableObject {
         } catch {
             print("AlarmPlayer could not start: \(error.localizedDescription)")
         }
+    }
+
+    /// Buzzes now, then every `vibrationInterval` until `stop()`.
+    private func startVibrating() {
+        vibrationTimer?.invalidate()
+        let buzz = vibrate
+        buzz()
+        vibrationTimer = Timer.scheduledTimer(withTimeInterval: Self.vibrationInterval,
+                                              repeats: true) { _ in buzz() }
     }
 
     /// Stops the sound and hands the volume back, without touching the scrub state.

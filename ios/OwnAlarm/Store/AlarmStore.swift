@@ -112,6 +112,7 @@ final class AlarmStore: ObservableObject {
         remembered.toneID = alarm.toneID
         remembered.snoozeMinutes = alarm.snoozeMinutes
         remembered.fadeInSeconds = alarm.fadeInSeconds
+        remembered.vibrates = alarm.vibrates
         settings.defaults = remembered   // one write, one persist
     }
 

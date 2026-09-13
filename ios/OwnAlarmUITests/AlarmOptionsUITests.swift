@@ -198,4 +198,19 @@ final class AlarmOptionsUITests: XCTestCase {
         XCTAssertTrue(app.buttons["Play test tone"].waitForExistence(timeout: 2),
                       "The preview should have stopped when the tab changed")
     }
+
+    // MARK: Vibration
+
+    func testVibrateIsOnForANewAlarmAndCanBeSwitchedOff() {
+        app.buttons["New alarm"].tap()
+        app.swipeUp()
+
+        let vibrate = app.switches.matching(NSPredicate(format: "label BEGINSWITH 'Vibrate'")).firstMatch
+        XCTAssertTrue(vibrate.waitForExistence(timeout: 5), "The editor should offer Vibrate")
+        XCTAssertEqual(vibrate.value as? String, "1", "New alarms vibrate unless told otherwise")
+
+        vibrate.tap()
+
+        XCTAssertEqual(vibrate.value as? String, "0")
+    }
 }

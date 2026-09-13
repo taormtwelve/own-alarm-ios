@@ -86,6 +86,9 @@ struct Alarm: Identifiable, Codable, Equatable {
     var toneID: String
     var snoozeMinutes: Int = 9
     var louderAfterSnooze: Bool = true
+    /// Buzz while the alarm rings in the app. On the Lock Screen iOS decides, from its
+    /// own Sounds & Haptics settings — no API lets an app choose there.
+    var vibrates: Bool = true
 
     /// Where a fade-in starts from, as a fraction of the target volume.
     static let fadeInFloor: Double = 0.24
@@ -129,7 +132,7 @@ struct Alarm: Identifiable, Codable, Equatable {
     }
 
     /// A new alarm opens on the current time — the picker starts at "now" and the
-    /// user scrolls forward — carrying the defaults from Settings.
+    /// user scrolls forward — carrying the choices remembered from the last save.
     static func newAlarm(from defaults: AlarmDefaults,
                          at now: Date = Date(),
                          calendar: Calendar = .current) -> Alarm {
@@ -144,8 +147,41 @@ struct Alarm: Identifiable, Codable, Equatable {
             overridesSilent: defaults.overridesSilent,
             toneID: defaults.toneID,
             snoozeMinutes: defaults.snoozeMinutes,
-            louderAfterSnooze: defaults.louderAfterSnooze
+            louderAfterSnooze: defaults.louderAfterSnooze,
+            vibrates: defaults.vibrates
         )
+    }
+}
+
+// MARK: - Loading older saves
+
+extension Alarm {
+    enum CodingKeys: String, CodingKey {
+        case id, task, hour, minute, repeatDays, isEnabled, volume, fadeInSeconds
+        case overridesSilent, toneID, snoozeMinutes, louderAfterSnooze, vibrates
+    }
+
+    /// Alarms are saved to disk, and a field added in a later version is missing from
+    /// every alarm saved before it. Swift's generated decoding would then reject the
+    /// whole file — and the app would start with no alarms. Fields added after the
+    /// first release are therefore read leniently, falling back to how the app
+    /// behaved before they existed.
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        id = try c.decode(UUID.self, forKey: .id)
+        task = try c.decode(String.self, forKey: .task)
+        hour = try c.decode(Int.self, forKey: .hour)
+        minute = try c.decode(Int.self, forKey: .minute)
+        repeatDays = try c.decode(Set<Weekday>.self, forKey: .repeatDays)
+        isEnabled = try c.decode(Bool.self, forKey: .isEnabled)
+        volume = try c.decode(Double.self, forKey: .volume)
+        fadeInSeconds = try c.decode(Int.self, forKey: .fadeInSeconds)
+        overridesSilent = try c.decode(Bool.self, forKey: .overridesSilent)
+        toneID = try c.decode(String.self, forKey: .toneID)
+        snoozeMinutes = try c.decode(Int.self, forKey: .snoozeMinutes)
+        louderAfterSnooze = try c.decode(Bool.self, forKey: .louderAfterSnooze)
+        // Added later: older alarms vibrate, as they always did.
+        vibrates = try c.decodeIfPresent(Bool.self, forKey: .vibrates) ?? true
     }
 }
 

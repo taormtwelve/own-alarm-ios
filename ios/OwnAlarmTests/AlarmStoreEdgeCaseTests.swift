@@ -91,6 +91,16 @@ final class AlarmStoreEdgeCaseTests: XCTestCase {
         XCTAssertEqual(second.settings.timeFormat, .twelveHour)
     }
 
+    func testTheVibrationChoiceIsRememberedForTheNextAlarm() {
+        var alarm = make()
+        alarm.vibrates = false
+
+        store.save(alarm, isNew: true)
+
+        XCTAssertFalse(store.settings.defaults.vibrates)
+        XCTAssertFalse(Alarm.newAlarm(from: store.settings.defaults).vibrates)
+    }
+
     private func make(task: String = "Test", hour: Int = 7) -> Alarm {
         Alarm(task: task, hour: hour, minute: 0, repeatDays: [],
               volume: 0.5, fadeInSeconds: 0, overridesSilent: true, toneID: "siren")

@@ -278,6 +278,51 @@ final class AlarmTests: XCTestCase {
         XCTAssertEqual(AppSettings.stored(in: suite).timeFormat, .twelveHour)
     }
 
+    // MARK: Vibration, and saves from older versions
+
+    /// Exactly what a build without `vibrates` wrote to disk. If this stops loading,
+    /// an update wipes every alarm the user has.
+    func testAnAlarmSavedBeforeVibrationExistedStillLoads() throws {
+        let json = """
+        {"id":"8B1F0B8E-6F1A-4C44-9F3B-3E1B7C1D2A10","task":"Old","hour":6,"minute":30,\
+        "repeatDays":[2,3],"isEnabled":true,"volume":0.5,"fadeInSeconds":0,\
+        "overridesSilent":true,"toneID":"siren","snoozeMinutes":9,"louderAfterSnooze":true}
+        """
+        let alarm = try JSONDecoder().decode(Alarm.self, from: Data(json.utf8))
+
+        XCTAssertEqual(alarm.task, "Old")
+        XCTAssertEqual(alarm.repeatDays, [.monday, .tuesday])
+        XCTAssertTrue(alarm.vibrates, "Older alarms vibrate, as they always did")
+    }
+
+    func testSettingsSavedBeforeVibrationExistedStillLoad() throws {
+        let json = """
+        {"timeFormat":"twelveHour","theme":"dark","showOnLockScreen":false,\
+        "defaults":{"volume":0.4,"fadeInSeconds":0,"overridesSilent":true,"toneID":"whisper",\
+        "snoozeMinutes":5,"louderAfterSnooze":false}}
+        """
+        let settings = try JSONDecoder().decode(AppSettings.self, from: Data(json.utf8))
+
+        XCTAssertEqual(settings.timeFormat, .twelveHour, "The rest of the settings survive")
+        XCTAssertEqual(settings.defaults.toneID, "whisper")
+        XCTAssertTrue(settings.defaults.vibrates)
+    }
+
+    func testSwitchingVibrationOffSurvivesSaving() throws {
+        var alarm = makeAlarm()
+        alarm.vibrates = false
+        let decoded = try JSONDecoder().decode(Alarm.self, from: JSONEncoder().encode(alarm))
+        XCTAssertFalse(decoded.vibrates)
+    }
+
+    func testANewAlarmCarriesTheRememberedVibration() {
+        var defaults = AlarmDefaults()
+        XCTAssertTrue(Alarm.newAlarm(from: defaults).vibrates, "Vibrates unless told otherwise")
+
+        defaults.vibrates = false
+        XCTAssertFalse(Alarm.newAlarm(from: defaults).vibrates)
+    }
+
     // MARK: Weekdays
 
     func testLocaleOrderedCoversEveryDayExactlyOnce() {

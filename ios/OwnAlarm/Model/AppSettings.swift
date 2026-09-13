@@ -76,6 +76,7 @@ struct AlarmDefaults: Codable, Equatable {
     var toneID: String = "marimba"
     var snoozeMinutes: Int = AlarmDefaults.standardSnoozeMinutes
     var louderAfterSnooze: Bool = true
+    var vibrates: Bool = true
 
     /// Fade length when the user switches fade-in on. The remembered value is 0
     /// whenever their last alarm had no fade, which would leave the switch stuck off.
@@ -86,6 +87,27 @@ struct AlarmDefaults: Codable, Equatable {
     /// Snooze length when the user switches snooze on — same reasoning.
     var snoozeWhenSwitchedOn: Int {
         snoozeMinutes > 0 ? snoozeMinutes : Self.standardSnoozeMinutes
+    }
+}
+
+extension AlarmDefaults {
+    enum CodingKeys: String, CodingKey {
+        case volume, fadeInSeconds, overridesSilent, toneID, snoozeMinutes, louderAfterSnooze, vibrates
+    }
+
+    /// Every field falls back to its factory value when missing, so settings saved
+    /// by an older version — before a field existed — still load instead of being
+    /// thrown away.
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        let factory = AlarmDefaults()
+        volume = try c.decodeIfPresent(Double.self, forKey: .volume) ?? factory.volume
+        fadeInSeconds = try c.decodeIfPresent(Int.self, forKey: .fadeInSeconds) ?? factory.fadeInSeconds
+        overridesSilent = try c.decodeIfPresent(Bool.self, forKey: .overridesSilent) ?? factory.overridesSilent
+        toneID = try c.decodeIfPresent(String.self, forKey: .toneID) ?? factory.toneID
+        snoozeMinutes = try c.decodeIfPresent(Int.self, forKey: .snoozeMinutes) ?? factory.snoozeMinutes
+        louderAfterSnooze = try c.decodeIfPresent(Bool.self, forKey: .louderAfterSnooze) ?? factory.louderAfterSnooze
+        vibrates = try c.decodeIfPresent(Bool.self, forKey: .vibrates) ?? factory.vibrates
     }
 }
 

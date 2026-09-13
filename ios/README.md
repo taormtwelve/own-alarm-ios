@@ -131,6 +131,14 @@ The mockups were fixed 390×844 frames. None of that survived into the code:
   (`ScaledSound`) and plays relative to the phone's alarm level. On iOS 16–25 the
   app falls back to notifications, which play once (30 s at most) and stay silent
   in Silent mode without the Critical Alerts entitlement.
+- **Vibration is the app's to set only while it rings in the app.** There the
+  per-alarm Vibrate switch buzzes every 1.6 s until Stop. On the Lock Screen iOS
+  gives apps no vibration control, so its Sounds & Haptics settings decide — the
+  switch's caption says so.
+- **Saved data must outlive updates.** Alarms and settings are decoded leniently
+  (`Alarm.init(from:)`, `AlarmDefaults.init(from:)`): a field added in a later
+  version falls back to the old behaviour instead of making the whole save
+  unreadable. Add new fields the same way, and a test with the older JSON.
 - **Snooze is a fresh notification**, not a pause. Cancelling it is handled, but the
   user tapping Snooze from the Lock Screen relies on the action handler running
   promptly.
