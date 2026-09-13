@@ -251,7 +251,7 @@ struct EditAlarmView: View {
                     subtitle: "Adds 10% every time you put it off",
                     showsDivider: false
                 ) {
-                    Toggle("", isOn: $alarm.louderAfterSnooze)
+                    Toggle("Louder after each snooze", isOn: $alarm.louderAfterSnooze)
                         .toggleStyle(.alarm)
                         .labelsHidden()
                 }

@@ -39,6 +39,7 @@ final class AlarmStoreTests: XCTestCase {
         super.tearDown()
     }
 
+    /// A new install: empty, as real users get it.
     private func makeStore() -> AlarmStore {
         AlarmStore(
             scheduler: spy,
@@ -158,21 +159,21 @@ final class AlarmStoreTests: XCTestCase {
 
     func testRescheduleAllSkipsDisabledAlarms() {
         let store = makeStore()
-        store.alarms.forEach { store.setEnabled(false, for: $0) }
-        let enabled = makeAlarm(task: "Only one")
-        store.add(enabled)
+        var switchedOff = makeAlarm(task: "Switched off")
+        switchedOff.isEnabled = false
+        store.add(switchedOff)
+        let switchedOn = makeAlarm(task: "Switched on")
+        store.add(switchedOn)
 
-        // The store holds the spy it was built with, so measure the delta rather
-        // than swapping in a fresh spy it would never see.
+        // The store holds the spy it was built with, so measure the delta.
         let scheduledBefore = spy.scheduled.count
         let cancelAllBefore = spy.cancelAllCount
 
         store.rescheduleAll()
 
-        let newlyScheduled = Array(spy.scheduled.dropFirst(scheduledBefore))
+        let rearmed = spy.scheduled.dropFirst(scheduledBefore).map { $0.alarm.id }
         XCTAssertEqual(spy.cancelAllCount, cancelAllBefore + 1)
-        XCTAssertEqual(newlyScheduled.count, 1, "Only the enabled alarm should be re-armed")
-        XCTAssertEqual(newlyScheduled.first?.alarm.id, enabled.id)
+        XCTAssertEqual(rearmed, [switchedOn.id], "Only the switched-on alarm is re-armed")
     }
 
     func testLockScreenPreferenceIsPassedToTheScheduler() {
@@ -186,36 +187,36 @@ final class AlarmStoreTests: XCTestCase {
 
     // MARK: Snooze — the volume rule
 
-    func testSnoozeReturnsTenPercentLouder() {
+    func testSnoozeReturnsTenPercentLouder() throws {
         let store = makeStore()
         let alarm = makeAlarm(volume: 0.50, louderAfterSnooze: true)
         store.add(alarm)
 
         store.snooze(alarm)
 
-        let snoozed = try? XCTUnwrap(spy.snoozed.last)
-        XCTAssertEqual(snoozed?.alarm.volume ?? 0, 0.60, accuracy: 0.0001)
-        XCTAssertEqual(snoozed?.minutes, alarm.snoozeMinutes)
+        let snoozed = try XCTUnwrap(spy.snoozed.last)
+        XCTAssertEqual(snoozed.alarm.volume, 0.60, accuracy: 0.0001)
+        XCTAssertEqual(snoozed.minutes, alarm.snoozeMinutes)
     }
 
-    func testSnoozeKeepsVolumeWhenTheRuleIsOff() {
+    func testSnoozeKeepsVolumeWhenTheRuleIsOff() throws {
         let store = makeStore()
         let alarm = makeAlarm(volume: 0.50, louderAfterSnooze: false)
         store.add(alarm)
 
         store.snooze(alarm)
 
-        XCTAssertEqual(spy.snoozed.last?.alarm.volume ?? 0, 0.50, accuracy: 0.0001)
+        XCTAssertEqual(try XCTUnwrap(spy.snoozed.last).alarm.volume, 0.50, accuracy: 0.0001)
     }
 
-    func testSnoozeNeverExceedsFullVolume() {
+    func testSnoozeNeverExceedsFullVolume() throws {
         let store = makeStore()
         let alarm = makeAlarm(volume: 0.97, louderAfterSnooze: true)
         store.add(alarm)
 
         store.snooze(alarm)
 
-        XCTAssertEqual(spy.snoozed.last?.alarm.volume ?? 0, 1.0, accuracy: 0.0001)
+        XCTAssertEqual(try XCTUnwrap(spy.snoozed.last).alarm.volume, 1.0, accuracy: 0.0001)
     }
 
     func testSnoozeClearsTheRingingAlarm() {
@@ -257,12 +258,10 @@ final class AlarmStoreTests: XCTestCase {
 
     func testNextAlarmIsTheSoonestEnabledOne() throws {
         let store = makeStore()
-        store.alarms.forEach { store.delete($0) }
-
-        let soon = makeAlarm(task: "Soon", hour: 6, minute: 0, days: Set(Weekday.allCases))
-        let later = makeAlarm(task: "Later", hour: 23, minute: 30, days: Set(Weekday.allCases))
-        store.add(later)
-        store.add(soon)
+        let early = makeAlarm(task: "Early", hour: 6, minute: 0, days: Set(Weekday.allCases))
+        let late = makeAlarm(task: "Late", hour: 23, minute: 30, days: Set(Weekday.allCases))
+        store.add(late)
+        store.add(early)
 
         let next = try XCTUnwrap(store.nextAlarm)
         let all = store.alarms.compactMap { $0.nextFireDate() }
@@ -271,7 +270,6 @@ final class AlarmStoreTests: XCTestCase {
 
     func testUsageCountTracksTonesInUse() {
         let store = makeStore()
-        store.alarms.forEach { store.delete($0) }
         let siren = AlarmTone.tone(id: "siren", in: AlarmTone.bundled)
 
         XCTAssertEqual(store.usageCount(of: siren), 0)
@@ -299,7 +297,6 @@ final class AlarmStoreTests: XCTestCase {
         let suite = UserDefaults(suiteName: UUID().uuidString)!
 
         let first = AlarmStore(scheduler: spy, fileURL: url, defaults: suite)
-        first.alarms.forEach { first.delete($0) }
         first.add(makeAlarm(task: "Persisted"))
 
         let second = AlarmStore(scheduler: SpyScheduler(), fileURL: url, defaults: suite)

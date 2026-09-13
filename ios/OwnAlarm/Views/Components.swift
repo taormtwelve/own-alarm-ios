@@ -116,6 +116,9 @@ struct SettingsRow<Trailing: View>: View {
             .padding(.horizontal, 16)
             .padding(.vertical, 12)
             .frame(minHeight: Metrics.rowHeight)
+            // The whole row is the target. A plain-style button otherwise only
+            // answers taps on its text, so the gap between title and value was dead.
+            .contentShape(Rectangle())
 
             if showsDivider {
                 Rectangle()
