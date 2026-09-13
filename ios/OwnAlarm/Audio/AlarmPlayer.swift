@@ -4,11 +4,11 @@ import Combine
 /// Plays tones in-app: the audition button in the Sounds tab, live feedback while a
 /// volume slider is being dragged, and the alarm itself while the app is open.
 ///
-/// Levels are absolute — 100% is the iPhone's maximum output, whatever the volume
-/// buttons were left at. `SystemVolume` sets the device to the requested level, the
-/// player runs at full scale, and the user's own level comes back when we stop.
-/// `.playback` is the session category that keeps sound coming through the Silent
-/// switch.
+/// Other apps are left alone. The app never changes the iPhone's volume — iOS has one
+/// media volume shared by every app, so changing it would change theirs — and
+/// previews mix with whatever else is playing instead of lowering it. Levels are
+/// therefore relative to the iPhone's own volume. `.playback` is the session category
+/// that keeps sound coming through the Silent switch.
 @MainActor
 final class AlarmPlayer: ObservableObject {
     @Published private(set) var playingToneID: String?
@@ -16,15 +16,16 @@ final class AlarmPlayer: ObservableObject {
     private var player: AVAudioPlayer?
     private var stopWork: DispatchWorkItem?
     private var isScrubbing = false
-    private let system = SystemVolume.shared
+    /// True while an alarm — not a preview — is sounding.
+    private var isRinging = false
 
     // MARK: Audition
 
-    /// A short preview at exactly the level given, so "60%" is something you can
-    /// hear before relying on it.
+    /// A short preview at the level given, so "60%" is something you can hear
+    /// before relying on it.
     func preview(_ tone: AlarmTone, at volume: Double, seconds: TimeInterval = 6) {
         stopWork?.cancel()
-        play(tone, level: volume, loops: 0)
+        play(tone, level: volume, loops: 0, purpose: .preview)
         scheduleStop(after: seconds)
     }
 
@@ -34,17 +35,17 @@ final class AlarmPlayer: ObservableObject {
     func beginScrub(_ tone: AlarmTone, at volume: Double) {
         stopWork?.cancel()
         isScrubbing = true
-        if playingToneID == tone.id, player?.isPlaying == true {
-            system.set(Float(volume))
+        if playingToneID == tone.id, let player, player.isPlaying {
+            player.volume = Float(volume)
         } else {
-            play(tone, level: volume, loops: -1)
+            play(tone, level: volume, loops: -1, purpose: .preview)
         }
     }
 
     /// Follows the slider as it moves — what you hear is the level you are setting.
     func scrub(to volume: Double) {
         guard isScrubbing else { return }
-        system.set(Float(volume))
+        player?.volume = Float(min(1, max(0, volume)))
     }
 
     /// The finger lifted: let the final level ring for a moment, then stop.
@@ -60,32 +61,50 @@ final class AlarmPlayer: ObservableObject {
         play(tone,
              level: alarm.volume,
              loops: -1,
+             purpose: .alarm,
              fadeFrom: alarm.fadeInSeconds > 0 ? Alarm.fadeInFloor : nil,
              fadeSeconds: TimeInterval(alarm.fadeInSeconds))
+        isRinging = true
+    }
+
+    /// The app has left the screen — backgrounded, locked, or Control Center pulled
+    /// down. Previews and slider feedback stop at once. A ringing alarm keeps going:
+    /// leaving the app must not be a way to silence it.
+    func appDidLeaveForeground() {
+        guard !isRinging else { return }
+        stop()
     }
 
     func stop() {
         stopWork?.cancel()
         stopWork = nil
         isScrubbing = false
+        isRinging = false
         player?.stop()
         player = nil
         playingToneID = nil
-        system.restore()
+        // Hands audio back to other apps at their own level.
         try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
     }
 
     // MARK: Engine
 
-    /// `level` is the absolute output, 0...1 of the device maximum. With `fadeFrom`,
-    /// the player ramps from that fraction of the level up to all of it.
+    private enum Purpose {
+        /// Plays alongside other apps' audio, which is left exactly as it was.
+        case preview
+        /// An alarm has to be heard: other audio dips while it rings and comes back
+        /// when it stops.
+        case alarm
+    }
+
+    /// `level` is 0...1 of the iPhone's current volume. With `fadeFrom`, the player
+    /// ramps from that fraction of the level up to all of it.
     private func play(_ tone: AlarmTone,
                       level: Double,
                       loops: Int,
+                      purpose: Purpose,
                       fadeFrom: Double? = nil,
                       fadeSeconds: TimeInterval = 0) {
-        // Stop the previous sound without restoring the system level — that keeps
-        // the level the user had before *any* of our playback as the one to return to.
         player?.stop()
         player = nil
 
@@ -96,17 +115,19 @@ final class AlarmPlayer: ObservableObject {
 
         do {
             let session = AVAudioSession.sharedInstance()
-            try session.setCategory(.playback, mode: .default, options: [.duckOthers])
+            try session.setCategory(.playback,
+                                    mode: .default,
+                                    options: purpose == .alarm ? [.duckOthers] : [.mixWithOthers])
             try session.setActive(true)
-            system.takeOver(at: Float(level))
 
+            let target = Float(min(1, max(0, level)))
             let player = try AVAudioPlayer(contentsOf: url)
             player.numberOfLoops = loops
-            player.volume = Float(fadeFrom ?? 1)
+            player.volume = fadeFrom.map { target * Float($0) } ?? target
             player.prepareToPlay()
             player.play()
             if fadeFrom != nil, fadeSeconds > 0 {
-                player.setVolume(1, fadeDuration: fadeSeconds)
+                player.setVolume(target, fadeDuration: fadeSeconds)
             }
             self.player = player
             playingToneID = tone.id

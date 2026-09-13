@@ -43,8 +43,6 @@ struct RingingView: View {
             if !reduceMotion { pulse = true }
         }
         .onDisappear { player.stop() }
-        // A full-screen cover leaves the root's volume view off screen; host our own.
-        .hostsSystemVolume()
     }
 
     // MARK: Pieces

@@ -1,8 +1,13 @@
 name: Build OwnAlarm
 
-# Runs only for prod. Merging dev into prod is the deploy: model tests, device build,
-# unit + UI tests, then a GitHub Release with the .ipa attached — and nothing is
-# released unless every test passed. Pushes to dev build nothing.
+# Runs only for prod. Merging dev into prod is the deploy, and nothing is released
+# unless every test passed. Pushes to dev build nothing.
+#
+# Three jobs run side by side, so a deploy waits only for the slowest of them:
+#   core-tests  (Linux)  model tests, no Apple SDK needed
+#   ipa         (macOS)  the Release build of the unsigned .ipa
+#   app-tests   (macOS)  unit and UI tests in the Simulator
+# `release` publishes the .ipa once all three have passed.
 #
 # The .ipa is UNSIGNED — you sign it on your own machine with your own Apple ID (see
 # ios/BUILD.md), which keeps certificates out of this repository.
@@ -16,16 +21,23 @@ on:
 permissions:
   contents: read
 
-# A newer push to dev makes the older run pointless — cancel it and save macOS
-# minutes, which bill at a multiple. Deploys to prod are never cancelled mid-way.
+# A newer run makes an older one pointless — cancel it and save macOS minutes,
+# which bill at a multiple. Deploys to prod are never cancelled mid-way.
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: ${{ github.ref != 'refs/heads/prod' }}
+
+env:
+  # Homebrew's self-update takes longer than the one install it precedes.
+  HOMEBREW_NO_AUTO_UPDATE: "1"
+  HOMEBREW_NO_INSTALL_CLEANUP: "1"
+  HOMEBREW_NO_ENV_HINTS: "1"
 
 jobs:
   core-tests:
     name: Model tests
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     # The official Swift image rather than a marketplace action: one less moving
     # part, and it cannot 404 looking for a toolchain.
     container: swift:5.9
@@ -34,17 +46,12 @@ jobs:
       - name: Run the platform-independent suite
         run: swift test --package-path ios
 
-  app:
-    name: Build unsigned .ipa
+  ipa:
+    name: Build .ipa
     runs-on: macos-latest
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v5
-
-      - name: Versions
-        run: |
-          xcodebuild -version
-          echo "--- available simulators ---"
-          xcrun simctl list devices available | head -40
 
       # AlarmKit — what makes alarms ring on the Lock Screen — ships in the iOS 26
       # SDK. The code compiles without it (guarded by canImport), so an older Xcode
@@ -61,25 +68,15 @@ jobs:
             echo "::warning::iOS SDK $SDK has no AlarmKit; Lock Screen ringing will be compiled out"
           fi
 
-      - name: Install XcodeGen
-        run: brew install xcodegen
-
       - name: Generate the Xcode project
         working-directory: ios
-        run: xcodegen generate
-
-      - name: Show what was generated
-        working-directory: ios
         run: |
-          xcodebuild -list -project OwnAlarm.xcodeproj
-          echo "--- shared schemes on disk ---"
-          ls -la OwnAlarm.xcodeproj/xcshareddata/xcschemes/ || echo "none"
+          brew install xcodegen
+          xcodegen generate
 
       # Unsigned: no certificates, no provisioning profiles, nothing secret in CI.
-      # Output is captured so the compiler errors can be lifted into the run summary
-      # instead of hiding behind an exit code.
+      # Indexing is for editors, not CI, so it is switched off.
       - name: Build for device
-        id: build
         working-directory: ios
         run: |
           set -o pipefail
@@ -89,21 +86,21 @@ jobs:
             -configuration Release \
             -sdk iphoneos \
             -derivedDataPath build \
+            COMPILER_INDEX_STORE_ENABLE=NO \
             CODE_SIGN_IDENTITY="" \
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGNING_ALLOWED=NO \
             build 2>&1 | tee xcodebuild.log
 
-      # Runs even when the build failed — this is the step that tells us why.
+      # Only on failure: lifts the compiler errors into the run summary.
       - name: Report errors
-        if: always()
+        if: failure()
         working-directory: ios
         run: |
           {
             echo "## xcodebuild"
             echo '```'
-            grep -E "error:|warning: .*(deprecated|unused)|\*\* BUILD" xcodebuild.log \
-              | head -60 || echo "(no error lines matched)"
+            grep -E "error:|\*\* BUILD" xcodebuild.log | head -60 || echo "(no error lines matched)"
             echo '```'
             echo "<details><summary>last 80 lines</summary>"
             echo '```'
@@ -113,7 +110,7 @@ jobs:
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upload build log
-        if: always()
+        if: failure()
         uses: actions/upload-artifact@v5
         with:
           name: xcodebuild-log
@@ -136,9 +133,29 @@ jobs:
           path: ios/OwnAlarm-unsigned.ipa
           retention-days: 30
 
+  app-tests:
+    name: Unit and UI tests
+    runs-on: macos-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Use the newest Xcode
+        run: |
+          XCODE=$(ls -d /Applications/Xcode_*.app | sort -V | tail -1)
+          sudo xcode-select -s "$XCODE"
+          xcodebuild -version
+
+      - name: Generate the Xcode project
+        working-directory: ios
+        run: |
+          brew install xcodegen
+          xcodegen generate
+
       # Runner images change their simulator line-up, so the device is discovered
-      # rather than named — pinning to "iPhone 15" is how this broke before.
-      - name: Pick a simulator
+      # rather than named. It is booted now, so it finishes starting up while the
+      # tests compile instead of after.
+      - name: Pick and boot a simulator
         id: sim
         run: |
           UDID=$(xcrun simctl list devices available -j \
@@ -152,9 +169,8 @@ jobs:
           fi
           echo "udid=$UDID" >> "$GITHUB_OUTPUT"
           xcrun simctl list devices available | grep "$UDID"
+          xcrun simctl boot "$UDID" || true
 
-      # Unit tests and UI tests. This also compiles for the Simulator, so it covers
-      # what the old build-only step did.
       - name: Test
         working-directory: ios
         run: |
@@ -166,6 +182,7 @@ jobs:
             -destination "id=${{ steps.sim.outputs.udid }}" \
             -derivedDataPath build-test \
             -resultBundlePath TestResults.xcresult \
+            COMPILER_INDEX_STORE_ENABLE=NO \
             2>&1 | tee xcodebuild-test.log
 
       - name: Report test results
@@ -175,13 +192,15 @@ jobs:
           {
             echo "## Tests"
             echo '```'
-            grep -E "Test Suite .* (passed|failed)|error:|XCTAssert|\*\* TEST" \
+            grep -E "Test Suite .* (passed|failed)|error:|\*\* TEST" \
               xcodebuild-test.log | head -60 || echo "(no result lines matched)"
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
 
+      # The result bundle carries UI-test screenshots and runs to hundreds of MB.
+      # Uploading it on every green run was pure waiting; now only failures do.
       - name: Upload test results
-        if: always()
+        if: failure()
         uses: actions/upload-artifact@v5
         with:
           name: test-results
@@ -190,13 +209,13 @@ jobs:
             ios/TestResults.xcresult
           retention-days: 7
 
-  # The deploy. Only for pushes to prod, and only once both jobs above — model
-  # tests, device build, unit and UI tests — have passed.
+  # The deploy. Only for pushes to prod, and only once every job above has passed.
   release:
     name: Deploy to GitHub Releases
-    needs: [core-tests, app]
+    needs: [core-tests, ipa, app-tests]
     if: github.event_name == 'push' && github.ref == 'refs/heads/prod'
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     permissions:
       contents: write
     steps:

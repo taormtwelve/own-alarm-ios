@@ -28,17 +28,56 @@ import ActivityKit
 /// file (`ScaledSound`). It plays at the phone's alarm level, and a 30% task rings
 /// with a file 30% as loud.
 ///
+/// Snooze is an AlarmKit countdown, drawn live on the Lock Screen and in the Dynamic
+/// Island by the OwnAlarmWidgets extension. AlarmKit also reveals when an alarm has
+/// rung and been stopped — it drops out of `alarmUpdates` — which is how a one-shot
+/// alarm gets switched off in the app. A snoozed alarm is still counting down, so it
+/// stays on until the user finally taps Stop.
+///
 /// Note: our model type `Alarm` shadows AlarmKit's, so AlarmKit's is always written
 /// `AlarmKit.Alarm` here.
 @available(iOS 26.0, *)
 final class AlarmKitScheduler: AlarmScheduling {
-    struct Metadata: AlarmMetadata {}
+    var onFinished: ((UUID) -> Void)? {
+        didSet { deliverPending() }
+    }
+
+    private static let armedKey = "ownalarm.alarmkit.armed"
 
     private let manager = AlarmManager.shared
     private let fallback: AlarmScheduling
+    private let defaults: UserDefaults
+    private let lock = NSLock()
+    /// Alarms handed to AlarmKit. One that vanishes from AlarmKit's list without us
+    /// cancelling it has rung and been stopped. Persisted, so alarms stopped while
+    /// the app was not running are still caught on the next launch.
+    private var armed: Set<UUID>
+    private var pending: [UUID] = []
+    private var updates: Task<Void, Never>?
 
-    init(fallback: AlarmScheduling) {
+    init(fallback: AlarmScheduling, defaults: UserDefaults = .standard) {
         self.fallback = fallback
+        self.defaults = defaults
+        armed = Set((defaults.stringArray(forKey: Self.armedKey) ?? [])
+            .compactMap(UUID.init(uuidString:)))
+
+        // Anything armed last time and gone now finished while the app was closed.
+        if let present = try? manager.alarms.map(\.id) {
+            let finished = armed.subtracting(present)
+            armed.subtract(finished)
+            pending = Array(finished)
+            persistArmed()
+        }
+
+        updates = Task { [weak self] in
+            for await alarms in AlarmManager.shared.alarmUpdates {
+                self?.reconcile(present: Set(alarms.map(\.id)))
+            }
+        }
+    }
+
+    deinit {
+        updates?.cancel()
     }
 
     static func requestAuthorization() async {
@@ -58,11 +97,15 @@ final class AlarmKitScheduler: AlarmScheduling {
             fallback.schedule(alarm, tone: tone, showOnLockScreen: showOnLockScreen)
             return
         }
+        // Snoozing or ringing right now: leave it be. Scheduling again would wipe
+        // the countdown the user is waiting on.
+        if isActive(alarm.id) { return }
 
         let configuration = makeConfiguration(for: alarm, tone: tone)
-        Task { [manager, fallback] in
+        Task { [weak self, manager, fallback] in
             do {
                 _ = try await manager.schedule(id: alarm.id, configuration: configuration)
+                self?.setArmed(alarm.id, true)
             } catch {
                 print("AlarmKit refused \(alarm.task): \(error). Using a notification instead.")
                 fallback.schedule(alarm, tone: tone, showOnLockScreen: showOnLockScreen)
@@ -77,6 +120,8 @@ final class AlarmKitScheduler: AlarmScheduling {
     }
 
     func cancel(_ alarm: Alarm) {
+        // Disarm first, so the update that follows is not read as "it rang".
+        setArmed(alarm.id, false)
         try? manager.cancel(id: alarm.id)
         fallback.cancel(alarm)
     }
@@ -86,16 +131,71 @@ final class AlarmKitScheduler: AlarmScheduling {
     }
 
     func cancelAll() {
+        // Alarms are re-armed on every launch; that must not cancel one that is
+        // snoozing or ringing at this moment.
         for scheduled in (try? manager.alarms) ?? [] {
+            guard case .scheduled = scheduled.state else { continue }
+            setArmed(scheduled.id, false)
             try? manager.cancel(id: scheduled.id)
         }
         fallback.cancelAll()
     }
 
+    // MARK: Tracking
+
+    private func isActive(_ id: UUID) -> Bool {
+        guard let alarm = (try? manager.alarms)?.first(where: { $0.id == id }) else { return false }
+        if case .scheduled = alarm.state { return false }
+        return true
+    }
+
+    private func reconcile(present: Set<UUID>) {
+        lock.lock()
+        let finished = armed.subtracting(present)
+        armed.subtract(finished)
+        lock.unlock()
+        guard !finished.isEmpty else { return }
+        persistArmed()
+        finished.forEach(report)
+    }
+
+    private func report(_ id: UUID) {
+        if let onFinished {
+            onFinished(id)
+        } else {
+            lock.lock()
+            pending.append(id)
+            lock.unlock()
+        }
+    }
+
+    private func deliverPending() {
+        guard let onFinished else { return }
+        lock.lock()
+        let ids = pending
+        pending = []
+        lock.unlock()
+        ids.forEach(onFinished)
+    }
+
+    private func setArmed(_ id: UUID, _ isArmed: Bool) {
+        lock.lock()
+        if isArmed { armed.insert(id) } else { armed.remove(id) }
+        lock.unlock()
+        persistArmed()
+    }
+
+    private func persistArmed() {
+        lock.lock()
+        let ids = armed.map(\.uuidString)
+        lock.unlock()
+        defaults.set(ids, forKey: Self.armedKey)
+    }
+
     // MARK: Configuration
 
     private func makeConfiguration(for alarm: Alarm, tone: AlarmTone)
-        -> AlarmManager.AlarmConfiguration<Metadata> {
+        -> AlarmManager.AlarmConfiguration<OwnAlarmMetadata> {
         let title = alarm.task.isEmpty ? "Alarm" : alarm.task
         let snoozes = alarm.snoozeMinutes > 0
 
@@ -108,9 +208,23 @@ final class AlarmKitScheduler: AlarmScheduling {
             secondaryButtonBehavior: snoozes ? .countdown : nil
         )
 
-        let attributes = AlarmAttributes<Metadata>(
-            presentation: AlarmPresentation(alert: alert),
-            metadata: Metadata(),
+        // While snoozed, the widget extension draws a live countdown from these.
+        let presentation = snoozes
+            ? AlarmPresentation(
+                alert: alert,
+                countdown: AlarmPresentation.Countdown(
+                    title: "Snoozed",
+                    pauseButton: AlarmButton(text: "Pause", textColor: .white,
+                                             systemImageName: "pause.fill")),
+                paused: AlarmPresentation.Paused(
+                    title: "Paused",
+                    resumeButton: AlarmButton(text: "Resume", textColor: .white,
+                                              systemImageName: "play.fill")))
+            : AlarmPresentation(alert: alert)
+
+        let attributes = AlarmAttributes<OwnAlarmMetadata>(
+            presentation: presentation,
+            metadata: OwnAlarmMetadata(task: title, volumePercent: alarm.volumePercent),
             tintColor: Color(hex: 0xE8940F)
         )
 

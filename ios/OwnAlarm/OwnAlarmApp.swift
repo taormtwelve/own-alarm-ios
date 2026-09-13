@@ -1,9 +1,22 @@
 import SwiftUI
+import UIKit
 import UserNotifications
 
 @main
 struct OwnAlarmApp: App {
     @StateObject private var store = OwnAlarmApp.makeStore()
+    @StateObject private var player = AlarmPlayer()
+    private let notifications = NotificationRouter()
+
+    @Environment(\.scenePhase) private var scenePhase
+
+    init() {
+        // UI tests do not need to watch sheets slide in and out; skipping the
+        // animations takes a real bite out of the suite's run time.
+        if ProcessInfo.processInfo.arguments.contains("-uitesting") {
+            UIView.setAnimationsEnabled(false)
+        }
+    }
 
     /// Real launches start with no alarms. Under UI test the app gets throwaway
     /// storage — seeded with sample alarms, or empty with `-emptyStore` — so the
@@ -14,10 +27,6 @@ struct OwnAlarmApp: App {
         guard args.contains("-uitesting") else { return AlarmStore() }
         return .ephemeral(seed: args.contains("-emptyStore") ? [] : Alarm.starter)
     }
-    @StateObject private var player = AlarmPlayer()
-    private let notifications = NotificationRouter()
-
-    @Environment(\.scenePhase) private var scenePhase
 
     var body: some Scene {
         WindowGroup {
@@ -42,6 +51,9 @@ struct OwnAlarmApp: App {
                     store.rescheduleAll()
                 }
                 .onChange(of: scenePhase) { phase in
+                    // Leaving the app silences previews immediately; a ringing
+                    // alarm keeps going.
+                    if phase != .active { player.appDidLeaveForeground() }
                     // Repeat triggers can drift after a long background spell or a
                     // time-zone change; re-arming on activation keeps them honest.
                     if phase == .active { store.rescheduleAll() }
@@ -50,11 +62,12 @@ struct OwnAlarmApp: App {
     }
 }
 
-/// Bridges notification taps and action buttons back into the app's state.
+/// Bridges notification taps and action buttons back into the app's state. What
+/// each one *does* lives in `AlarmStore.respond`, where it can be tested.
 ///
-/// The Lock Screen presentation in the design *is* this notification: its title,
-/// body and the Stop / Snooze actions registered in `AlarmScheduler`. There is no
-/// custom view for it — iOS owns that surface.
+/// On iOS 16–25 the Lock Screen presentation is this notification: its title, body
+/// and the Stop / Snooze actions registered in `AlarmScheduler`. On iOS 26 AlarmKit
+/// owns the Lock Screen instead.
 final class NotificationRouter: NSObject, UNUserNotificationCenterDelegate {
     weak var store: AlarmStore?
 
@@ -76,18 +89,8 @@ final class NotificationRouter: NSObject, UNUserNotificationCenterDelegate {
 
     @MainActor
     private func route(_ content: UNNotificationContent, action: String?) {
-        guard let store,
-              let raw = content.userInfo["alarmID"] as? String,
-              let id = UUID(uuidString: raw),
-              let alarm = store.alarm(withID: id) else { return }
-
-        switch action {
-        case AlarmScheduler.snoozeAction:
-            store.snooze(alarm)
-        case AlarmScheduler.stopAction, UNNotificationDismissActionIdentifier:
-            store.stop(alarm)
-        default:
-            store.ringing = alarm
-        }
+        guard let raw = content.userInfo["alarmID"] as? String,
+              let id = UUID(uuidString: raw) else { return }
+        store?.respond(AlarmResponse(actionIdentifier: action), toAlarmWithID: id)
     }
 }
