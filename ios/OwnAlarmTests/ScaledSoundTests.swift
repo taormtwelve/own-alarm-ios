@@ -35,8 +35,9 @@ final class ScaledSoundTests: XCTestCase {
 
     // MARK: The formula
 
-    /// A tone quiet enough that the no-clipping cap never gets in the way.
-    private let roomy: Float = 0.01
+    /// A tone quiet enough that the no-clipping cap never gets in the way — even a
+    /// 30% ringer at 100% needs 100× gain, and this leaves room for 980×.
+    private let roomy: Float = 0.001
 
     func testAtTheRingerLevelTheCopyIsTheToneItself() {
         let gain = ScaledSound.copyGain(for: ScaledSound.assumedRinger, peak: roomy)
@@ -114,9 +115,12 @@ final class ScaledSoundTests: XCTestCase {
         let buffer = try XCTUnwrap(AVAudioPCMBuffer(pcmFormat: file.processingFormat,
                                                     frameCapacity: AVAudioFrameCount(file.length)))
         try file.read(into: buffer)
-        let channel = try XCTUnwrap(buffer.floatChannelData)[0]
+        // Every channel, as the render does: its cap is set by the loudest one.
+        let channels = try XCTUnwrap(buffer.floatChannelData)
         var loudest: Float = 0
-        for i in 0..<Int(buffer.frameLength) { loudest = max(loudest, abs(channel[i])) }
+        for channel in 0..<Int(file.processingFormat.channelCount) {
+            for i in 0..<Int(buffer.frameLength) { loudest = max(loudest, abs(channels[channel][i])) }
+        }
         return loudest
     }
 }
