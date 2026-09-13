@@ -176,4 +176,26 @@ final class AlarmOptionsUITests: XCTestCase {
         XCTAssertTrue(app.buttons["Dark"].waitForExistence(timeout: 5))
         XCTAssertTrue(app.buttons["Dark"].isSelected)
     }
+
+    // MARK: Changing tab
+
+    func testChangingTabStopsAPreviewAtOnce() throws {
+        app.tabBars.buttons["Sounds"].tap()
+        let play = app.buttons["Play test tone"]
+        XCTAssertTrue(play.waitForExistence(timeout: 10))
+
+        play.tap()
+        guard app.buttons["Stop test tone"].waitForExistence(timeout: 3) else {
+            throw XCTSkip("No audio output available on this machine")
+        }
+
+        let left = Date()
+        app.tabBars.buttons["Alarms"].tap()
+        app.tabBars.buttons["Sounds"].tap()
+        // A preview ends on its own after 6 s; a slower round trip proves nothing.
+        try XCTSkipIf(Date().timeIntervalSince(left) > 5, "Round trip too slow to prove anything")
+
+        XCTAssertTrue(app.buttons["Play test tone"].waitForExistence(timeout: 2),
+                      "The preview should have stopped when the tab changed")
+    }
 }

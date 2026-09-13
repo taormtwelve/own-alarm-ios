@@ -6,17 +6,23 @@ import Combine
 ///
 /// Levels are shares of the iPhone's maximum. While a sound plays, `SystemVolume`
 /// sets the phone's volume to the chosen level and the player runs at full scale on
-/// top; the moment the sound ends — the finger lifts, the preview finishes, the alarm
-/// is stopped, the app leaves the screen — the user's own volume is put back.
-/// Previews play alongside other apps' audio rather than pausing it. `.playback` is
-/// the session category that keeps sound coming through the Silent switch.
+/// top; the moment the sound ends — the finger lifts, the preview finishes, another
+/// control is touched, the tab changes, the app leaves the screen, the alarm is
+/// stopped — the user's own volume is put back. Previews play alongside other apps'
+/// audio rather than pausing it. `.playback` keeps sound coming through Silent.
 @MainActor
 final class AlarmPlayer: ObservableObject {
     @Published private(set) var playingToneID: String?
 
+    /// How long a slider can sit untouched before its sound stops by itself. iOS can
+    /// cancel a drag — a scroll takes the finger over — without the slider ever
+    /// reporting that it was let go, and the tone must not loop forever after that.
+    static let scrubIdleTimeout: TimeInterval = 2
+
     private var player: AVAudioPlayer?
     private var stopWork: DispatchWorkItem?
     private var isScrubbing = false
+    private var scrubTone: AlarmTone?
     /// True while an alarm — not a preview — is sounding.
     private var isRinging = false
     private let system: SystemVolume
@@ -40,25 +46,33 @@ final class AlarmPlayer: ObservableObject {
     /// A finger lands on a volume slider: the phone's volume is remembered and the
     /// tone starts looping at the slider's level.
     func beginScrub(_ tone: AlarmTone, at volume: Double) {
-        stopWork?.cancel()
         isScrubbing = true
+        scrubTone = tone
         if playingToneID == tone.id, player?.isPlaying == true {
             system.takeOver(at: Float(volume))
         } else {
             play(tone, level: volume, loops: -1, purpose: .preview)
         }
+        scheduleIdleSilence()
     }
 
     /// Follows the slider — the phone's volume moves with it.
     func scrub(to volume: Double) {
-        guard isScrubbing else { return }
-        system.set(Float(volume))
+        guard isScrubbing, let tone = scrubTone else { return }
+        if player == nil {
+            // Went quiet after sitting still; the finger is moving again.
+            play(tone, level: volume, loops: -1, purpose: .preview)
+        } else {
+            system.set(Float(volume))
+        }
+        scheduleIdleSilence()
     }
 
     /// The finger lifted: the final level rings for a moment, then the sound stops
     /// and the phone's own volume comes back.
     func endScrub() {
         isScrubbing = false
+        scrubTone = nil
         scheduleStop(after: 0.8)
     }
 
@@ -75,25 +89,29 @@ final class AlarmPlayer: ObservableObject {
         isRinging = true
     }
 
-    /// The app has left the screen — backgrounded, locked, or Control Center pulled
-    /// down. Previews and slider feedback stop at once and the volume comes back. A
-    /// ringing alarm keeps going: leaving the app must not be a way to silence it.
-    func appDidLeaveForeground() {
+    // MARK: Stopping
+
+    /// Ends any preview or slider sound at once — the tab changed, another control
+    /// was touched, the app left the screen. A ringing alarm is not a preview and
+    /// keeps going: none of those must be a way to silence it.
+    func stopPreviews() {
         guard !isRinging else { return }
         stop()
+    }
+
+    /// The app has left the screen — backgrounded, locked, or Control Center pulled
+    /// down.
+    func appDidLeaveForeground() {
+        stopPreviews()
     }
 
     func stop() {
         stopWork?.cancel()
         stopWork = nil
         isScrubbing = false
+        scrubTone = nil
         isRinging = false
-        player?.stop()
-        player = nil
-        playingToneID = nil
-        // The user's own volume comes back the moment the sound ends.
-        system.restore()
-        try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
+        silence()
     }
 
     // MARK: Engine
@@ -150,9 +168,29 @@ final class AlarmPlayer: ObservableObject {
         }
     }
 
+    /// Stops the sound and hands the volume back, without touching the scrub state.
+    private func silence() {
+        player?.stop()
+        player = nil
+        playingToneID = nil
+        // The user's own volume comes back the moment the sound ends.
+        system.restore()
+        try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
+    }
+
     private func scheduleStop(after seconds: TimeInterval) {
+        schedule(after: seconds) { [weak self] in self?.stop() }
+    }
+
+    /// Goes quiet if the slider sits still, but stays ready: moving it again brings
+    /// the sound back (see `scrub(to:)`).
+    private func scheduleIdleSilence() {
+        schedule(after: Self.scrubIdleTimeout) { [weak self] in self?.silence() }
+    }
+
+    private func schedule(after seconds: TimeInterval, _ body: @escaping () -> Void) {
         stopWork?.cancel()
-        let work = DispatchWorkItem { [weak self] in self?.stop() }
+        let work = DispatchWorkItem(block: body)
         stopWork = work
         DispatchQueue.main.asyncAfter(deadline: .now() + seconds, execute: work)
     }

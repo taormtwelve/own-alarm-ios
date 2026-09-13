@@ -32,6 +32,14 @@ struct EditAlarmView: View {
             }
             .background(Tokens.background)
             .scrollDismissesKeyboard(.interactively)
+            // Touching any other control ends a slider preview at once — including
+            // after iOS cancelled the drag without the slider reporting it.
+            .onChange(of: alarm.fadeInSeconds) { _ in player.stopPreviews() }
+            .onChange(of: alarm.overridesSilent) { _ in player.stopPreviews() }
+            .onChange(of: alarm.snoozeMinutes) { _ in player.stopPreviews() }
+            .onChange(of: alarm.louderAfterSnooze) { _ in player.stopPreviews() }
+            .onChange(of: alarm.repeatDays) { _ in player.stopPreviews() }
+            .onChange(of: time) { _ in player.stopPreviews() }
             .navigationTitle(isNew ? "New alarm" : alarm.task.isEmpty ? "Alarm" : alarm.task)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {

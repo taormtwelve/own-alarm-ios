@@ -131,4 +131,67 @@ final class AlarmPlayerTests: XCTestCase {
         player.stop()
         XCTAssertEqual(phone.level, 0.3, accuracy: 0.001, "Stopped: the user's volume is back")
     }
+
+    // MARK: Stopping previews
+
+    func testStopPreviewsEndsAPreview() throws {
+        player.preview(siren, at: 0.4)
+        try requirePlayback()
+
+        player.stopPreviews()
+
+        XCTAssertNil(player.playingToneID)
+    }
+
+    func testStopPreviewsEndsSliderFeedback() throws {
+        player.beginScrub(siren, at: 0.4)
+        try requirePlayback()
+
+        player.stopPreviews()   // e.g. the fade switch was touched
+
+        XCTAssertNil(player.playingToneID)
+        player.scrub(to: 0.9)
+        XCTAssertNil(player.playingToneID, "A stopped drag must not restart on a stray value change")
+    }
+
+    func testStopPreviewsLeavesARingingAlarmAlone() throws {
+        let alarm = Alarm(task: "Wake", hour: 7, minute: 0, repeatDays: [],
+                          volume: 0.4, fadeInSeconds: 0, overridesSilent: true, toneID: "siren")
+        player.startRinging(alarm, tone: siren)
+        try requirePlayback()
+
+        player.stopPreviews()
+
+        XCTAssertEqual(player.playingToneID, "siren")
+    }
+
+    // MARK: A drag iOS cancelled
+
+    func testASliderLeftAloneFallsSilentOnItsOwn() throws {
+        // iOS can cancel a drag (a scroll takes it over) without the slider ever
+        // reporting the finger lifting. The tone must not loop forever.
+        let phone = FakeVolume(0.3)
+        let player = AlarmPlayer(system: .fake(phone, defaults: UserDefaults(suiteName: UUID().uuidString)!))
+        defer { player.stop() }
+
+        player.beginScrub(siren, at: 0.8)
+        try XCTSkipIf(player.playingToneID == nil, "No audio output available on this machine")
+
+        let silent = NSPredicate { _, _ in player.playingToneID == nil }
+        expectation(for: silent, evaluatedWith: nil)
+        waitForExpectations(timeout: AlarmPlayer.scrubIdleTimeout + 2)
+        XCTAssertEqual(phone.level, 0.3, accuracy: 0.001, "The user's volume comes back")
+    }
+
+    func testMovingTheSliderAgainAfterASilenceBringsTheSoundBack() throws {
+        player.beginScrub(siren, at: 0.5)
+        try requirePlayback()
+        let silent = NSPredicate { _, _ in self.player.playingToneID == nil }
+        expectation(for: silent, evaluatedWith: nil)
+        waitForExpectations(timeout: AlarmPlayer.scrubIdleTimeout + 2)
+
+        player.scrub(to: 0.6)
+
+        XCTAssertEqual(player.playingToneID, "siren", "Still dragging: the sound resumes")
+    }
 }
