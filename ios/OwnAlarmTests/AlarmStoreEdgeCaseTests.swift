@@ -81,13 +81,14 @@ final class AlarmStoreEdgeCaseTests: XCTestCase {
             .appendingPathComponent("alarms.json")
         let suite = UserDefaults(suiteName: UUID().uuidString)!
 
+        // Values that differ from the defaults, or a lost save would still "pass".
         let first = AlarmStore(scheduler: spy, fileURL: url, defaults: suite)
         first.settings.showOnLockScreen = false
-        first.settings.timeFormat = .automatic
+        first.settings.timeFormat = .twelveHour
 
         let second = AlarmStore(scheduler: SpyScheduler(), fileURL: url, defaults: suite)
         XCTAssertFalse(second.settings.showOnLockScreen)
-        XCTAssertEqual(second.settings.timeFormat, .automatic)
+        XCTAssertEqual(second.settings.timeFormat, .twelveHour)
     }
 
     private func make(task: String = "Test", hour: Int = 7) -> Alarm {

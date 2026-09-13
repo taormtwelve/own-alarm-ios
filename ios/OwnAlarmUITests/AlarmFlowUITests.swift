@@ -46,8 +46,14 @@ final class AlarmFlowUITests: XCTestCase {
     // MARK: The clock setting
 
     func testSwitchingToTwelveHourChangesEveryTimeOnTheList() {
-        XCTAssertTrue(app.staticTexts["13:15"].waitForExistence(timeout: 10),
-                      "24-hour is the default, so an afternoon alarm reads 13:15")
+        // The default follows the test phone's region, so pin 24-hour first.
+        app.tabBars.buttons["Settings"].tap()
+        let twentyFour = app.buttons["24-hour"]
+        XCTAssertTrue(twentyFour.waitForExistence(timeout: 10))
+        twentyFour.tap()
+        app.tabBars.buttons["Alarms"].tap()
+        XCTAssertTrue(app.staticTexts["13:15"].waitForExistence(timeout: 5),
+                      "In 24-hour an afternoon alarm reads 13:15")
 
         app.tabBars.buttons["Settings"].tap()
         let amPm = app.buttons["AM / PM"]

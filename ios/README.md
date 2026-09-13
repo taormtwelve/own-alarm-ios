@@ -106,7 +106,8 @@ The mockups were fixed 390×844 frames. None of that survived into the code:
   trait and Switch Control keep working; day pills report selected state.
 - **Reduce Motion** removes the pulsing ring on the ringing screen.
 - **Light and dark** come from one token table (`Tokens`), resolved per trait, with
-  a Light / Dark / Auto override in Settings. Light is the default.
+  a Light / Dark / Auto override in Settings. Auto is the first-launch default, so
+  the app follows the phone — as does the clock, which starts on Match device.
 
 ---
 

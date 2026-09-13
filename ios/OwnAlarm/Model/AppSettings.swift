@@ -6,8 +6,8 @@ import Foundation
 import SwiftUI
 #endif
 
-/// How clocks are rendered app-wide. Defaults to 24-hour, per the approved design,
-/// but `.automatic` is offered so the app can follow the device region instead.
+/// How clocks are rendered app-wide. `.automatic` — the first-launch default —
+/// follows the phone's region; the other two pin 24-hour or AM / PM.
 enum TimeFormat: String, Codable, CaseIterable, Identifiable {
     case twentyFourHour
     case twelveHour
@@ -89,9 +89,11 @@ struct AlarmDefaults: Codable, Equatable {
     }
 }
 
+/// First launch follows the phone: its region decides 24-hour or AM/PM, and its
+/// light or dark mode decides the theme. Either can be pinned in Settings.
 struct AppSettings: Codable, Equatable {
-    var timeFormat: TimeFormat = .twentyFourHour
-    var theme: ThemePreference = .light
+    var timeFormat: TimeFormat = .automatic
+    var theme: ThemePreference = .automatic
     var showOnLockScreen: Bool = true
     var defaults = AlarmDefaults()
 }
