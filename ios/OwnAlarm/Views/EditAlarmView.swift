@@ -166,6 +166,13 @@ struct EditAlarmView: View {
             // Previews only: a ringing alarm's cover also makes this disappear.
             .onDisappear { player.stopPreviews() }
 
+            if player.previewMuted {
+                Text("Silent mode is on — previews are muted. Switch Silent off to hear the level.")
+                    .font(Typo.caption)
+                    .foregroundStyle(Tokens.textMuted)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+
             Toggle(isOn: Binding(
                 get: { alarm.fadeInSeconds > 0 },
                 set: { alarm.fadeInSeconds = $0 ? store.settings.defaults.fadeInWhenSwitchedOn : 0 }

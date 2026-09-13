@@ -69,9 +69,10 @@ Two paths, because iOS has two:
   ringer volume plays. Previews never touch media volume. A system sound's volume
   is fixed, so a slider moving to a new level swaps in a copy at that level,
   rendered from where the tone had got to — it carries on rather than restarting.
-  The Silent switch mutes alert sounds; when a preview is muted (it ends the
-  instant it starts) the same copy plays as media instead, at the media volume as
-  it is, with the level turned live on the player.
+  The Silent switch mutes alert sounds, previews included — chosen over a
+  media-volume stand-in, which could not match the real ring. A muted preview ends
+  the instant it starts; `AlarmPlayer.previewMuted` picks that up and the slider
+  screens show a line saying Silent is on.
 - **An alarm ringing in the app** — it has to loop, fade in and ring through Silent,
   which a system sound cannot, so it plays under `AVAudioSession(.playback)`.
   `SystemVolume` remembers the phone's media volume, sets it to the alarm's level,

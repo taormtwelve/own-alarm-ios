@@ -48,7 +48,12 @@ struct VolumeSlider: View {
     var onEditingChanged: (Bool) -> Void = { _ in }
 
     var body: some View {
-        Slider(value: $volume, in: 0...1, step: 0.01) {
+        // Whole percents, but not via `step:` — on iOS 26 a stepped slider draws a
+        // tick for every step, and a hundred of them read as a dotted line under
+        // the bar. The rounding happens in the binding instead.
+        Slider(value: Binding(get: { volume },
+                              set: { volume = ($0 * 100).rounded() / 100 }),
+               in: 0...1) {
             Text("Alarm volume")
         } onEditingChanged: { editing in
             onEditingChanged(editing)

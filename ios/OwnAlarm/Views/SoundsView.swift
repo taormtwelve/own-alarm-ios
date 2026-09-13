@@ -84,6 +84,13 @@ struct SoundsView: View {
             }
             .onChange(of: testLevel) { player.scrub(to: $0) }
 
+            if player.previewMuted {
+                Text("Silent mode is on — previews are muted. Switch Silent off to hear the level.")
+                    .font(Typo.caption)
+                    .foregroundStyle(Tokens.textMuted)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+
             HStack {
                 Text("Test level")
                     .font(Typo.caption)

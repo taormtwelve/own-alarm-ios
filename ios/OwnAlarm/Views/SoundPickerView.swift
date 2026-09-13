@@ -43,8 +43,16 @@ struct SoundPickerView: View {
             .navigationTitle("Sound & loudness")
             .navigationBarTitleDisplayMode(.inline)
             .safeAreaInset(edge: .bottom) {
-                PrimaryButton(title: "Hear it at \(alarm.volumePercent)%", systemImage: "speaker.wave.3.fill") {
-                    player.preview(store.tone(for: alarm), at: alarm.volume)
+                VStack(spacing: 8) {
+                    if player.previewMuted {
+                        Text("Silent mode is on — previews are muted. Switch Silent off to hear it.")
+                            .font(Typo.caption)
+                            .foregroundStyle(Tokens.textMuted)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                    PrimaryButton(title: "Hear it at \(alarm.volumePercent)%", systemImage: "speaker.wave.3.fill") {
+                        player.preview(store.tone(for: alarm), at: alarm.volume)
+                    }
                 }
                 .padding(.horizontal, Metrics.gutter)
                 .padding(.vertical, 12)
