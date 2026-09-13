@@ -74,11 +74,20 @@ final class AlarmStoreEdgeCaseTests: XCTestCase {
         XCTAssertEqual(store.settings.defaults.fadeInWhenSwitchedOn, 25)
     }
 
-    func testChangingTheLockScreenSettingPersists() {
-        store.settings.showOnLockScreen = false
-        store.settings.timeFormat = .automatic
-        XCTAssertFalse(store.settings.showOnLockScreen)
-        XCTAssertEqual(store.settings.timeFormat, .automatic)
+    func testLockScreenAndClockChoicesSurviveARelaunch() {
+        // Two stores over the same storage: the second one is the app reopening.
+        let url = URL(fileURLWithPath: NSTemporaryDirectory())
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+            .appendingPathComponent("alarms.json")
+        let suite = UserDefaults(suiteName: UUID().uuidString)!
+
+        let first = AlarmStore(scheduler: spy, fileURL: url, defaults: suite)
+        first.settings.showOnLockScreen = false
+        first.settings.timeFormat = .automatic
+
+        let second = AlarmStore(scheduler: SpyScheduler(), fileURL: url, defaults: suite)
+        XCTAssertFalse(second.settings.showOnLockScreen)
+        XCTAssertEqual(second.settings.timeFormat, .automatic)
     }
 
     private func make(task: String = "Test", hour: Int = 7) -> Alarm {

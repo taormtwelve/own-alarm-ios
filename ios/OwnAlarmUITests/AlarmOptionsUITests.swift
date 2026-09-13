@@ -90,17 +90,25 @@ final class AlarmOptionsUITests: XCTestCase {
     func testChoosingASoundUpdatesTheAlarm() {
         openMorningRun()
         let soundRow = app.buttons["soundRow"]
-        XCTAssertTrue(soundRow.waitForExistence(timeout: 5))
-        XCTAssertTrue(soundRow.label.contains("Siren"))
+        XCTAssertTrue(soundRow.waitForExistence(timeout: 5), "The editor should have a Sound row")
+        XCTAssertTrue(soundRow.label.contains("Siren"), "Sound row reads: \(soundRow.label)")
 
+        // Taps the row's centre — the empty gap between title and value — which is
+        // exactly where a row without a full-width hit area would ignore the tap.
         soundRow.tap()
-        let whisper = app.buttons["tone.whisper"]
-        XCTAssertTrue(whisper.waitForExistence(timeout: 5))
-        whisper.tap()
-        app.buttons["Done"].tap()
+        XCTAssertTrue(app.navigationBars["Sound & loudness"].waitForExistence(timeout: 5),
+                      "Tapping anywhere on the Sound row should open the sound picker")
 
-        XCTAssertTrue(soundRow.waitForExistence(timeout: 5))
-        XCTAssertTrue(soundRow.label.contains("Whisper"), "got \(soundRow.label)")
+        let whisper = app.buttons["tone.whisper"]
+        XCTAssertTrue(whisper.waitForExistence(timeout: 5), "The picker should list Whisper")
+        whisper.tap()
+
+        let done = app.buttons["Done"]
+        XCTAssertTrue(done.waitForExistence(timeout: 5), "The picker should have a Done button")
+        done.tap()
+
+        XCTAssertTrue(soundRow.waitForExistence(timeout: 5), "Should be back in the editor")
+        XCTAssertTrue(soundRow.label.contains("Whisper"), "Sound row reads: \(soundRow.label)")
     }
 
     // MARK: Leaving the app
@@ -130,6 +138,11 @@ final class AlarmOptionsUITests: XCTestCase {
     func testOverrideSilentIsHiddenWhereAlarmsAlwaysRingThroughSilent() {
         openMorningRun()
         app.swipeUp()
+
+        // Positive control first: the Fade in switch shares the card, so if it is
+        // here, the override's absence means something rather than a wrong screen.
+        let fade = app.switches.matching(NSPredicate(format: "label BEGINSWITH 'Fade in'")).firstMatch
+        XCTAssertTrue(fade.waitForExistence(timeout: 5), "Should be looking at the volume card")
 
         let override = app.switches.matching(NSPredicate(format: "label BEGINSWITH 'Override Silent'")).firstMatch
         if onIOS26 {

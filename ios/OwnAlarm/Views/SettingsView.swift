@@ -31,7 +31,7 @@ struct SettingsView: View {
                                 title: "Show on Lock Screen",
                                 subtitle: "Off, the alarm only takes over inside the app"
                             ) {
-                                Toggle("", isOn: $store.settings.showOnLockScreen)
+                                Toggle("Show on Lock Screen", isOn: $store.settings.showOnLockScreen)
                                     .toggleStyle(.alarm)
                                     .labelsHidden()
                             }
@@ -42,7 +42,7 @@ struct SettingsView: View {
                                     title: "Override Silent & Focus",
                                     subtitle: "Applied to new alarms"
                                 ) {
-                                    Toggle("", isOn: $store.settings.defaults.overridesSilent)
+                                    Toggle("Override Silent & Focus", isOn: $store.settings.defaults.overridesSilent)
                                         .toggleStyle(.alarm)
                                         .labelsHidden()
                                 }
@@ -52,7 +52,7 @@ struct SettingsView: View {
                                 title: "Louder after each snooze",
                                 subtitle: "Adds 10% every time"
                             ) {
-                                Toggle("", isOn: $store.settings.defaults.louderAfterSnooze)
+                                Toggle("Louder after each snooze", isOn: $store.settings.defaults.louderAfterSnooze)
                                     .toggleStyle(.alarm)
                                     .labelsHidden()
                             }

@@ -1,7 +1,12 @@
 import XCTest
 
 /// Drives the real app in the Simulator. Launched with `-uitesting`, so the store is
-/// throwaway and seeded with the starter alarms every run.
+/// throwaway and seeded with the four sample alarms every run.
+///
+/// Rule for this suite: never find something by text that also appears elsewhere on
+/// screen — a sheet does not hide the list behind it from the query, so a check like
+/// "85% exists" passes whether or not the sheet shows it. Use identifiers or labels
+/// that exist in exactly one place.
 final class AlarmFlowUITests: XCTestCase {
 
     private var app: XCUIApplication!
@@ -12,6 +17,10 @@ final class AlarmFlowUITests: XCTestCase {
         app = XCUIApplication()
         app.launchArguments = ["-uitesting"]
         app.launch()
+    }
+
+    private var rows: XCUIElementQuery {
+        app.descendants(matching: .any).matching(identifier: "alarmRow")
     }
 
     // MARK: Getting around
@@ -25,9 +34,7 @@ final class AlarmFlowUITests: XCTestCase {
     func testTheAlarmListShowsTheSeededAlarms() {
         XCTAssertTrue(app.staticTexts["Morning run"].waitForExistence(timeout: 10))
         XCTAssertTrue(app.staticTexts["Take medication"].exists)
-        XCTAssertGreaterThanOrEqual(
-            app.descendants(matching: .any).matching(identifier: "alarmRow").count, 3
-        )
+        XCTAssertEqual(rows.count, 4, "One row per sample alarm")
     }
 
     /// The whole premise: two alarms, two different volumes, both visible at a glance.
@@ -49,10 +56,12 @@ final class AlarmFlowUITests: XCTestCase {
 
         app.tabBars.buttons["Alarms"].tap()
 
-        let meridiem = app.staticTexts.containing(
-            NSPredicate(format: "label CONTAINS[c] 'PM' OR label CONTAINS[c] 'AM'")
-        )
-        XCTAssertGreaterThan(meridiem.count, 0, "Expected AM/PM times after switching")
+        // 13:15 becomes 1:15 PM. iOS puts a narrow no-break space before "PM", so the
+        // parts are matched rather than the exact string.
+        let afternoon = app.staticTexts.matching(
+            NSPredicate(format: "label BEGINSWITH '1:15' AND label CONTAINS[c] 'PM'"))
+        XCTAssertTrue(afternoon.firstMatch.waitForExistence(timeout: 5),
+                      "The 13:15 alarm should now read 1:15 PM")
         XCTAssertFalse(app.staticTexts["13:15"].exists, "13:15 should no longer appear")
     }
 
@@ -69,16 +78,18 @@ final class AlarmFlowUITests: XCTestCase {
         app.buttons["Save"].tap()
 
         XCTAssertTrue(app.staticTexts["Feed the cat"].waitForExistence(timeout: 5))
+        XCTAssertEqual(rows.count, 5, "The new alarm joins the four samples")
     }
 
     func testCancellingLeavesTheListAlone() {
-        let before = app.descendants(matching: .any).matching(identifier: "alarmRow").count
+        XCTAssertTrue(rows.firstMatch.waitForExistence(timeout: 10))
+        let before = rows.count
 
         app.buttons["New alarm"].tap()
         XCTAssertTrue(app.buttons["Cancel"].waitForExistence(timeout: 5))
         app.buttons["Cancel"].tap()
 
-        XCTAssertEqual(app.descendants(matching: .any).matching(identifier: "alarmRow").count, before)
+        XCTAssertEqual(rows.count, before)
     }
 
     // MARK: Saving
@@ -100,7 +111,6 @@ final class AlarmFlowUITests: XCTestCase {
     // MARK: Deleting
 
     func testSwipingLeftRevealsDeleteAndRemovesTheAlarm() {
-        let rows = app.descendants(matching: .any).matching(identifier: "alarmRow")
         XCTAssertTrue(rows.firstMatch.waitForExistence(timeout: 10))
         let before = rows.count
         XCTAssertEqual(before, 4, "One element per alarm — the four sample alarms")
@@ -124,7 +134,7 @@ final class AlarmFlowUITests: XCTestCase {
         app.launch()
 
         XCTAssertTrue(app.staticTexts["No alarms yet"].waitForExistence(timeout: 10))
-        XCTAssertEqual(app.descendants(matching: .any).matching(identifier: "alarmRow").count, 0)
+        XCTAssertEqual(rows.count, 0)
         XCTAssertTrue(app.buttons["Add an alarm"].exists)
     }
 
@@ -132,15 +142,16 @@ final class AlarmFlowUITests: XCTestCase {
 
     func testOpeningAnAlarmShowsItsVolume() {
         app.staticTexts["Morning run"].tap()
-        XCTAssertTrue(app.staticTexts["Volume for this task"].waitForExistence(timeout: 5))
-        XCTAssertTrue(app.staticTexts["85%"].exists)
+
+        // The readout, not any "85%": the list behind the sheet shows 85% too.
+        let readout = app.staticTexts["volumeReadout"]
+        XCTAssertTrue(readout.waitForExistence(timeout: 5), "The editor should open")
+        XCTAssertEqual(readout.label, "85%")
     }
 
     func testTheVolumeSliderIsReachableAndAdjustable() {
         app.staticTexts["Morning run"].tap()
 
-        // Query the readout by identifier: the list behind the sheet still carries
-        // its own "85%" label, so matching on text alone proves nothing.
         let readout = app.staticTexts["volumeReadout"]
         XCTAssertTrue(readout.waitForExistence(timeout: 5))
         let before = readout.label
@@ -157,6 +168,7 @@ final class AlarmFlowUITests: XCTestCase {
     func testSoundsTabListsTheBundledTones() {
         app.tabBars.buttons["Sounds"].tap()
 
+        // Exact names: the alarm list only ever shows them inside longer summaries.
         XCTAssertTrue(app.staticTexts["Siren"].waitForExistence(timeout: 10))
         XCTAssertTrue(app.staticTexts["Marimba"].exists)
         XCTAssertTrue(app.staticTexts["Soft bell"].exists)
@@ -169,7 +181,7 @@ final class AlarmFlowUITests: XCTestCase {
         app.tabBars.buttons["Settings"].tap()
 
         XCTAssertTrue(app.staticTexts["Time format"].waitForExistence(timeout: 10))
-        XCTAssertTrue(app.staticTexts["Show on Lock Screen"].exists)
+        XCTAssertTrue(app.switches["Show on Lock Screen"].exists)
         XCTAssertTrue(app.buttons["Dark"].exists)
         XCTAssertTrue(app.buttons["Light"].exists)
         // New-alarm defaults are learned from saved alarms, not set here.
@@ -179,14 +191,18 @@ final class AlarmFlowUITests: XCTestCase {
     func testTurningOffLockScreenAlertsSticksAcrossTabs() {
         app.tabBars.buttons["Settings"].tap()
 
-        let toggle = app.switches.firstMatch
+        // By name: "the first switch" could be an alarm's switch on the list tab.
+        let toggle = app.switches["Show on Lock Screen"]
         XCTAssertTrue(toggle.waitForExistence(timeout: 10))
-        let before = toggle.value as? String
+        XCTAssertEqual(toggle.value as? String, "1", "On by default")
+
         toggle.tap()
+        XCTAssertEqual(toggle.value as? String, "0")
 
         app.tabBars.buttons["Alarms"].tap()
         app.tabBars.buttons["Settings"].tap()
 
-        XCTAssertNotEqual(app.switches.firstMatch.value as? String, before)
+        XCTAssertTrue(toggle.waitForExistence(timeout: 5))
+        XCTAssertEqual(toggle.value as? String, "0", "The choice should stick")
     }
 }
