@@ -101,22 +101,40 @@ enum ScaledSound {
 
     /// A throwaway copy for a preview, rendered as the real alarm's is, in the
     /// temporary folder. The caller deletes it when done.
-    static func previewFile(for tone: AlarmTone, volume: Double) -> URL? {
+    ///
+    /// `offset` is where in the tone the copy begins, wrapping round at the end: a
+    /// slider moving to a new level renders the new copy from where the old one had
+    /// got to, so the tone carries on rather than starting again.
+    static func previewFile(for tone: AlarmTone, volume: Double, startingAt offset: TimeInterval = 0) -> URL? {
         let url = FileManager.default.temporaryDirectory
             .appendingPathComponent("ownalarm-preview-\(UUID().uuidString).caf")
-        return render(tone, percent: percent(volume), seconds: previewSeconds, to: url) ? url : nil
+        return render(tone, percent: percent(volume), seconds: previewSeconds, from: offset, to: url) ? url : nil
     }
 
-    private static func render(_ tone: AlarmTone, percent: Int, seconds: Double, to destination: URL) -> Bool {
+    /// How much of the tone the system can play, in seconds.
+    static func duration(of tone: AlarmTone) -> TimeInterval? {
+        guard let source = tone.fileURL, let input = try? AVAudioFile(forReading: source) else { return nil }
+        return min(Double(input.length) / input.processingFormat.sampleRate, maxSeconds)
+    }
+
+    private static func render(_ tone: AlarmTone, percent: Int, seconds: Double,
+                               from offset: TimeInterval = 0, to destination: URL) -> Bool {
         guard let source = tone.fileURL,
               let loudest = peak(of: tone),
-              let buffer = read(source, seconds: seconds) else { return false }
+              let whole = read(source, seconds: maxSeconds) else { return false }
 
+        let format = whole.format
+        let total = Int(whole.frameLength)
+        let count = min(total, Int(format.sampleRate * seconds))
+        guard total > 0, count > 0,
+              let buffer = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: AVAudioFrameCount(count)) else { return false }
+        buffer.frameLength = AVAudioFrameCount(count)
+
+        let start = Int((max(0, offset) * format.sampleRate).rounded()) % total
         let gain = copyGain(for: Double(percent) / 100, peak: loudest)
-        if let channels = buffer.floatChannelData {
-            for channel in 0..<Int(buffer.format.channelCount) {
-                let samples = channels[channel]
-                for i in 0..<Int(buffer.frameLength) { samples[i] *= gain }
+        if let from = whole.floatChannelData, let to = buffer.floatChannelData {
+            for channel in 0..<Int(format.channelCount) {
+                for i in 0..<count { to[channel][i] = from[channel][(start + i) % total] * gain }
             }
         }
 

@@ -66,8 +66,12 @@ Two paths, because iOS has two:
   real alarm rings with (`ScaledSound`) through System Sound Services, which plays
   at the Ringer & Alerts volume just as AlarmKit and notifications do. So a level
   sounds the same while you set it as when it rings, and 100% is the loudest your
-  ringer volume plays. Previews never touch media volume; the Silent switch mutes
-  them, as it does every alert sound.
+  ringer volume plays. Previews never touch media volume. A system sound's volume
+  is fixed, so a slider moving to a new level swaps in a copy at that level,
+  rendered from where the tone had got to — it carries on rather than restarting.
+  The Silent switch mutes alert sounds; when a preview is muted (it ends the
+  instant it starts) the same copy plays as media instead, at the media volume as
+  it is, with the level turned live on the player.
 - **An alarm ringing in the app** — it has to loop, fade in and ring through Silent,
   which a system sound cannot, so it plays under `AVAudioSession(.playback)`.
   `SystemVolume` remembers the phone's media volume, sets it to the alarm's level,
@@ -112,8 +116,8 @@ The mockups were fixed 390×844 frames. None of that survived into the code:
   trait and Switch Control keep working; day pills report selected state.
 - **Reduce Motion** removes the pulsing ring on the ringing screen.
 - **Light and dark** come from one token table (`Tokens`), resolved per trait, with
-  a Light / Dark / Auto override in Settings. Auto is the first-launch default, so
-  the app follows the phone — as does the clock, which starts on Match device.
+  a Light / Dark / Auto choice in Settings. Light is the first-launch default,
+  whatever mode the phone is in; the clock starts on Match device.
 
 ---
 

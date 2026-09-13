@@ -14,6 +14,10 @@ import Combine
 /// one ends the instant it starts — so when that happens, the same copy plays as
 /// media instead, audible through Silent at whatever media volume the user has.
 ///
+/// A system sound's volume is fixed, so a slider moving to a new level plays a new
+/// copy — rendered from the point the old one had reached, so the tone carries on
+/// at the new level instead of starting over. As media the level turns live.
+///
 /// An alarm ringing inside the app has to loop until stopped, fade in and ring
 /// through Silent, which a system sound cannot. It plays under
 /// `AVAudioSession(.playback)` instead, with `SystemVolume` setting the phone's
@@ -33,10 +37,10 @@ final class AlarmPlayer: ObservableObject {
     /// reporting that it was let go, and the tone must not loop forever after that.
     static let scrubIdleTimeout: TimeInterval = 2
 
-    /// How often slider feedback moves to a new level. A system sound's volume is
-    /// fixed, so each move restarts the tone from a freshly rendered copy: the sound
-    /// follows the finger in steps rather than smoothly.
-    static let scrubStepInterval: TimeInterval = 0.3
+    /// How often slider feedback moves to a new level. Each move swaps in a copy at
+    /// the new level, continuing from where the tone was; this keeps a fast drag from
+    /// swapping every frame.
+    static let scrubStepInterval: TimeInterval = 0.2
 
     /// How often the phone buzzes while a vibrating alarm rings.
     static let vibrationInterval: TimeInterval = 1.6
@@ -45,10 +49,17 @@ final class AlarmPlayer: ObservableObject {
     /// The system sound playing a preview, and the throwaway copy it plays.
     private var previewSound: SystemSoundID?
     private var previewFile: URL?
+    private var previewTone: AlarmTone?
     /// The same copy played as media, when alert sounds are muted.
     private var previewPlayer: AVAudioPlayer?
     private var previewActive: Bool { previewSound != nil || previewPlayer != nil }
+    /// True once a muted preview has moved to media playback.
+    var previewPlaysAsMedia: Bool { previewPlayer != nil }
     private var lastPreviewStart = Date.distantPast
+    /// Where in the tone the current copy began, and how long the copy runs before
+    /// it loops — together they say where the tone is now.
+    private var previewOffset: TimeInterval = 0
+    private var previewPeriod: TimeInterval = 0
     private var pendingStep: DispatchWorkItem?
     private var stopWork: DispatchWorkItem?
     private var isScrubbing = false
@@ -116,19 +127,33 @@ final class AlarmPlayer: ObservableObject {
         scheduleStop(after: 0.8)
     }
 
-    /// Moves the preview to the slider's level — now, or once the last move is
-    /// `scrubStepInterval` old, so a fast drag does not restart the sound every frame.
+    /// Moves the preview to the slider's level without starting the tone over. As
+    /// media the level simply turns; as a system sound a copy at the new level takes
+    /// over from where the tone is — now, or once the last swap is
+    /// `scrubStepInterval` old, so a fast drag does not swap every frame.
     private func step(now: Bool = false) {
         pendingStep?.cancel()
         pendingStep = nil
         guard let tone = scrubTone, previewActive,
               ScaledSound.percent(scrubLevel) != previewPercent else { return }
+        if let media = previewPlayer {
+            media.volume = Float(ScaledSound.phoneGain(scrubLevel))
+            previewPercent = ScaledSound.percent(scrubLevel)
+            return
+        }
         let wait = Self.scrubStepInterval - Date().timeIntervalSince(lastPreviewStart)
         if now || wait <= 0 {
-            playPreview(tone, at: scrubLevel)
+            playPreview(tone, at: scrubLevel, from: previewPosition)
         } else {
             pendingStep = after(wait) { [weak self] in self?.step(now: true) }
         }
+    }
+
+    /// How far into the tone the preview is right now.
+    private var previewPosition: TimeInterval {
+        guard previewPeriod > 0 else { return 0 }
+        return (previewOffset + Date().timeIntervalSince(lastPreviewStart))
+            .truncatingRemainder(dividingBy: previewPeriod)
     }
 
     // MARK: Ringing
@@ -173,25 +198,36 @@ final class AlarmPlayer: ObservableObject {
 
     // MARK: Previews
 
-    private func playPreview(_ tone: AlarmTone, at volume: Double) {
-        endPreview()
-        guard let file = ScaledSound.previewFile(for: tone, volume: volume) else {
+    /// Starts the tone at `volume` — from its beginning, or from `offset` when a copy
+    /// at a new level is taking over from the one playing.
+    private func playPreview(_ tone: AlarmTone, at volume: Double, from offset: TimeInterval = 0) {
+        guard let file = ScaledSound.previewFile(for: tone, volume: volume, startingAt: offset) else {
             print("AlarmPlayer could not render a preview of \(tone.id)")
+            endPreview()
             playingToneID = nil
             return
         }
         var id: SystemSoundID = 0
         guard AudioServicesCreateSystemSoundID(file as CFURL, &id) == kAudioServicesNoError else {
             try? FileManager.default.removeItem(at: file)
+            endPreview()
             playingToneID = nil
             return
         }
+        // The old copy stops only now the new one is ready, so the gap is as short
+        // as it can be.
+        let continuing = previewActive && offset > 0
+        endPreview()
         previewSound = id
         previewFile = file
+        previewTone = tone
         previewPercent = ScaledSound.percent(volume)
+        previewOffset = offset
+        previewPeriod = min(ScaledSound.duration(of: tone) ?? ScaledSound.previewSeconds,
+                            ScaledSound.previewSeconds)
         lastPreviewStart = Date()
         playingToneID = tone.id
-        loop(id, first: true)
+        loop(id, first: !continuing)
     }
 
     /// A system sound plays once. While its preview is still the current one — an
@@ -212,23 +248,32 @@ final class AlarmPlayer: ObservableObject {
         }
     }
 
-    /// The preview's copy through `.playback`, which plays through Silent, mixed
-    /// with other audio and at the media volume as it is — never changed. If even
-    /// this cannot start, the preview stays as it was: silent, but still steppable.
-    /// Internal so tests can stand in for a muted alert sound.
+    /// The preview through `.playback`, which plays through Silent, mixed with other
+    /// audio and at the media volume as it is — never changed. The copy is rendered
+    /// at 100% and the player's own volume set to the level, so a drag turns it live.
+    /// If even this cannot start, the preview stays as it was: silent, but still
+    /// steppable. Internal so tests can stand in for a muted alert sound.
     func playPreviewAsMedia() {
-        guard let file = previewFile else { return }
+        guard let tone = previewTone, let percent = previewPercent,
+              let file = ScaledSound.previewFile(for: tone, volume: 1, startingAt: previewPosition) else { return }
         do {
             let session = AVAudioSession.sharedInstance()
             try session.setCategory(.playback, mode: .default, options: [.mixWithOthers])
             try session.setActive(true)
             let media = try AVAudioPlayer(contentsOf: file)
             media.numberOfLoops = -1
-            guard media.play() else { return }
+            media.volume = Float(ScaledSound.phoneGain(Double(percent) / 100))
+            guard media.play() else {
+                try? FileManager.default.removeItem(at: file)
+                return
+            }
             if let id = previewSound { AudioServicesDisposeSystemSoundID(id) }
             previewSound = nil
+            if let old = previewFile { try? FileManager.default.removeItem(at: old) }
+            previewFile = file
             previewPlayer = media
         } catch {
+            try? FileManager.default.removeItem(at: file)
             print("AlarmPlayer could not play the preview as media: \(error.localizedDescription)")
         }
     }
@@ -244,7 +289,10 @@ final class AlarmPlayer: ObservableObject {
         if let file = previewFile { try? FileManager.default.removeItem(at: file) }
         previewSound = nil
         previewFile = nil
+        previewTone = nil
         previewPercent = nil
+        previewOffset = 0
+        previewPeriod = 0
     }
 
     // MARK: Ringing engine

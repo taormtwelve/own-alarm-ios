@@ -111,11 +111,12 @@ extension AlarmDefaults {
     }
 }
 
-/// First launch follows the phone: its region decides 24-hour or AM/PM, and its
-/// light or dark mode decides the theme. Either can be pinned in Settings.
+/// First launch: the clock follows the phone's region (24-hour or AM/PM), and the
+/// theme is Light, whatever mode the phone is in — the user asked for it fixed.
+/// Both can be changed in Settings.
 struct AppSettings: Codable, Equatable {
     var timeFormat: TimeFormat = .automatic
-    var theme: ThemePreference = .automatic
+    var theme: ThemePreference = .light
     var showOnLockScreen: Bool = true
     var defaults = AlarmDefaults()
 }

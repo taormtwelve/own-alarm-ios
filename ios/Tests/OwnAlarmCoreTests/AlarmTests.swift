@@ -241,10 +241,10 @@ final class AlarmTests: XCTestCase {
         XCTAssertEqual(defaults.snoozeWhenSwitchedOn, 4)
     }
 
-    func testFirstLaunchFollowsThePhone() {
+    func testFirstLaunchClockFollowsThePhoneAndThemeIsLight() {
         let settings = AppSettings()
         XCTAssertEqual(settings.timeFormat, .automatic, "Clock follows the phone's region")
-        XCTAssertEqual(settings.theme, .automatic, "Theme follows the phone's light or dark mode")
+        XCTAssertEqual(settings.theme, .light, "Light whatever mode the phone is in")
         XCTAssertTrue(settings.showOnLockScreen)
     }
 

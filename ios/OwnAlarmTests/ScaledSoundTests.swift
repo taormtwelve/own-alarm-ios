@@ -43,6 +43,41 @@ final class ScaledSoundTests: XCTestCase {
                        "What you hear while choosing a level is what rings")
     }
 
+    func testAContinuedPreviewPicksUpWhereTheToneWas() throws {
+        // A slider moving to a new level renders the new copy from where the old
+        // one had got to: its first sample is the straight copy's sample at that time.
+        let straight = try XCTUnwrap(ScaledSound.previewFile(for: siren, volume: 0.5))
+        let continued = try XCTUnwrap(ScaledSound.previewFile(for: siren, volume: 0.5, startingAt: 1.0))
+        defer { for url in [straight, continued] { try? FileManager.default.removeItem(at: url) } }
+
+        let whole = try samples(of: straight)
+        let resumed = try samples(of: continued)
+        let rate = try AVAudioFile(forReading: straight).processingFormat.sampleRate
+        let at = Int(rate * 1.0)
+
+        XCTAssertEqual(resumed.count, whole.count, "Same length: it still loops on the same period")
+        for i in 0..<200 {
+            XCTAssertEqual(resumed[i], whole[at + i], accuracy: 0.0002, "sample \(i)")
+        }
+    }
+
+    func testAContinuedPreviewWrapsRoundTheTone() throws {
+        let duration = try XCTUnwrap(ScaledSound.duration(of: siren))
+        let straight = try XCTUnwrap(ScaledSound.previewFile(for: siren, volume: 0.5))
+        // Half a second short of the end: the copy has to wrap back to the start.
+        let continued = try XCTUnwrap(ScaledSound.previewFile(for: siren, volume: 0.5, startingAt: duration - 0.5))
+        defer { for url in [straight, continued] { try? FileManager.default.removeItem(at: url) } }
+
+        let whole = try samples(of: straight)
+        let resumed = try samples(of: continued)
+        let rate = try AVAudioFile(forReading: straight).processingFormat.sampleRate
+        let beforeWrap = Int((rate * 0.5).rounded())
+
+        for i in 0..<200 {
+            XCTAssertEqual(resumed[beforeWrap + i], whole[i], accuracy: 0.0002, "sample \(i) after the wrap")
+        }
+    }
+
     func testAPreviewOfALongToneRendersOnlyItsStart() throws {
         let bell = AlarmTone.tone(id: "soft-bell", in: AlarmTone.bundled)   // 8 seconds
         let preview = try XCTUnwrap(ScaledSound.previewFile(for: bell, volume: 0.5))
@@ -121,6 +156,16 @@ final class ScaledSoundTests: XCTestCase {
     }
 
     // MARK: Helpers
+
+    /// The first channel, sample by sample.
+    private func samples(of url: URL) throws -> [Float] {
+        let file = try AVAudioFile(forReading: url)
+        let buffer = try XCTUnwrap(AVAudioPCMBuffer(pcmFormat: file.processingFormat,
+                                                    frameCapacity: AVAudioFrameCount(file.length)))
+        try file.read(into: buffer)
+        let channel = try XCTUnwrap(buffer.floatChannelData)[0]
+        return Array(UnsafeBufferPointer(start: channel, count: Int(buffer.frameLength)))
+    }
 
     private func peak(of url: URL) throws -> Float {
         let file = try AVAudioFile(forReading: url)
