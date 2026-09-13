@@ -4,13 +4,23 @@ import XCTest
 /// A pretend phone volume, so the bookkeeping can be tested without a device.
 final class FakeVolume {
     var level: Float
+    /// Loses the next change, as iOS can when two arrive back to back.
+    var dropsNextChange = false
     init(_ level: Float) { self.level = level }
+
+    func apply(_ newLevel: Float) {
+        if dropsNextChange {
+            dropsNextChange = false
+            return
+        }
+        level = newLevel
+    }
 }
 
 @MainActor
 extension SystemVolume {
     static func fake(_ volume: FakeVolume, defaults: UserDefaults) -> SystemVolume {
-        SystemVolume(defaults: defaults, read: { volume.level }, write: { volume.level = $0 })
+        SystemVolume(defaults: defaults, read: { volume.level }, write: { volume.apply($0) })
     }
 }
 
@@ -45,6 +55,20 @@ final class SystemVolumeTests: XCTestCase {
 
         XCTAssertEqual(phone.level, 0.3, accuracy: 0.001,
                        "The user's level, not one the app set along the way")
+    }
+
+    func testARestoreThePhoneDroppedIsAppliedAgain() {
+        let phone = FakeVolume(0.3)
+        let volume = SystemVolume.fake(phone, defaults: freshDefaults())
+        volume.takeOver(at: 0.9)
+
+        phone.dropsNextChange = true
+        volume.restore()
+        XCTAssertEqual(phone.level, 0.9, accuracy: 0.001, "The first try was lost")
+
+        let back = NSPredicate { _, _ in abs(phone.level - 0.3) < 0.001 }
+        expectation(for: back, evaluatedWith: nil)
+        waitForExpectations(timeout: 2)
     }
 
     func testRestoringWhenNotInChargeLeavesTheVolumeAlone() {

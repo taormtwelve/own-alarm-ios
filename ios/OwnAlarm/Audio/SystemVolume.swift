@@ -60,6 +60,13 @@ final class SystemVolume {
         guard let original else { return }
         set(original)
         defaults.removeObject(forKey: Self.originalKey)
+        // iOS can drop a change that lands straight after another — the last drag
+        // step, then this. Check it took, and try once more if not.
+        Task { @MainActor [weak self] in
+            try? await Task.sleep(nanoseconds: 400_000_000)
+            guard let self, self.original == nil, abs(self.current - original) > 0.005 else { return }
+            self.set(original)
+        }
     }
 
     /// At launch: if the app was closed while it had the volume, put it back.
@@ -75,6 +82,13 @@ final class SystemVolume {
             return
         }
         guard let slider = activeView.subviews.lazy.compactMap({ $0 as? UISlider }).first else { return }
+        // Each screen has its own volume view, and one that was off screen can still
+        // show an old level. If it already shows this one, the assignment counts as
+        // no change and iOS never hears it — so step off it first.
+        if abs(slider.value - clamped) < 0.001 {
+            slider.value = clamped > 0.5 ? clamped - 0.01 : clamped + 0.01
+            slider.sendActions(for: .valueChanged)
+        }
         slider.value = clamped
         slider.sendActions(for: .valueChanged)
     }
@@ -86,8 +100,9 @@ final class SystemVolume {
         hosted.append(Weak(view: view))
     }
 
-    /// A full-screen cover takes its presenter out of the window, so the most
-    /// recently attached view that is still on screen wins.
+    /// A cover takes its presenter out of the window and a sheet sits over it, so
+    /// each hosts its own view, and the most recently attached one still on screen
+    /// wins.
     private var activeView: MPVolumeView {
         hosted.compactMap(\.view).last { $0.window != nil } ?? detached
     }

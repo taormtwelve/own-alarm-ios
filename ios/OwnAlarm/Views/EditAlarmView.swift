@@ -55,6 +55,9 @@ struct EditAlarmView: View {
                 SoundPickerView(alarm: $alarm)
             }
         }
+        // A sheet sits over the root's volume view; with its own, the drag can set
+        // the phone's volume and put it back, as the Sounds tab does.
+        .hostsSystemVolume()
     }
 
     // MARK: Time

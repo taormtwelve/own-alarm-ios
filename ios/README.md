@@ -128,7 +128,11 @@ The mockups were fixed 390×844 frames. None of that survived into the code:
 - **Ringing on the Lock Screen needs iOS 26.** There, alarms go through AlarmKit:
   full screen, sounding until stopped, through Silent and Focus. AlarmKit has no
   volume parameter, so each task's level is baked into a scaled copy of its sound
-  (`ScaledSound`) and plays relative to the phone's alarm level. On iOS 16–25 the
+  (`ScaledSound`), which iOS plays at the Ringer & Alerts level. Apps cannot read
+  that level, so the copy is scaled to match the preview at an assumed ringer of
+  50% — `copy = phoneGain(level) / phoneGain(ringer)`, with iOS's volume modelled
+  as equal decibel steps over 40 dB — and never pushed past full scale. With the
+  ringer well below 50%, the real alarm is still quieter. On iOS 16–25 the
   app falls back to notifications, which play once (30 s at most) and stay silent
   in Silent mode without the Critical Alerts entitlement.
 - **Vibration is the app's to set only while it rings in the app.** There the
