@@ -141,7 +141,7 @@ final class AlarmPlayer: ObservableObject {
         guard let tone = scrubTone, previewActive,
               ScaledSound.percent(scrubLevel) != previewPercent else { return }
         if let media = previewPlayer {
-            media.volume = Float(ScaledSound.phoneGain(scrubLevel))
+            media.volume = Float(ScaledSound.levelGain(scrubLevel))
             previewPercent = ScaledSound.percent(scrubLevel)
             return
         }
@@ -222,6 +222,13 @@ final class AlarmPlayer: ObservableObject {
         // as it can be.
         let continuing = previewActive && offset > 0
         endPreview()
+        // Alert sounds follow the Ringer & Alerts volume only while the app has no
+        // active audio session; one left active — by the in-app alarm, or a Silent
+        // mode preview — would pull them onto media volume and make a preview
+        // louder than the real ring. Release it before every preview.
+        let session = AVAudioSession.sharedInstance()
+        try? session.setCategory(.ambient)
+        try? session.setActive(false, options: .notifyOthersOnDeactivation)
         previewSound = id
         previewFile = file
         previewTone = tone
@@ -266,7 +273,7 @@ final class AlarmPlayer: ObservableObject {
             try session.setActive(true)
             let media = try AVAudioPlayer(contentsOf: file)
             media.numberOfLoops = -1
-            media.volume = Float(ScaledSound.phoneGain(Double(percent) / 100))
+            media.volume = Float(ScaledSound.levelGain(Double(percent) / 100))
             guard media.play() else {
                 try? FileManager.default.removeItem(at: file)
                 return

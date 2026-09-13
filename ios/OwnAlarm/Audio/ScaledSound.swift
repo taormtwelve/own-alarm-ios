@@ -29,10 +29,11 @@ extension AlarmTone {
 /// the same volume (`AlarmPlayer`), so what you hear while choosing a level is how
 /// the alarm will ring.
 ///
-/// 100% is the tone as loud as it can go without clipping. Lower levels step down in
-/// equal decibels, the way the phone's own volume buttons do:
+/// 100% is the Ringer & Alerts volume itself — the tone as loud as it can go without
+/// clipping. Every other level is that share of it: a 50% task is half as loud as
+/// the ringer plays, a 30% task 30%.
 ///
-///     copy = phoneGain(level) × ceiling / peak
+///     copy = level × ceiling / peak
 enum ScaledSound {
     /// System alert sounds are capped at 30 seconds.
     static let maxSeconds: Double = 29
@@ -41,16 +42,12 @@ enum ScaledSound {
     /// and a short render keeps a drag responsive.
     static let previewSeconds: Double = 6
 
-    /// The span from 100% down to 0%, in decibels, stepped evenly — an approximation
-    /// of iOS's own volume taper, so the slider feels like the volume buttons.
-    static let volumeRangeDB: Double = 40
-
     /// The loudest a sample may be at 100% — just under full scale.
     static let ceiling: Float = 0.98
 
     /// Bumped whenever the formula changes, so copies rendered by an older one are
     /// thrown away rather than served from the cache.
-    private static let formulaVersion = 3
+    private static let formulaVersion = 4
     private static let formulaKey = "ownalarm.scaledSound.formula"
     private static var checkedFormula = false
 
@@ -65,17 +62,16 @@ enum ScaledSound {
 
     // MARK: The formula
 
-    /// How loud a level plays relative to 100%, as an amplitude factor: 1 at 100%,
-    /// silent at 0.
-    static func phoneGain(_ level: Double) -> Double {
-        guard level > 0 else { return 0 }
-        return pow(10, (min(1, level) - 1) * volumeRangeDB / 20)
+    /// How loud a level plays relative to 100%, as an amplitude factor: the level
+    /// itself — 1 at 100%, 0.5 at 50%, silent at 0.
+    static func levelGain(_ level: Double) -> Double {
+        min(1, max(0, level))
     }
 
     /// The factor the copy's samples are multiplied by, for a task at `level` and a
     /// tone whose loudest sample is `peak`.
     static func copyGain(for level: Double, peak: Float) -> Float {
-        let gain = Float(phoneGain(level))
+        let gain = Float(levelGain(level))
         guard peak > 0 else { return gain }
         return gain * ceiling / peak
     }

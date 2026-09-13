@@ -139,8 +139,8 @@ The mockups were fixed 390×844 frames. None of that survived into the code:
   full screen, sounding until stopped, through Silent and Focus. AlarmKit has no
   volume parameter, so each task's level is baked into a scaled copy of its sound
   (`ScaledSound`), which iOS plays at the Ringer & Alerts volume. 100% is the tone
-  as loud as it can go without clipping; lower levels step down in equal decibels
-  over 40 dB. Previews play the same copy at the same volume, so they match — and
+  as loud as it can go without clipping; every other level is that share of it
+  (50% is half as loud). Previews play the same copy at the same volume, so they match — and
   how loud 100% is depends on the ringer volume, which apps cannot set. On iOS 16–25 the
   app falls back to notifications, which play once (30 s at most) and stay silent
   in Silent mode without the Critical Alerts entitlement.

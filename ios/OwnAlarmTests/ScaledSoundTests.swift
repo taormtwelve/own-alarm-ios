@@ -125,13 +125,13 @@ final class ScaledSoundTests: XCTestCase {
         }
     }
 
-    func testEachStepDownIsTheSameNumberOfDecibels() {
-        // Like the volume buttons: every 10% lower is the same step quieter.
-        let step = pow(10, 0.1 * ScaledSound.volumeRangeDB / 20)
-        for level in stride(from: 0.2, through: 1.0, by: 0.1) {
-            let ratio = ScaledSound.copyGain(for: level, peak: 0.5)
-                / ScaledSound.copyGain(for: level - 0.1, peak: 0.5)
-            XCTAssertEqual(Double(ratio), step, accuracy: 0.001, "\(Int((level * 100).rounded()))%")
+    func testEveryLevelIsThatShareOfFullVolume() {
+        // 50% is half as loud as 100%, 30% is 30% — for preview and real ring alike,
+        // since both play the same copy at the Ringer & Alerts volume.
+        let full = ScaledSound.copyGain(for: 1, peak: 0.5)
+        for level in stride(from: 0.0, through: 1.0, by: 0.05) {
+            XCTAssertEqual(ScaledSound.copyGain(for: level, peak: 0.5), full * Float(level),
+                           accuracy: 0.0001, "\(Int((level * 100).rounded()))%")
         }
     }
 
