@@ -60,9 +60,11 @@ final class AlarmKitSchedulerTests: XCTestCase {
         UserDefaults(suiteName: UUID().uuidString)!
     }
 
-    private func sample() -> Alarm {
-        Alarm(task: "Wake", hour: 6, minute: 30, repeatDays: [],
-              volume: 0.6, fadeInSeconds: 0, overridesSilent: true, toneID: "siren")
+    // Both AlarmKit and the app declare `Alarm`. Inside the app its own wins, but a
+    // test file imports both, so the app's has to be named in full.
+    private func sample() -> OwnAlarm.Alarm {
+        OwnAlarm.Alarm(task: "Wake", hour: 6, minute: 30, repeatDays: [],
+                       volume: 0.6, fadeInSeconds: 0, overridesSilent: true, toneID: "siren")
     }
 }
 #endif
