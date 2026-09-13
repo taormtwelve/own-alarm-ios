@@ -29,7 +29,7 @@
       "x": 490,
       "y": -220,
       "w": 390,
-      "text": "Editing an alarm.\nNew alarms open on the current time, carrying the volume, sound, snooze and fade-in of the last alarm saved. Saving switches an alarm on. Fade-in starts off; switched on, it ramps over 10 s. The editor scrolls — this artboard is taller to show all of it."
+      "text": "Editing an alarm.\nNew alarms open on the current time, carrying the volume, sound, snooze, fade-in and vibration of the last alarm saved. Saving switches an alarm on. Fade-in starts off; switched on, it ramps over 10 s. Vibrate buzzes while the alarm rings in the app; on the Lock Screen, iOS's Haptics setting decides. The editor scrolls — this artboard is taller to show all of it."
     },
     {
       "id": "sheet-note",
