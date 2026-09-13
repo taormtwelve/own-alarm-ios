@@ -34,12 +34,15 @@ struct OwnAlarmApp: App {
                 .environmentObject(store)
                 .environmentObject(player)
                 .task {
+                    // Closed last time while it had the phone's volume? Put it back.
+                    SystemVolume.shared.recoverIfNeeded()
                     AlarmScheduler.registerCategories()
                     notifications.store = store
                     UNUserNotificationCenter.current().delegate = notifications
 
+                    let args = ProcessInfo.processInfo.arguments
                     // UI tests run without system permission prompts over the app.
-                    if !ProcessInfo.processInfo.arguments.contains("-uitesting") {
+                    if !args.contains("-uitesting") {
                         _ = await AlarmScheduler.requestAuthorization()
                         #if canImport(AlarmKit)
                         if #available(iOS 26.0, *) {
@@ -49,6 +52,11 @@ struct OwnAlarmApp: App {
                         #endif
                     }
                     store.rescheduleAll()
+
+                    // UI tests of the ringing screen open it for the first alarm.
+                    if args.contains("-uitesting"), args.contains("-ringFirstAlarm") {
+                        store.ringing = store.sortedAlarms.first
+                    }
                 }
                 .onChange(of: scenePhase) { phase in
                     // Leaving the app silences previews immediately; a ringing
@@ -71,12 +79,15 @@ struct OwnAlarmApp: App {
 final class NotificationRouter: NSObject, UNUserNotificationCenterDelegate {
     weak var store: AlarmStore?
 
-    /// Fired while the app is open: show our own ringing screen rather than a banner.
+    /// Fired while the app is open. An alarm shows our own ringing screen rather than
+    /// a banner; anything else — the "snoozed" notice — shows as a normal banner.
     func userNotificationCenter(
         _ center: UNUserNotificationCenter,
         willPresent notification: UNNotification
     ) async -> UNNotificationPresentationOptions {
-        await route(notification.request.content, action: nil)
+        let content = notification.request.content
+        guard content.userInfo["alarmID"] != nil else { return [.banner, .list] }
+        await route(content, action: nil)
         return []
     }
 

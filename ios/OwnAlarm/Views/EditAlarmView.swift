@@ -136,7 +136,7 @@ struct EditAlarmView: View {
                         .font(Typo.sectionLabel)
                         .tracking(1.1)
                         .foregroundStyle(Tokens.accentLabel)
-                    Text("Relative to your iPhone's volume")
+                    Text("100% is your iPhone's maximum — your volume comes back after")
                         .font(Typo.caption)
                         .foregroundStyle(Tokens.textMuted)
                         .fixedSize(horizontal: false, vertical: true)

@@ -129,3 +129,20 @@ enum TimeText {
         return "in \(hours)h \(minutes)m"
     }
 }
+
+// MARK: - Storage
+
+extension AppSettings {
+    /// Where `AlarmStore` keeps the settings. Also read by code that runs without a
+    /// store, such as the Lock Screen snooze.
+    static let storageKey = "ownalarm.settings"
+
+    /// The saved settings, or the defaults if nothing has been saved yet.
+    static func stored(in defaults: UserDefaults = .standard) -> AppSettings {
+        guard let data = defaults.data(forKey: storageKey),
+              let settings = try? JSONDecoder().decode(AppSettings.self, from: data) else {
+            return AppSettings()
+        }
+        return settings
+    }
+}

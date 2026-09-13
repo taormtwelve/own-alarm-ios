@@ -252,6 +252,32 @@ final class AlarmTests: XCTestCase {
         XCTAssertEqual(ThemePreference.allCases.map(\.label), ["Light", "Dark", "Auto"])
     }
 
+    // MARK: Snooze notice
+
+    func testSnoozeNoticeSaysWhenTheAlarmReturns() {
+        let now = reference().addingTimeInterval(30 * 60)   // 08:30
+        let body = SnoozeText.body(minutes: 9, now: now, format: .twentyFourHour,
+                                   locale: Locale(identifier: "en_GB"), calendar: calendar)
+        XCTAssertTrue(body.contains("08:39"), "got \(body)")
+        XCTAssertTrue(body.contains("9 min"), "got \(body)")
+    }
+
+    func testSnoozeNoticeNamesTheTask() {
+        XCTAssertEqual(SnoozeText.title(task: "Morning run"), "Morning run · snoozed")
+        XCTAssertEqual(SnoozeText.title(task: ""), "Alarm snoozed")
+    }
+
+    func testStoredSettingsFallBackToDefaultsThenReadWhatWasSaved() throws {
+        let suite = try XCTUnwrap(UserDefaults(suiteName: UUID().uuidString))
+        XCTAssertEqual(AppSettings.stored(in: suite), AppSettings(), "Nothing saved yet")
+
+        var saved = AppSettings()
+        saved.timeFormat = .twelveHour
+        suite.set(try JSONEncoder().encode(saved), forKey: AppSettings.storageKey)
+
+        XCTAssertEqual(AppSettings.stored(in: suite).timeFormat, .twelveHour)
+    }
+
     // MARK: Weekdays
 
     func testLocaleOrderedCoversEveryDayExactlyOnce() {

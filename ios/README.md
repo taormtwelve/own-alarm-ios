@@ -62,12 +62,14 @@ Two paths, because iOS has two:
   rides on the notification:
   `UNNotificationSound.criticalSoundNamed(_:withAudioVolume:)`. That API is the whole
   reason the feature is possible; it is also why Critical Alerts matters.
-- **App in the foreground** — `AlarmPlayer` plays at the alarm's percentage of the
-  iPhone's own volume, under `AVAudioSession(.playback)` (which ignores the Silent
-  switch), and ramps with `setVolume(_:fadeDuration:)`. It never changes the
-  system volume — iOS has one media volume shared by every app — and previews mix
-  with other apps' audio rather than lowering it. Every volume slider plays its tone
-  live while dragged, and all previews stop the moment the app leaves the screen.
+- **App in the foreground** — levels are shares of the iPhone's maximum. While a
+  slider is dragged, a tone auditioned, or an alarm rings in the app, `SystemVolume`
+  remembers the phone's volume, sets it to the chosen level, and puts it back the
+  moment the sound ends (and on the next launch, if the app was closed mid-way).
+  `AlarmPlayer` runs at full scale on top under `AVAudioSession(.playback)`, which
+  ignores the Silent switch, and ramps with `setVolume(_:fadeDuration:)`. There is
+  no public API for system volume: this uses the slider inside `MPVolumeView`, the
+  route alarm apps rely on — it works today, but Apple could close it.
 
 ### Screens → files
 

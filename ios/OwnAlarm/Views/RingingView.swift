@@ -43,6 +43,8 @@ struct RingingView: View {
             if !reduceMotion { pulse = true }
         }
         .onDisappear { player.stop() }
+        // A full-screen cover leaves the root's volume view off screen; host our own.
+        .hostsSystemVolume()
     }
 
     // MARK: Pieces
@@ -130,22 +132,30 @@ struct RingingView: View {
     }
 
     private var actions: some View {
-        VStack(spacing: 14) {
-            PrimaryButton(title: "Stop", systemImage: "stop.fill") {
-                player.stop()
-                store.stop(alarm)
-            }
-
+        VStack(spacing: 20) {
             if alarm.snoozeMinutes > 0 {
-                SecondaryButton(
-                    title: "Snooze \(alarm.snoozeMinutes) min",
-                    detail: alarm.louderAfterSnooze
-                        ? "returns at \(min(100, alarm.volumePercent + 10))%"
-                        : nil
-                ) {
+                // Deliberately small: easy to reach, but not what a half-awake thumb
+                // lands on by accident.
+                Button {
                     player.stop()
                     store.snooze(alarm)
+                } label: {
+                    Label("Snooze \(alarm.snoozeMinutes) min", systemImage: "zzz")
+                        .font(Typo.body(15, relativeTo: .subheadline, weight: .semibold))
+                        .foregroundStyle(Tokens.textSecondary)
+                        .padding(.horizontal, 22)
+                        .frame(minHeight: Metrics.minTapTarget)
+                        .background(Tokens.card)
+                        .clipShape(Capsule())
+                        .overlay(Capsule().strokeBorder(Tokens.border, lineWidth: 1))
                 }
+                .buttonStyle(.plain)
+            }
+
+            // Stop is a slide, so a stray tap cannot silence an alarm.
+            SlideToStop {
+                player.stop()
+                store.stop(alarm)
             }
         }
     }

@@ -1,20 +1,21 @@
 name: Build OwnAlarm
 
-# Runs only for prod. Merging dev into prod is the deploy, and nothing is released
-# unless every test passed. Pushes to dev build nothing.
+# Runs for dev and prod. Every push builds the .ipa and runs every test; only a push
+# to prod goes on to publish a release, and only if every test passed. Merging dev
+# into prod is the deploy.
 #
-# Three jobs run side by side, so a deploy waits only for the slowest of them:
+# Three jobs run side by side, so a run waits only for the slowest of them:
 #   core-tests  (Linux)  model tests, no Apple SDK needed
 #   ipa         (macOS)  the Release build of the unsigned .ipa
 #   app-tests   (macOS)  unit and UI tests in the Simulator
-# `release` publishes the .ipa once all three have passed.
+# `release` (prod only) publishes the .ipa once all three have passed.
 #
 # The .ipa is UNSIGNED — you sign it on your own machine with your own Apple ID (see
 # ios/BUILD.md), which keeps certificates out of this repository.
 
 on:
   push:
-    branches: [prod]
+    branches: [dev, prod]
   # Manual runs from the Actions tab, on any branch, when you want one.
   workflow_dispatch:
 

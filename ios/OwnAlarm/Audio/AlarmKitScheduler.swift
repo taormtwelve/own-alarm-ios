@@ -245,6 +245,12 @@ final class AlarmKitScheduler: AlarmScheduling {
                 : nil,
             schedule: .relative(.init(time: time, repeats: repeats)),
             attributes: attributes,
+            // The app's own code behind the Lock Screen buttons: Snooze starts the
+            // countdown and posts the "snoozed" notice; Stop clears it.
+            stopIntent: StopAlarmIntent(alarmID: alarm.id),
+            secondaryIntent: snoozes
+                ? SnoozeAlarmIntent(alarmID: alarm.id, task: title, minutes: alarm.snoozeMinutes)
+                : nil,
             sound: sound
         )
     }

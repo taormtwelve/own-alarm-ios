@@ -45,11 +45,11 @@ there is no `.xcodeproj` in the repo and why you never needed a Mac to create on
 When it finishes, download **OwnAlarm-unsigned-ipa** from the run's Artifacts
 section. Unzip it; inside is `OwnAlarm-unsigned.ipa`.
 
-**Branches:** only `prod` builds. Work on `dev` freely — pushes there run nothing.
-Merging `dev` into `prod` is the deploy: it runs the tests and the build and, only
-if every test passes, publishes a **GitHub Release** with the `.ipa` attached. Take
-the app from the repo's **Releases** page; release files do not expire. To build a
-branch without deploying, use **Run workflow** on the Actions tab.
+**Branches:** every push to `dev` builds the `.ipa` and runs all the tests — the
+`.ipa` is under that run's Artifacts. Merging `dev` into `prod` is the deploy: the
+same pipeline and then, only if every test passes, a **GitHub Release** with the
+`.ipa` attached. Take tested builds from the repo's **Releases** page; release files
+do not expire, artifacts go after 30 days.
 
 ## Step 3 — Install it on your iPhone
 

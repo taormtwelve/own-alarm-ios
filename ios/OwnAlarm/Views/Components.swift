@@ -218,27 +218,77 @@ struct PrimaryButton: View {
     }
 }
 
-struct SecondaryButton: View {
-    let title: String
-    var detail: String?
+// MARK: - Slide to stop
+
+/// A track you drag across to stop an alarm — a stray tap cannot trigger it. It only
+/// counts once the knob is most of the way across; short of that it springs back.
+/// VoiceOver cannot drag, so to VoiceOver it is one button that stops on activate.
+struct SlideToStop: View {
     let action: () -> Void
 
+    @State private var offset: CGFloat = 0
+    @State private var completed = false
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    private let knob: CGFloat = 56
+    private let inset: CGFloat = 4
+
     var body: some View {
-        Button(action: action) {
-            VStack(spacing: 2) {
-                Text(title)
+        GeometryReader { geo in
+            let travel = max(0, geo.size.width - knob - inset * 2)
+            let progress = travel > 0 ? offset / travel : 0
+
+            ZStack(alignment: .leading) {
+                Capsule()
+                    .fill(Tokens.accentSurface)
+                    .overlay(Capsule().strokeBorder(Tokens.accentBorder, lineWidth: 1))
+
+                Text("Slide to stop")
                     .font(Typo.body(16, relativeTo: .headline, weight: .semibold))
-                    .foregroundStyle(Tokens.textSecondary)
-                if let detail {
-                    Text(detail)
-                        .font(Typo.caption)
-                        .foregroundStyle(Tokens.textMuted)
-                }
+                    .foregroundStyle(Tokens.accentText)
+                    .frame(maxWidth: .infinity)
+                    .opacity(1 - Double(progress))
+
+                Circle()
+                    .fill(Tokens.accentFill)
+                    .overlay(
+                        Image(systemName: "stop.fill")
+                            .font(.system(size: 18, weight: .bold))
+                            .foregroundStyle(Tokens.inkOnAccent)
+                    )
+                    .frame(width: knob, height: knob)
+                    .offset(x: inset + offset)
+                    .gesture(
+                        DragGesture()
+                            .onChanged { value in
+                                guard !completed else { return }
+                                offset = min(max(0, value.translation.width), travel)
+                            }
+                            .onEnded { _ in
+                                guard !completed else { return }
+                                if Self.completes(offset: offset, travel: travel) {
+                                    completed = true
+                                    offset = travel
+                                    action()
+                                } else {
+                                    withAnimation(reduceMotion ? nil : .spring(response: 0.35, dampingFraction: 0.8)) {
+                                        offset = 0
+                                    }
+                                }
+                            }
+                    )
             }
-            .frame(maxWidth: .infinity)
-            .frame(minHeight: 56)
-            .cardSurface(radius: 20)
         }
-        .buttonStyle(.plain)
+        .frame(height: knob + inset * 2)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("Stop alarm")
+        .accessibilityAddTraits(.isButton)
+        .accessibilityAction { action() }
+        .accessibilityIdentifier("slideToStop")
+    }
+
+    /// Past 85% of the way across counts as a deliberate stop.
+    static func completes(offset: CGFloat, travel: CGFloat) -> Bool {
+        travel > 0 && offset >= travel * 0.85
     }
 }

@@ -17,7 +17,7 @@ final class AlarmStore: ObservableObject {
     private let fileURL: URL
     private let defaults: UserDefaults
     private let seed: [Alarm]
-    private let settingsKey = "ownalarm.settings"
+    private let settingsKey = AppSettings.storageKey
 
     /// `fileURL` and `defaults` are injectable so tests — and UI-test launches —
     /// get their own storage instead of trampling the real app's data.

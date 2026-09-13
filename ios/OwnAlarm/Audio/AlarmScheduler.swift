@@ -37,15 +37,14 @@ enum AlarmResponse: Equatable {
     }
 }
 
-/// Schedules alarms as notifications.
+/// Schedules alarms as notifications — the route on iOS 16–25, and the fallback on
+/// iOS 26 when AlarmKit cannot be used.
 ///
-/// This is where per-task volume becomes real. iOS will not let a terminated app
-/// wake up and play audio, so the level has to ride on the notification itself —
-/// `UNNotificationSound.criticalSoundNamed(_:withAudioVolume:)` is the only API that
-/// plays at a volume the app chooses rather than the one the ringer is set to, and
-/// it is also what lets the sound through Silent and Focus. It requires the
-/// **Critical Alerts** entitlement from Apple; without it we fall back to a normal
-/// notification sound, which obeys the ringer and the mute switch.
+/// A terminated app cannot wake up and play audio, so the level has to ride on the
+/// notification itself. `UNNotificationSound.criticalSoundNamed(_:withAudioVolume:)`
+/// plays at a volume the app chooses and through Silent, but needs Apple's Critical
+/// Alerts entitlement; otherwise the task's level is baked into the sound file
+/// (`ScaledSound`) and plays relative to the ringer.
 final class AlarmScheduler: AlarmScheduling {
     private let center = UNUserNotificationCenter.current()
 
@@ -135,6 +134,8 @@ final class AlarmScheduler: AlarmScheduling {
             trigger: trigger
         )
         center.add(request)
+        // Say so straight away, rather than leaving a silent gap until it returns.
+        SnoozeNotice.post(alarmID: alarm.id, task: alarm.task, minutes: minutes)
     }
 
     // MARK: Content
@@ -185,6 +186,7 @@ final class AlarmScheduler: AlarmScheduling {
         center.removeDeliveredNotifications(
             withIdentifiers: [identifier(for: alarm, suffix: "snooze")]
         )
+        SnoozeNotice.clear(alarmID: alarm.id)
     }
 
     func cancelAll() {
