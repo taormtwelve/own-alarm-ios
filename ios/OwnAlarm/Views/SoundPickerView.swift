@@ -62,8 +62,6 @@ struct SoundPickerView: View {
             // Previews only: a ringing alarm's cover also makes this disappear.
             .onDisappear { player.stopPreviews() }
         }
-        // A sheet sits over the root's volume view; host our own.
-        .hostsSystemVolume()
     }
 }
 

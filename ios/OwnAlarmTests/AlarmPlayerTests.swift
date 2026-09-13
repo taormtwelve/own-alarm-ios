@@ -1,8 +1,9 @@
 import XCTest
 @testable import OwnAlarm
 
-/// In-app playback: previews, live slider feedback, and what happens when the app
-/// leaves the screen.
+/// In-app playback: previews and live slider feedback — the real alarm's own sound
+/// at the Ringer & Alerts volume — the alarm ringing in the app, and what happens
+/// when the app leaves the screen.
 @MainActor
 final class AlarmPlayerTests: XCTestCase {
 
@@ -82,35 +83,53 @@ final class AlarmPlayerTests: XCTestCase {
         XCTAssertNil(player.playingToneID)
     }
 
+    // MARK: Following the slider
+
+    func testSliderFeedbackMovesToWhereTheFingerSettles() throws {
+        player.beginScrub(siren, at: 0.8)
+        try requirePlayback()
+        XCTAssertEqual(player.previewPercent, 80)
+
+        player.scrub(to: 0.5)   // straight after: waits for the next step
+
+        let moved = NSPredicate { _, _ in self.player.previewPercent == 50 }
+        expectation(for: moved, evaluatedWith: nil)
+        waitForExpectations(timeout: AlarmPlayer.scrubStepInterval + 1)
+    }
+
+    func testLettingGoPlaysTheLevelItLetGoAt() throws {
+        player.beginScrub(siren, at: 0.8)
+        try requirePlayback()
+        player.scrub(to: 0.4)   // too soon for a step of its own
+
+        player.endScrub()
+
+        XCTAssertEqual(player.previewPercent, 40, "The last level heard is the one chosen")
+    }
+
     // MARK: The phone's volume
 
-    func testDraggingMovesThePhoneVolumeAndLettingGoPutsItBack() throws {
+    func testDraggingNeverTouchesThePhonesMediaVolume() throws {
         let phone = FakeVolume(0.3)
         let player = AlarmPlayer(system: .fake(phone, defaults: UserDefaults(suiteName: UUID().uuidString)!))
         defer { player.stop() }
 
         player.beginScrub(siren, at: 0.8)
         try XCTSkipIf(player.playingToneID == nil, "No audio output available on this machine")
-        XCTAssertEqual(phone.level, 0.8, accuracy: 0.001, "The phone follows the slider")
-
         player.scrub(to: 0.5)
-        XCTAssertEqual(phone.level, 0.5, accuracy: 0.001)
-
         player.endScrub()
-        let restored = NSPredicate { _, _ in abs(phone.level - 0.3) < 0.001 }
-        expectation(for: restored, evaluatedWith: nil)
-        waitForExpectations(timeout: 3)
+
+        XCTAssertEqual(phone.level, 0.3, accuracy: 0.001,
+                       "Previews play at the Ringer & Alerts volume, as the real alarm does")
     }
 
-    func testLeavingTheAppPutsThePhoneVolumeBack() throws {
+    func testAPreviewLeavesThePhonesMediaVolumeAlone() throws {
         let phone = FakeVolume(0.3)
         let player = AlarmPlayer(system: .fake(phone, defaults: UserDefaults(suiteName: UUID().uuidString)!))
         defer { player.stop() }
 
         player.preview(siren, at: 0.9)
         try XCTSkipIf(player.playingToneID == nil, "No audio output available on this machine")
-
-        player.appDidLeaveForeground()
 
         XCTAssertEqual(phone.level, 0.3, accuracy: 0.001)
     }
@@ -181,7 +200,7 @@ final class AlarmPlayerTests: XCTestCase {
         let silent = NSPredicate { _, _ in player.playingToneID == nil }
         expectation(for: silent, evaluatedWith: nil)
         waitForExpectations(timeout: AlarmPlayer.scrubIdleTimeout + 2)
-        XCTAssertEqual(phone.level, 0.3, accuracy: 0.001, "The user's volume comes back")
+        XCTAssertEqual(phone.level, 0.3, accuracy: 0.001, "Media volume never moved")
     }
 
     func testMovingTheSliderAgainAfterASilenceBringsTheSoundBack() throws {

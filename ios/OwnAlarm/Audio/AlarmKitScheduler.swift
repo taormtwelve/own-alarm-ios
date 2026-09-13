@@ -25,8 +25,8 @@ import ActivityKit
 /// the user's permission.
 ///
 /// AlarmKit has no volume parameter, so the task's level is baked into the sound
-/// file (`ScaledSound`), scaled so that at the ringer's level it sounds like the
-/// preview did.
+/// file (`ScaledSound`) — the same sound previews play, at the same Ringer & Alerts
+/// volume, so it rings as it sounded when the level was set.
 ///
 /// Snooze is an AlarmKit countdown, drawn live on the Lock Screen and in the Dynamic
 /// Island by the OwnAlarmWidgets extension. AlarmKit also reveals when an alarm has

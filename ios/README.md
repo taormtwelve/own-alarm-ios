@@ -62,14 +62,19 @@ Two paths, because iOS has two:
   rides on the notification:
   `UNNotificationSound.criticalSoundNamed(_:withAudioVolume:)`. That API is the whole
   reason the feature is possible; it is also why Critical Alerts matters.
-- **App in the foreground** — levels are shares of the iPhone's maximum. While a
-  slider is dragged, a tone auditioned, or an alarm rings in the app, `SystemVolume`
-  remembers the phone's volume, sets it to the chosen level, and puts it back the
-  moment the sound ends (and on the next launch, if the app was closed mid-way).
-  `AlarmPlayer` runs at full scale on top under `AVAudioSession(.playback)`, which
-  ignores the Silent switch, and ramps with `setVolume(_:fadeDuration:)`. There is
-  no public API for system volume: this uses the slider inside `MPVolumeView`, the
-  route alarm apps rely on — it works today, but Apple could close it.
+- **Previews** — dragging a slider or auditioning a tone plays the very copy the
+  real alarm rings with (`ScaledSound`) through System Sound Services, which plays
+  at the Ringer & Alerts volume just as AlarmKit and notifications do. So a level
+  sounds the same while you set it as when it rings, and 100% is the loudest your
+  ringer volume plays. Previews never touch media volume; the Silent switch mutes
+  them, as it does every alert sound.
+- **An alarm ringing in the app** — it has to loop, fade in and ring through Silent,
+  which a system sound cannot, so it plays under `AVAudioSession(.playback)`.
+  `SystemVolume` remembers the phone's media volume, sets it to the alarm's level,
+  and puts it back when it stops (and on the next launch, if the app was closed
+  mid-way). There is no public API for system volume: this uses the slider inside
+  `MPVolumeView`, the route alarm apps rely on — it works today, but Apple could
+  close it.
 
 ### Screens → files
 
@@ -96,11 +101,12 @@ The mockups were fixed 390×844 frames. None of that survived into the code:
   rather than truncating.
 - **Layouts that give way.** `ViewThatFits` moves the alarm row's toggle below the
   content at large text sizes, drops the ringing dial to a plain stack on short
-  screens, and stacks the sound-source tiles when they need the width. Repeat-day
-  pills use an adaptive `LazyVGrid`, so they reflow instead of overflowing.
+  screens, and stacks the sound-source tiles when they need the width. The seven
+  repeat-day pills always share one line, narrowing on a small phone.
 - **iPad and landscape.** Content is capped at a readable 620pt and centred
   (`.readableWidth()`) rather than stretched across a 12.9" display.
-- **Hit targets.** Nothing tappable is under 44pt.
+- **Hit targets.** Nothing tappable is under 44pt tall. The day pills trade width
+  for keeping the week on one line: on the narrowest phones they are about 35pt wide.
 - **VoiceOver.** The volume meter is one element reporting "85 percent", not eleven
   anonymous bars; the slider keeps the real `Slider` underneath so the adjustable
   trait and Switch Control keep working; day pills report selected state.
@@ -128,11 +134,10 @@ The mockups were fixed 390×844 frames. None of that survived into the code:
 - **Ringing on the Lock Screen needs iOS 26.** There, alarms go through AlarmKit:
   full screen, sounding until stopped, through Silent and Focus. AlarmKit has no
   volume parameter, so each task's level is baked into a scaled copy of its sound
-  (`ScaledSound`), which iOS plays at the Ringer & Alerts level. Apps cannot read
-  that level, so the copy is scaled to match the preview at an assumed ringer of
-  50% — `copy = phoneGain(level) / phoneGain(ringer)`, with iOS's volume modelled
-  as equal decibel steps over 40 dB — and never pushed past full scale. With the
-  ringer well below 50%, the real alarm is still quieter. On iOS 16–25 the
+  (`ScaledSound`), which iOS plays at the Ringer & Alerts volume. 100% is the tone
+  as loud as it can go without clipping; lower levels step down in equal decibels
+  over 40 dB. Previews play the same copy at the same volume, so they match — and
+  how loud 100% is depends on the ringer volume, which apps cannot set. On iOS 16–25 the
   app falls back to notifications, which play once (30 s at most) and stay silent
   in Silent mode without the Critical Alerts entitlement.
 - **Vibration is the app's to set only while it rings in the app.** There the

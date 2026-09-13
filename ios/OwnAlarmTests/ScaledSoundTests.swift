@@ -2,8 +2,9 @@ import XCTest
 import AVFoundation
 @testable import OwnAlarm
 
-/// The system plays alarm sounds at its own level, so per-task volume survives only
-/// if the scaled copies really are quieter by the right amount.
+/// The system plays alarm sounds at the Ringer & Alerts volume with no volume
+/// parameter, so per-task volume survives only if the scaled copies are right — and
+/// a preview only tells the truth if it plays the same sound.
 final class ScaledSoundTests: XCTestCase {
 
     private let siren = AlarmTone.tone(id: "siren", in: AlarmTone.bundled)
@@ -22,8 +23,7 @@ final class ScaledSoundTests: XCTestCase {
         let name = try XCTUnwrap(ScaledSound.fileName(for: siren, volume: 0.3))
         let scaled = try peak(of: ScaledSound.directory.appendingPathComponent(name))
 
-        let gain = ScaledSound.copyGain(for: 0.3, peak: original)
-        XCTAssertEqual(scaled, original * gain, accuracy: 0.02)
+        XCTAssertEqual(scaled, original * ScaledSound.copyGain(for: 0.3, peak: original), accuracy: 0.002)
     }
 
     func testFullVolumeIsAsLoudAsTheFileCanGoWithoutClipping() throws {
@@ -33,52 +33,25 @@ final class ScaledSoundTests: XCTestCase {
         XCTAssertEqual(scaled, ScaledSound.ceiling, accuracy: 0.02)
     }
 
-    // MARK: The formula
+    func testAPreviewIsTheRealAlarmsOwnSound() throws {
+        let name = try XCTUnwrap(ScaledSound.fileName(for: siren, volume: 0.42))
+        let real = try peak(of: ScaledSound.directory.appendingPathComponent(name))
+        let preview = try XCTUnwrap(ScaledSound.previewFile(for: siren, volume: 0.42))
+        defer { try? FileManager.default.removeItem(at: preview) }
 
-    /// A tone quiet enough that the no-clipping cap never gets in the way — even a
-    /// 30% ringer at 100% needs 100× gain, and this leaves room for 980×.
-    private let roomy: Float = 0.001
-
-    func testAtTheRingerLevelTheCopyIsTheToneItself() {
-        let gain = ScaledSound.copyGain(for: ScaledSound.assumedRinger, peak: roomy)
-        XCTAssertEqual(gain, 1, accuracy: 0.0001,
-                       "Preview and real alarm then play the same file at the same phone level")
+        XCTAssertEqual(try peak(of: preview), real, accuracy: 0.0005,
+                       "What you hear while choosing a level is what rings")
     }
 
-    func testTheRealAlarmLandsWhereThePreviewDoes() {
-        for ringer in [0.3, 0.5, 0.8] {
-            for level in stride(from: 0.05, through: 1.0, by: 0.05) {
-                let real = Double(ScaledSound.copyGain(for: level, peak: roomy, ringer: ringer))
-                    * ScaledSound.phoneGain(ringer)
-                XCTAssertEqual(real, ScaledSound.phoneGain(level), accuracy: 0.0001,
-                               "level \(level), ringer \(ringer)")
-            }
-        }
-    }
+    func testAPreviewOfALongToneRendersOnlyItsStart() throws {
+        let bell = AlarmTone.tone(id: "soft-bell", in: AlarmTone.bundled)   // 8 seconds
+        let preview = try XCTUnwrap(ScaledSound.previewFile(for: bell, volume: 0.5))
+        defer { try? FileManager.default.removeItem(at: preview) }
 
-    func testALouderTaskAlwaysGetsALouderCopy() {
-        let gains = stride(from: 0.05, through: 1.0, by: 0.05)
-            .map { ScaledSound.copyGain(for: $0, peak: roomy) }
-        XCTAssertEqual(gains, gains.sorted())
-        XCTAssertEqual(Set(gains).count, gains.count)
-    }
-
-    func testTheRealAlarmIsNeverQuieterThanTheOldStraightScaling() {
-        for level in stride(from: 0.01, through: 1.0, by: 0.01) {
-            XCTAssertGreaterThanOrEqual(ScaledSound.copyGain(for: level, peak: roomy), Float(level),
-                                        "\(Int(level * 100))%")
-        }
-    }
-
-    func testABoostNeverClips() {
-        for peak: Float in [0.3, 0.7, 1.0] {
-            XCTAssertLessThanOrEqual(ScaledSound.copyGain(for: 1, peak: peak) * peak,
-                                     ScaledSound.ceiling + 0.0001)
-        }
-    }
-
-    func testZeroIsSilent() {
-        XCTAssertEqual(ScaledSound.copyGain(for: 0, peak: roomy), 0)
+        let file = try AVAudioFile(forReading: preview)
+        XCTAssertLessThanOrEqual(Double(file.length) / file.fileFormat.sampleRate,
+                                 ScaledSound.previewSeconds + 0.05,
+                                 "A short render keeps dragging responsive")
     }
 
     func testEachLevelGetsItsOwnFile() throws {
@@ -108,6 +81,45 @@ final class ScaledSoundTests: XCTestCase {
         XCTAssertTrue(exists(bellCopy), "Other tones keep theirs")
     }
 
+    // MARK: The formula
+
+    func testFullVolumeIsTheLoudestTheToneCanGo() {
+        for peak: Float in [0.2, 0.62, 1.0] {
+            XCTAssertEqual(ScaledSound.copyGain(for: 1, peak: peak) * peak, ScaledSound.ceiling,
+                           accuracy: 0.0001, "peak \(peak)")
+        }
+    }
+
+    func testEachStepDownIsTheSameNumberOfDecibels() {
+        // Like the volume buttons: every 10% lower is the same step quieter.
+        let step = pow(10, 0.1 * ScaledSound.volumeRangeDB / 20)
+        for level in stride(from: 0.2, through: 1.0, by: 0.1) {
+            let ratio = ScaledSound.copyGain(for: level, peak: 0.5)
+                / ScaledSound.copyGain(for: level - 0.1, peak: 0.5)
+            XCTAssertEqual(Double(ratio), step, accuracy: 0.001, "\(Int((level * 100).rounded()))%")
+        }
+    }
+
+    func testALouderTaskAlwaysGetsALouderCopy() {
+        let gains = stride(from: 0.05, through: 1.0, by: 0.05)
+            .map { ScaledSound.copyGain(for: $0, peak: 0.5) }
+        XCTAssertEqual(gains, gains.sorted())
+        XCTAssertEqual(Set(gains).count, gains.count)
+    }
+
+    func testNoLevelEverClips() {
+        for peak: Float in [0.3, 0.7, 1.0] {
+            for level in stride(from: 0.0, through: 1.0, by: 0.05) {
+                XCTAssertLessThanOrEqual(ScaledSound.copyGain(for: level, peak: peak) * peak,
+                                         ScaledSound.ceiling + 0.0001)
+            }
+        }
+    }
+
+    func testZeroIsSilent() {
+        XCTAssertEqual(ScaledSound.copyGain(for: 0, peak: 0.5), 0)
+    }
+
     // MARK: Helpers
 
     private func peak(of url: URL) throws -> Float {
@@ -115,7 +127,7 @@ final class ScaledSoundTests: XCTestCase {
         let buffer = try XCTUnwrap(AVAudioPCMBuffer(pcmFormat: file.processingFormat,
                                                     frameCapacity: AVAudioFrameCount(file.length)))
         try file.read(into: buffer)
-        // Every channel, as the render does: its cap is set by the loudest one.
+        // Every channel, as the render does: its scale is set by the loudest one.
         let channels = try XCTUnwrap(buffer.floatChannelData)
         var loudest: Float = 0
         for channel in 0..<Int(file.processingFormat.channelCount) {

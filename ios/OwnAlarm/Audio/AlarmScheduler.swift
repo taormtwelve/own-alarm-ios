@@ -190,7 +190,7 @@ final class AlarmScheduler: AlarmScheduling {
         } else {
             // A normal notification sound follows the ringer — as does a critical one
             // iOS was not approved to play — so the task's level is baked into the
-            // file instead, scaled to sound like the preview (see `ScaledSound`).
+            // file instead — the same sound previews play (see `ScaledSound`).
             let name = ScaledSound.fileName(for: tone, volume: alarm.volume) ?? tone.fileName
             content.sound = UNNotificationSound(named: UNNotificationSoundName(rawValue: name))
         }

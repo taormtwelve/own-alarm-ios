@@ -55,9 +55,6 @@ struct EditAlarmView: View {
                 SoundPickerView(alarm: $alarm)
             }
         }
-        // A sheet sits over the root's volume view; with its own, the drag can set
-        // the phone's volume and put it back, as the Sounds tab does.
-        .hostsSystemVolume()
     }
 
     // MARK: Time
@@ -100,12 +97,9 @@ struct EditAlarmView: View {
                     .foregroundStyle(Tokens.textSecondary)
                     .frame(maxWidth: .infinity, alignment: .leading)
 
-                // Adaptive columns let the day pills reflow instead of overflowing
-                // on a narrow phone or at large text sizes.
-                LazyVGrid(
-                    columns: [GridItem(.adaptive(minimum: Metrics.minTapTarget), spacing: 8)],
-                    spacing: 8
-                ) {
+                // The whole week on one line on every phone: the pills share the
+                // width equally and narrow on a small screen rather than wrapping.
+                HStack(spacing: 6) {
                     ForEach(Weekday.localeOrdered) { day in
                         DayPill(day: day, isOn: alarm.repeatDays.contains(day)) {
                             if alarm.repeatDays.contains(day) {
@@ -147,7 +141,7 @@ struct EditAlarmView: View {
                         .font(Typo.sectionLabel)
                         .tracking(1.1)
                         .foregroundStyle(Tokens.accentLabel)
-                    Text("100% is your iPhone's maximum — your volume comes back after")
+                    Text("100% is as loud as your Ringer & Alerts volume allows — you hear exactly how it will ring")
                         .font(Typo.caption)
                         .foregroundStyle(Tokens.textMuted)
                         .fixedSize(horizontal: false, vertical: true)
@@ -342,7 +336,10 @@ private struct DayPill: View {
             Text(day.narrowSymbol)
                 .font(Typo.body(14, relativeTo: .subheadline, weight: .semibold))
                 .foregroundStyle(isOn ? Tokens.inkOnAccent : Tokens.textSecondary)
-                .frame(minWidth: Metrics.minTapTarget, minHeight: Metrics.minTapTarget)
+                .lineLimit(1)
+                .minimumScaleFactor(0.6)
+                // Full height for the finger; width is a seventh of the row.
+                .frame(maxWidth: .infinity, minHeight: Metrics.minTapTarget)
                 .background(isOn ? Tokens.accentFill : Tokens.track)
                 .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
         }

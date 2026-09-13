@@ -3,13 +3,13 @@ import MediaPlayer
 import SwiftUI
 import UIKit
 
-/// The iPhone's own volume — what "100%" means while the app plays a chosen level.
+/// The iPhone's media volume, while an alarm rings inside the app.
 ///
-/// While a volume slider is dragged, a tone is auditioned, or an alarm rings inside
-/// the app, the phone's volume is set to the chosen level, so what you hear is that
-/// share of the device's maximum. The volume you had is remembered first and put
-/// back the moment the sound ends. It is also saved to disk, so if the app is closed
-/// mid-way the next launch puts it back instead of leaving the phone at 90%.
+/// An in-app alarm plays as media, so the phone's volume is set to the alarm's level
+/// for as long as it rings. The volume you had is remembered first and put back the
+/// moment it stops. It is also saved to disk, so if the app is closed mid-way the
+/// next launch puts it back instead of leaving the phone at 90%. Previews do not come
+/// here: they play at the Ringer & Alerts volume, like the real alarm (`AlarmPlayer`).
 ///
 /// iOS has no public setter for system volume. The slider inside `MPVolumeView` is
 /// the route alarm apps rely on in practice — undocumented, so treat it as something
