@@ -21,6 +21,22 @@ extension AlarmScheduling {
     }
 }
 
+/// What the user did with an alarm notification: tapped it, or one of its buttons.
+enum AlarmResponse: Equatable {
+    case open, snooze, stop
+
+    init(actionIdentifier: String?) {
+        switch actionIdentifier {
+        case AlarmScheduler.snoozeAction:
+            self = .snooze
+        case AlarmScheduler.stopAction, UNNotificationDismissActionIdentifier:
+            self = .stop
+        default:
+            self = .open
+        }
+    }
+}
+
 /// Schedules alarms as notifications.
 ///
 /// This is where per-task volume becomes real. iOS will not let a terminated app

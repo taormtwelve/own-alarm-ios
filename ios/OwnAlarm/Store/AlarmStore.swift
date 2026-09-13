@@ -160,6 +160,17 @@ final class AlarmStore: ObservableObject {
         alarms.first { $0.id == id }
     }
 
+    /// What the user did with an alarm's notification. Tapping it opens the ringing
+    /// screen; the buttons snooze or stop. An alarm deleted since is ignored.
+    func respond(_ response: AlarmResponse, toAlarmWithID id: UUID) {
+        guard let alarm = alarm(withID: id) else { return }
+        switch response {
+        case .open: ringing = alarm
+        case .snooze: snooze(alarm)
+        case .stop: stop(alarm)
+        }
+    }
+
     // MARK: Scheduling
 
     func rescheduleAll() {

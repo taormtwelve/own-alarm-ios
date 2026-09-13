@@ -122,6 +122,7 @@ struct EditAlarmView: View {
                 }
             }
             .buttonStyle(.plain)
+            .accessibilityIdentifier("soundRow")
         }
     }
 

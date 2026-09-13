@@ -240,6 +240,18 @@ final class AlarmTests: XCTestCase {
         XCTAssertEqual(defaults.snoozeWhenSwitchedOn, 4)
     }
 
+    func testAppSettingsStartWithTheApprovedDefaults() {
+        let settings = AppSettings()
+        XCTAssertEqual(settings.timeFormat, .twentyFourHour)
+        XCTAssertEqual(settings.theme, .light)
+        XCTAssertTrue(settings.showOnLockScreen)
+    }
+
+    func testEveryOptionHasALabel() {
+        XCTAssertEqual(TimeFormat.allCases.map(\.label), ["24-hour", "AM / PM", "Match device"])
+        XCTAssertEqual(ThemePreference.allCases.map(\.label), ["Light", "Dark", "Auto"])
+    }
+
     // MARK: Weekdays
 
     func testLocaleOrderedCoversEveryDayExactlyOnce() {
