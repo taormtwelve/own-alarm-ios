@@ -159,15 +159,6 @@ struct EditAlarmView: View {
             .onChange(of: alarm.volume) { player.scrub(to: $0) }
             // Previews only: a ringing alarm's cover also makes this disappear.
             .onDisappear { player.stopPreviews() }
-
-            HStack {
-                Text("Whisper").font(Typo.caption).foregroundStyle(Tokens.textFaint)
-                Spacer()
-                Text("Room").font(Typo.caption).foregroundStyle(Tokens.textFaint)
-                Spacer()
-                Text("Wake the dead").font(Typo.caption).foregroundStyle(Tokens.textFaint)
-            }
-
             Divider().background(Tokens.border)
 
             Toggle(isOn: Binding(
