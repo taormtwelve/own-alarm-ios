@@ -1,12 +1,24 @@
 import Foundation
 import UserNotifications
 
-protocol AlarmScheduling {
+protocol AlarmScheduling: AnyObject {
     func schedule(_ alarm: Alarm, tone: AlarmTone, showOnLockScreen: Bool)
     func scheduleSnooze(_ alarm: Alarm, minutes: Int)
     func cancel(_ alarm: Alarm)
     func cancelSnooze(_ alarm: Alarm)
     func cancelAll()
+
+    /// Set by the store. Called with an alarm's id when the system reports that the
+    /// alarm has rung and been stopped. Only AlarmKit can tell; other schedulers
+    /// never call it.
+    var onFinished: ((UUID) -> Void)? { get set }
+}
+
+extension AlarmScheduling {
+    var onFinished: ((UUID) -> Void)? {
+        get { nil }
+        set {}
+    }
 }
 
 /// Schedules alarms as notifications.

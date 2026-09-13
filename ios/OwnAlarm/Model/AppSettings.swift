@@ -61,24 +61,31 @@ enum ThemePreference: String, Codable, CaseIterable, Identifiable {
     #endif
 }
 
-/// What a freshly created alarm starts from: half volume and a 20 s fade at first,
-/// then whatever the user last saved — `AlarmStore.save` copies each saved alarm's
-/// volume, sound, snooze and fade-in back into these.
+/// What a freshly created alarm starts from: half volume, fade-in off, a 9-minute
+/// snooze at first — then whatever the user last saved. `AlarmStore.save` copies
+/// each saved alarm's volume, sound, snooze and fade-in back into these.
 struct AlarmDefaults: Codable, Equatable {
-    /// The fade used when none has been remembered.
-    static let standardFadeInSeconds = 20
+    /// Fade length when fade-in is switched on and none has been remembered.
+    static let standardFadeInSeconds = 10
+    /// Snooze length when snooze is switched on and none has been remembered.
+    static let standardSnoozeMinutes = 9
 
     var volume: Double = 0.50
-    var fadeInSeconds: Int = AlarmDefaults.standardFadeInSeconds
+    var fadeInSeconds: Int = 0
     var overridesSilent: Bool = true
     var toneID: String = "marimba"
-    var snoozeMinutes: Int = 9
+    var snoozeMinutes: Int = AlarmDefaults.standardSnoozeMinutes
     var louderAfterSnooze: Bool = true
 
-    /// Fade length when the user switches fade-in on. The remembered value can be
-    /// 0 — their last alarm had no fade — which would leave the switch stuck off.
+    /// Fade length when the user switches fade-in on. The remembered value is 0
+    /// whenever their last alarm had no fade, which would leave the switch stuck off.
     var fadeInWhenSwitchedOn: Int {
         fadeInSeconds > 0 ? fadeInSeconds : Self.standardFadeInSeconds
+    }
+
+    /// Snooze length when the user switches snooze on — same reasoning.
+    var snoozeWhenSwitchedOn: Int {
+        snoozeMinutes > 0 ? snoozeMinutes : Self.standardSnoozeMinutes
     }
 }
 

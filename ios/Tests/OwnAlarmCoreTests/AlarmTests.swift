@@ -216,19 +216,28 @@ final class AlarmTests: XCTestCase {
         XCTAssertTrue(alarm.isEnabled)
     }
 
-    func testFactoryDefaultsAreHalfVolumeWithATwentySecondFade() {
+    func testFactoryDefaultsAreHalfVolumeWithFadeOff() {
         let defaults = AlarmDefaults()
         XCTAssertEqual(defaults.volume, 0.5, accuracy: 0.0001)
-        XCTAssertEqual(defaults.fadeInSeconds, 20)
+        XCTAssertEqual(defaults.fadeInSeconds, 0, "Fade-in starts switched off")
+        XCTAssertEqual(defaults.snoozeMinutes, 9)
     }
 
-    func testSwitchingFadeBackOnNeverLandsOnZero() {
+    func testSwitchingFadeOnStartsAtTenSeconds() {
         var defaults = AlarmDefaults()
-        defaults.fadeInSeconds = 0          // the user's last alarm had no fade
-        XCTAssertEqual(defaults.fadeInWhenSwitchedOn, AlarmDefaults.standardFadeInSeconds)
+        XCTAssertEqual(defaults.fadeInWhenSwitchedOn, 10)
 
-        defaults.fadeInSeconds = 45
+        defaults.fadeInSeconds = 45          // remembered from the user's last alarm
         XCTAssertEqual(defaults.fadeInWhenSwitchedOn, 45)
+    }
+
+    func testSwitchingSnoozeBackOnNeverLandsOnZero() {
+        var defaults = AlarmDefaults()
+        defaults.snoozeMinutes = 0          // the user's last alarm had snooze off
+        XCTAssertEqual(defaults.snoozeWhenSwitchedOn, AlarmDefaults.standardSnoozeMinutes)
+
+        defaults.snoozeMinutes = 4
+        XCTAssertEqual(defaults.snoozeWhenSwitchedOn, 4)
     }
 
     // MARK: Weekdays

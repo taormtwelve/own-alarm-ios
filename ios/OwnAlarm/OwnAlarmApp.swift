@@ -42,6 +42,9 @@ struct OwnAlarmApp: App {
                     store.rescheduleAll()
                 }
                 .onChange(of: scenePhase) { phase in
+                    // Leaving the app silences previews immediately; a ringing
+                    // alarm keeps going.
+                    if phase != .active { player.appDidLeaveForeground() }
                     // Repeat triggers can drift after a long background spell or a
                     // time-zone change; re-arming on activation keeps them honest.
                     if phase == .active { store.rescheduleAll() }

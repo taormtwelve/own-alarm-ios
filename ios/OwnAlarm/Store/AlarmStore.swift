@@ -34,6 +34,17 @@ final class AlarmStore: ObservableObject {
             .urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
             .appendingPathComponent("alarms.json")
         load()
+        scheduler.onFinished = { [weak self] id in
+            Task { @MainActor in self?.alarmFinished(id) }
+        }
+    }
+
+    /// The system reports this alarm has rung and been stopped. A one-shot alarm has
+    /// done its job and switches off; a repeating one stays armed for its next day.
+    /// A snoozed alarm never arrives here — it is still counting down.
+    func alarmFinished(_ id: UUID) {
+        guard let alarm = alarm(withID: id), alarm.repeatDays.isEmpty, alarm.isEnabled else { return }
+        setEnabled(false, for: alarm)
     }
 
     /// A store backed by a throwaway directory. Used when the app launches under

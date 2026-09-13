@@ -135,7 +135,7 @@ struct EditAlarmView: View {
                         .font(Typo.sectionLabel)
                         .tracking(1.1)
                         .foregroundStyle(Tokens.accentLabel)
-                    Text("100% is your iPhone's maximum volume")
+                    Text("Relative to your iPhone's volume")
                         .font(Typo.caption)
                         .foregroundStyle(Tokens.textMuted)
                         .fixedSize(horizontal: false, vertical: true)
@@ -231,11 +231,20 @@ struct EditAlarmView: View {
     private var snoozeCard: some View {
         CardGroup {
             SettingsRow(title: "Snooze", showsDivider: alarm.snoozeMinutes > 0) {
-                Stepper("\(alarm.snoozeMinutes) min", value: $alarm.snoozeMinutes, in: 0...30, step: 1)
-                    .font(Typo.rowValue)
-                    .fixedSize()
+                Toggle("", isOn: Binding(
+                    get: { alarm.snoozeMinutes > 0 },
+                    set: { alarm.snoozeMinutes = $0 ? store.settings.defaults.snoozeWhenSwitchedOn : 0 }
+                ))
+                .toggleStyle(.alarm)
+                .labelsHidden()
+                .accessibilityLabel("Snooze")
             }
             if alarm.snoozeMinutes > 0 {
+                SettingsRow(title: "Snooze length") {
+                    Stepper("\(alarm.snoozeMinutes) min", value: $alarm.snoozeMinutes, in: 1...30)
+                        .font(Typo.rowValue)
+                        .fixedSize()
+                }
                 SettingsRow(
                     title: "Louder after each snooze",
                     subtitle: "Adds 10% every time you put it off",

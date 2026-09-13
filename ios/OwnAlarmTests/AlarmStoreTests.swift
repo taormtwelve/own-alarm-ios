@@ -9,6 +9,7 @@ final class SpyScheduler: AlarmScheduling {
     private(set) var cancelled: [Alarm] = []
     private(set) var cancelledSnoozes: [Alarm] = []
     private(set) var cancelAllCount = 0
+    var onFinished: ((UUID) -> Void)?
 
     func schedule(_ alarm: Alarm, tone: AlarmTone, showOnLockScreen: Bool) {
         scheduled.append((alarm, tone, showOnLockScreen))

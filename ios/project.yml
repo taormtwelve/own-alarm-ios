@@ -54,6 +54,10 @@ targets:
         excludes:
           - "**/.DS_Store"
 
+    dependencies:
+      # Draws AlarmKit's snooze countdown on the Lock Screen and in the Dynamic Island.
+      - target: OwnAlarmWidgets
+
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.ownalarm.app
@@ -94,7 +98,35 @@ targets:
         NSAlarmKitUsageDescription: >-
           OwnAlarm rings your alarms on the Lock Screen and through Silent mode,
           each at the volume you set for its task.
+        # The snooze countdown is a Live Activity.
+        NSSupportsLiveActivities: true
         ITSAppUsesNonExemptEncryption: false
+
+  # The snooze countdown's Live Activity (iOS 26+, AlarmKit). A separate process, so
+  # it shares OwnAlarmMetadata with the app through OwnAlarm/Shared.
+  OwnAlarmWidgets:
+    type: app-extension
+    platform: iOS
+    deploymentTarget: "26.0"
+    sources:
+      - OwnAlarmWidgets
+      - OwnAlarm/Shared
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.ownalarm.app.widgets
+        PRODUCT_NAME: OwnAlarmWidgets
+        GENERATE_INFOPLIST_FILE: NO
+        SKIP_INSTALL: YES
+        DEVELOPMENT_TEAM: ""
+        CODE_SIGN_STYLE: Manual
+    info:
+      path: OwnAlarmWidgets/Info.plist
+      properties:
+        CFBundleDisplayName: OwnAlarm
+        CFBundleShortVersionString: "$(MARKETING_VERSION)"
+        CFBundleVersion: "$(CURRENT_PROJECT_VERSION)"
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.widgetkit-extension
 
   # Unit tests: the store's behaviour against a spy scheduler, and the notification
   # content where per-task volume actually lives.
