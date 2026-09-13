@@ -165,6 +165,8 @@ struct ToneRow: View {
                     .frame(width: 38, height: 38)
                     .background(isSelected ? Tokens.accentFill : Tokens.track)
                     .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                    // Decorative: without this VoiceOver reads "Play" before every name.
+                    .accessibilityHidden(true)
 
                 VStack(alignment: .leading, spacing: 2) {
                     Text(tone.name)
@@ -178,9 +180,11 @@ struct ToneRow: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
 
                 if isSelected {
+                    // The selected trait below says this already.
                     Image(systemName: "checkmark")
                         .font(.system(size: 15, weight: .bold))
                         .foregroundStyle(Tokens.accentText)
+                        .accessibilityHidden(true)
                 }
             }
             .padding(.horizontal, 14)
@@ -190,6 +194,7 @@ struct ToneRow: View {
         }
         .buttonStyle(.plain)
         .accessibilityAddTraits(isSelected ? [.isSelected, .isButton] : .isButton)
+        .accessibilityIdentifier("tone.\(tone.id)")
     }
 }
 

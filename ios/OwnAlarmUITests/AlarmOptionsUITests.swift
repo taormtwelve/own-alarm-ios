@@ -94,7 +94,7 @@ final class AlarmOptionsUITests: XCTestCase {
         XCTAssertTrue(soundRow.label.contains("Siren"))
 
         soundRow.tap()
-        let whisper = app.buttons.matching(NSPredicate(format: "label BEGINSWITH 'Whisper'")).firstMatch
+        let whisper = app.buttons["tone.whisper"]
         XCTAssertTrue(whisper.waitForExistence(timeout: 5))
         whisper.tap()
         app.buttons["Done"].tap()
