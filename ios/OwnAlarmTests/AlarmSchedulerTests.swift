@@ -58,6 +58,21 @@ final class AlarmSchedulerTests: XCTestCase {
         XCTAssertNil(content.sound, "Nothing should be audible from the Lock Screen")
     }
 
+    func testAOneShotIsReportedFinishedOnceItsTimeHasPassed() {
+        let scheduler = AlarmScheduler(defaults: UserDefaults(suiteName: UUID().uuidString)!)
+        var finished: [UUID] = []
+        scheduler.onFinished = { finished.append($0) }
+        let alarm = makeAlarm()
+        scheduler.schedule(alarm, tone: tone, showOnLockScreen: true)
+
+        scheduler.reportFinishedOneShots(now: Date())
+        XCTAssertTrue(finished.isEmpty, "Not rung yet")
+
+        scheduler.reportFinishedOneShots(now: Date().addingTimeInterval(2 * 86_400))
+        XCTAssertEqual(finished, [alarm.id])
+        scheduler.cancel(alarm)
+    }
+
     func testEveryBundledToneResolvesToAFileInTheBundle() {
         for tone in AlarmTone.bundled {
             let name = (tone.fileName as NSString).deletingPathExtension

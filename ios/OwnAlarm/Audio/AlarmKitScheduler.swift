@@ -39,7 +39,11 @@ import ActivityKit
 @available(iOS 26.0, *)
 final class AlarmKitScheduler: AlarmScheduling {
     var onFinished: ((UUID) -> Void)? {
-        didSet { deliverPending() }
+        didSet {
+            // Alarms that fell back to notifications finish there.
+            fallback.onFinished = onFinished
+            deliverPending()
+        }
     }
 
     private static let armedKey = "ownalarm.alarmkit.armed"
@@ -54,6 +58,10 @@ final class AlarmKitScheduler: AlarmScheduling {
     private var armed: Set<UUID>
     private var pending: [UUID] = []
     private var updates: Task<Void, Never>?
+    /// The latest request per alarm — schedule or cancel — numbered, so a schedule
+    /// that lands after a newer request knows it is out of date.
+    private var requests: [UUID: (number: Int, wanted: Bool)] = [:]
+    private var requestCount = 0
 
     init(fallback: AlarmScheduling, defaults: UserDefaults = .standard) {
         self.fallback = fallback
@@ -102,24 +110,33 @@ final class AlarmKitScheduler: AlarmScheduling {
         if isActive(alarm.id) { return }
 
         let configuration = makeConfiguration(for: alarm, tone: tone)
+        let number = record(alarm.id, wanted: true)
         Task { [weak self, manager, fallback] in
             do {
                 _ = try await manager.schedule(id: alarm.id, configuration: configuration)
-                self?.setArmed(alarm.id, true)
+                let latest = self?.latest(alarm.id)
+                if latest?.number == number {
+                    self?.setArmed(alarm.id, true)
+                } else if latest?.wanted == false {
+                    // Switched off or deleted while this was on its way.
+                    try? manager.cancel(id: alarm.id)
+                }
             } catch {
+                guard self?.latest(alarm.id)?.number == number else { return }
                 print("AlarmKit refused \(alarm.task): \(error). Using a notification instead.")
                 fallback.schedule(alarm, tone: tone, showOnLockScreen: showOnLockScreen)
             }
         }
     }
 
-    func scheduleSnooze(_ alarm: Alarm, minutes: Int) {
+    func scheduleSnooze(_ alarm: Alarm, tone: AlarmTone, minutes: Int) {
         // AlarmKit snoozes by itself (the countdown below). This path is only reached
         // from the in-app ringing screen, which the notification route drives.
-        fallback.scheduleSnooze(alarm, minutes: minutes)
+        fallback.scheduleSnooze(alarm, tone: tone, minutes: minutes)
     }
 
     func cancel(_ alarm: Alarm) {
+        record(alarm.id, wanted: false)
         // Disarm first, so the update that follows is not read as "it rang".
         setArmed(alarm.id, false)
         try? manager.cancel(id: alarm.id)
@@ -130,18 +147,34 @@ final class AlarmKitScheduler: AlarmScheduling {
         fallback.cancelSnooze(alarm)
     }
 
-    func cancelAll() {
+    func cancelAll(_ alarms: [Alarm]) {
         // Alarms are re-armed on every launch; that must not cancel one that is
         // snoozing or ringing at this moment.
         for scheduled in (try? manager.alarms) ?? [] {
             guard case .scheduled = scheduled.state else { continue }
+            record(scheduled.id, wanted: false)
             setArmed(scheduled.id, false)
             try? manager.cancel(id: scheduled.id)
         }
-        fallback.cancelAll()
+        fallback.cancelAll(alarms)
     }
 
     // MARK: Tracking
+
+    @discardableResult
+    private func record(_ id: UUID, wanted: Bool) -> Int {
+        lock.lock()
+        defer { lock.unlock() }
+        requestCount += 1
+        requests[id] = (requestCount, wanted)
+        return requestCount
+    }
+
+    private func latest(_ id: UUID) -> (number: Int, wanted: Bool)? {
+        lock.lock()
+        defer { lock.unlock() }
+        return requests[id]
+    }
 
     private func isActive(_ id: UUID) -> Bool {
         guard let alarm = (try? manager.alarms)?.first(where: { $0.id == id }) else { return false }

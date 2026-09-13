@@ -5,7 +5,7 @@ import XCTest
 /// without touching UNUserNotificationCenter.
 final class SpyScheduler: AlarmScheduling {
     private(set) var scheduled: [(alarm: Alarm, tone: AlarmTone, lockScreen: Bool)] = []
-    private(set) var snoozed: [(alarm: Alarm, minutes: Int)] = []
+    private(set) var snoozed: [(alarm: Alarm, tone: AlarmTone, minutes: Int)] = []
     private(set) var cancelled: [Alarm] = []
     private(set) var cancelledSnoozes: [Alarm] = []
     private(set) var cancelAllCount = 0
@@ -14,10 +14,12 @@ final class SpyScheduler: AlarmScheduling {
     func schedule(_ alarm: Alarm, tone: AlarmTone, showOnLockScreen: Bool) {
         scheduled.append((alarm, tone, showOnLockScreen))
     }
-    func scheduleSnooze(_ alarm: Alarm, minutes: Int) { snoozed.append((alarm, minutes)) }
+    func scheduleSnooze(_ alarm: Alarm, tone: AlarmTone, minutes: Int) {
+        snoozed.append((alarm, tone, minutes))
+    }
     func cancel(_ alarm: Alarm) { cancelled.append(alarm) }
     func cancelSnooze(_ alarm: Alarm) { cancelledSnoozes.append(alarm) }
-    func cancelAll() { cancelAllCount += 1 }
+    func cancelAll(_ alarms: [Alarm]) { cancelAllCount += 1 }
 }
 
 @MainActor
@@ -219,6 +221,44 @@ final class AlarmStoreTests: XCTestCase {
         XCTAssertEqual(try XCTUnwrap(spy.snoozed.last).alarm.volume, 1.0, accuracy: 0.0001)
     }
 
+    func testEachSnoozeReturnsLouderThanTheLast() {
+        let store = makeStore()
+        let alarm = makeAlarm(volume: 0.50, louderAfterSnooze: true)
+        store.add(alarm)
+
+        store.snooze(alarm)
+        store.snooze(alarm)
+        store.snooze(alarm)
+
+        XCTAssertEqual(spy.snoozed.map { ($0.alarm.volume * 100).rounded() }, [60, 70, 80])
+    }
+
+    func testStoppingStartsTheNextSnoozeFromTheAlarmsOwnLevel() throws {
+        let store = makeStore()
+        let alarm = makeAlarm(volume: 0.50, days: [.monday], louderAfterSnooze: true)
+        store.add(alarm)
+        store.snooze(alarm)
+        store.snooze(alarm)
+
+        store.stop(alarm)
+        store.snooze(alarm)
+
+        XCTAssertEqual(try XCTUnwrap(spy.snoozed.last).alarm.volume, 0.60, accuracy: 0.0001)
+    }
+
+    func testSnoozeRingsWithTheAlarmsImportedTone() throws {
+        let store = makeStore()
+        let mine = AlarmTone(id: "mine.m4a", name: "Mine", character: "Yours",
+                             peak: 2, fileName: "mine.m4a", source: .imported)
+        store.addImportedTone(mine)
+        let alarm = makeAlarm(toneID: mine.id)
+        store.add(alarm)
+
+        store.snooze(alarm)
+
+        XCTAssertEqual(try XCTUnwrap(spy.snoozed.last).tone, mine)
+    }
+
     func testSnoozeClearsTheRingingAlarm() {
         let store = makeStore()
         let alarm = makeAlarm()
@@ -288,6 +328,20 @@ final class AlarmStoreTests: XCTestCase {
         store.addImportedTone(tone)
 
         XCTAssertEqual(store.tones.filter { $0.id == tone.id }.count, 1)
+    }
+
+    func testImportedTonesSurviveARelaunch() {
+        let url = folder.appendingPathComponent("alarms.json")
+        let suite = UserDefaults(suiteName: UUID().uuidString)!
+        let tone = AlarmTone(id: "kitchen.m4a", name: "kitchen", character: "Yours",
+                             peak: 2, fileName: "kitchen.m4a", source: .imported)
+
+        let first = AlarmStore(scheduler: spy, fileURL: url, defaults: suite)
+        first.addImportedTone(tone)
+
+        let second = AlarmStore(scheduler: SpyScheduler(), fileURL: url, defaults: suite)
+        XCTAssertTrue(second.tones.contains(tone), "An imported song must still be there after a relaunch")
+        XCTAssertEqual(second.tones.count, AlarmTone.bundled.count + 1)
     }
 
     // MARK: Persistence

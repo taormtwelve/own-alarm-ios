@@ -18,6 +18,10 @@ final class AlarmStore: ObservableObject {
     private let defaults: UserDefaults
     private let seed: [Alarm]
     private let settingsKey = AppSettings.storageKey
+    private let tonesKey = "ownalarm.importedTones"
+    /// The level each snoozed alarm last returned at, so "louder after each snooze"
+    /// keeps climbing. Cleared when the alarm is stopped or changed.
+    private let snoozeLevelsKey = "ownalarm.snoozeLevels"
 
     /// `fileURL` and `defaults` are injectable so tests — and UI-test launches —
     /// get their own storage instead of trampling the real app's data.
@@ -97,6 +101,7 @@ final class AlarmStore: ObservableObject {
         guard let index = alarms.firstIndex(where: { $0.id == alarm.id }) else { return }
         alarms[index] = alarm
         persist()
+        setSnoozeLevel(nil, for: alarm.id)
         reschedule(alarm)
     }
 
@@ -133,8 +138,15 @@ final class AlarmStore: ObservableObject {
     }
 
     func addImportedTone(_ tone: AlarmTone) {
-        guard !tones.contains(where: { $0.id == tone.id }) else { return }
+        // The file behind this name may just have been replaced; copies rendered
+        // from the old one must not keep ringing.
+        ScaledSound.discardCopies(of: tone.id)
+        guard !tones.contains(where: { $0.id == tone.id }) else {
+            rescheduleAll()   // renders fresh copies from the new file
+            return
+        }
         tones.append(tone)
+        persistTones()
     }
 
     // MARK: Ringing
@@ -142,14 +154,15 @@ final class AlarmStore: ObservableObject {
     func snooze(_ alarm: Alarm) {
         ringing = nil
         var copy = alarm
-        if alarm.louderAfterSnooze {
-            copy.volume = min(1.0, alarm.volume + 0.10)
-        }
-        scheduler.scheduleSnooze(copy, minutes: alarm.snoozeMinutes)
+        let lastLevel = snoozeLevels[alarm.id.uuidString] ?? alarm.volume
+        copy.volume = alarm.louderAfterSnooze ? min(1.0, lastLevel + 0.10) : lastLevel
+        setSnoozeLevel(copy.volume, for: alarm.id)
+        scheduler.scheduleSnooze(copy, tone: tone(for: alarm), minutes: alarm.snoozeMinutes)
     }
 
     func stop(_ alarm: Alarm) {
         ringing = nil
+        setSnoozeLevel(nil, for: alarm.id)
         scheduler.cancelSnooze(alarm)
         // A one-shot alarm has done its job; a repeating one stays armed.
         if alarm.repeatDays.isEmpty {
@@ -175,7 +188,7 @@ final class AlarmStore: ObservableObject {
     // MARK: Scheduling
 
     func rescheduleAll() {
-        scheduler.cancelAll()
+        scheduler.cancelAll(alarms)
         for alarm in alarms where alarm.isEnabled {
             scheduler.schedule(alarm, tone: tone(for: alarm), showOnLockScreen: settings.showOnLockScreen)
         }
@@ -193,6 +206,11 @@ final class AlarmStore: ObservableObject {
         if let data = defaults.data(forKey: settingsKey),
            let decoded = try? JSONDecoder().decode(AppSettings.self, from: data) {
             settings = decoded
+        }
+
+        if let data = defaults.data(forKey: tonesKey),
+           let imported = try? JSONDecoder().decode([AlarmTone].self, from: data) {
+            tones = AlarmTone.bundled + imported
         }
 
         guard let data = try? Data(contentsOf: fileURL),
@@ -218,5 +236,21 @@ final class AlarmStore: ObservableObject {
     private func persistSettings() {
         guard let data = try? JSONEncoder().encode(settings) else { return }
         defaults.set(data, forKey: settingsKey)
+    }
+
+    private func persistTones() {
+        guard let data = try? JSONEncoder().encode(tones.filter { $0.source == .imported }) else { return }
+        defaults.set(data, forKey: tonesKey)
+    }
+
+    private var snoozeLevels: [String: Double] {
+        defaults.dictionary(forKey: snoozeLevelsKey) as? [String: Double] ?? [:]
+    }
+
+    private func setSnoozeLevel(_ level: Double?, for id: UUID) {
+        var levels = snoozeLevels
+        guard levels[id.uuidString] != level else { return }
+        levels[id.uuidString] = level
+        defaults.set(levels, forKey: snoozeLevelsKey)
     }
 }

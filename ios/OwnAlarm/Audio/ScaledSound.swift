@@ -34,6 +34,16 @@ enum ScaledSound {
             .appendingPathComponent("Sounds", isDirectory: true)
     }
 
+    /// Deletes every copy rendered from a tone — its source file has been replaced,
+    /// and the cache below only knows tones by name.
+    static func discardCopies(of toneID: String) {
+        let files = (try? FileManager.default.contentsOfDirectory(atPath: directory.path)) ?? []
+        for file in files where file.hasPrefix("\(toneID)-") && file.hasSuffix(".caf") {
+            guard Int(file.dropFirst(toneID.count + 1).dropLast(4)) != nil else { continue }
+            try? FileManager.default.removeItem(at: directory.appendingPathComponent(file))
+        }
+    }
+
     /// File name of the scaled copy, rendered on first use and cached by tone and
     /// percentage. Nil if the tone could not be read — callers fall back to the
     /// original file.

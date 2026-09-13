@@ -99,9 +99,25 @@ final class NotificationRouter: NSObject, UNUserNotificationCenterDelegate {
     }
 
     @MainActor
-    private func route(_ content: UNNotificationContent, action: String?) {
+    private func route(_ content: UNNotificationContent, action: String?) async {
         guard let raw = content.userInfo["alarmID"] as? String,
               let id = UUID(uuidString: raw) else { return }
-        store?.respond(AlarmResponse(actionIdentifier: action), toAlarmWithID: id)
+        let response = AlarmResponse(actionIdentifier: action)
+        // The ringing screen is a full-screen cover on the root view, and SwiftUI
+        // cannot present it over an open sheet — the editor, the sound picker. Close
+        // those first, or the alarm would arrive with nothing on screen.
+        if response == .open { await Self.closeSheets() }
+        store?.respond(response, toAlarmWithID: id)
+    }
+
+    @MainActor
+    private static func closeSheets() async {
+        let root = UIApplication.shared.connectedScenes
+            .compactMap { ($0 as? UIWindowScene)?.keyWindow?.rootViewController }
+            .first
+        guard let root, root.presentedViewController != nil else { return }
+        await withCheckedContinuation { done in
+            root.dismiss(animated: false) { done.resume() }
+        }
     }
 }

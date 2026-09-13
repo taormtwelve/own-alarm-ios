@@ -51,7 +51,7 @@ final class AlarmKitSchedulerTests: XCTestCase {
         let spy = SpyScheduler()
         let scheduler = AlarmKitScheduler(fallback: spy, defaults: freshDefaults())
 
-        scheduler.scheduleSnooze(sample(), minutes: 5)
+        scheduler.scheduleSnooze(sample(), tone: tone, minutes: 5)
 
         XCTAssertEqual(spy.snoozed.last?.minutes, 5)
     }

@@ -3,10 +3,12 @@ import UserNotifications
 
 protocol AlarmScheduling: AnyObject {
     func schedule(_ alarm: Alarm, tone: AlarmTone, showOnLockScreen: Bool)
-    func scheduleSnooze(_ alarm: Alarm, minutes: Int)
+    func scheduleSnooze(_ alarm: Alarm, tone: AlarmTone, minutes: Int)
     func cancel(_ alarm: Alarm)
     func cancelSnooze(_ alarm: Alarm)
-    func cancelAll()
+    /// Clears these alarms' schedules before a full re-arm. Snoozes are left alone:
+    /// each is a countdown the user is waiting on.
+    func cancelAll(_ alarms: [Alarm])
 
     /// Set by the store. Called with an alarm's id when the system reports that the
     /// alarm has rung and been stopped. Only AlarmKit can tell; other schedulers
@@ -47,10 +49,27 @@ enum AlarmResponse: Equatable {
 /// (`ScaledSound`) and plays relative to the ringer.
 final class AlarmScheduler: AlarmScheduling {
     private let center = UNUserNotificationCenter.current()
+    private let defaults: UserDefaults
 
     static let categoryIdentifier = "ownalarm.alarm"
     static let snoozeAction = "ownalarm.snooze"
     static let stopAction = "ownalarm.stop"
+
+    /// When each one-shot is due, and when each snooze ends. A notification cannot
+    /// say it has been answered, so these are how a one-shot is known to be done.
+    private static let onceKey = "ownalarm.notifications.once"
+    private static let snoozeKey = "ownalarm.notifications.snoozes"
+
+    /// Whether iOS will honour a critical sound's volume. Without Apple's approval it
+    /// downgrades one to a plain full-level sound, so until this is known to be true
+    /// alarms use the scaled copy that works for everyone.
+    static var criticalAlertsEnabled = false
+
+    var onFinished: ((UUID) -> Void)?
+
+    init(defaults: UserDefaults = .standard) {
+        self.defaults = defaults
+    }
 
     /// Registers the Stop / Snooze buttons that appear on the Lock Screen alert.
     static func registerCategories() {
@@ -80,18 +99,27 @@ final class AlarmScheduler: AlarmScheduling {
         var options: UNAuthorizationOptions = [.alert, .sound, .badge]
         options.insert(.criticalAlert)
         _ = try? await center.requestAuthorization(options: options)
-        return await center.notificationSettings().authorizationStatus
+        let settings = await center.notificationSettings()
+        criticalAlertsEnabled = settings.criticalAlertSetting == .enabled
+        return settings.authorizationStatus
     }
 
     static func criticalAlertsGranted() async -> Bool {
-        await UNUserNotificationCenter.current()
+        criticalAlertsEnabled = await UNUserNotificationCenter.current()
             .notificationSettings()
             .criticalAlertSetting == .enabled
+        return criticalAlertsEnabled
     }
 
     // MARK: Scheduling
 
     func schedule(_ alarm: Alarm, tone: AlarmTone, showOnLockScreen: Bool) {
+        // A one-shot mid-snooze has rung for today; arming it for tomorrow would
+        // outlive the Stop the user is about to give it.
+        if alarm.repeatDays.isEmpty, let end = dates(Self.snoozeKey)[alarm.id.uuidString], end > Date() {
+            return
+        }
+
         // A repeating alarm becomes one request per weekday; a one-shot becomes one.
         let triggers: [(String, UNCalendarNotificationTrigger)] = {
             if alarm.repeatDays.isEmpty {
@@ -119,21 +147,23 @@ final class AlarmScheduler: AlarmScheduling {
             )
             center.add(request)
         }
+        if alarm.repeatDays.isEmpty {
+            setDate(triggers.first?.1.nextTriggerDate(), for: alarm.id, in: Self.onceKey)
+        }
     }
 
-    func scheduleSnooze(_ alarm: Alarm, minutes: Int) {
+    func scheduleSnooze(_ alarm: Alarm, tone: AlarmTone, minutes: Int) {
         let trigger = UNTimeIntervalNotificationTrigger(
             timeInterval: TimeInterval(minutes * 60),
             repeats: false
         )
         let request = UNNotificationRequest(
             identifier: identifier(for: alarm, suffix: "snooze"),
-            content: content(for: alarm,
-                             tone: AlarmTone.tone(id: alarm.toneID, in: AlarmTone.bundled),
-                             showOnLockScreen: true),
+            content: content(for: alarm, tone: tone, showOnLockScreen: true),
             trigger: trigger
         )
         center.add(request)
+        setDate(Date().addingTimeInterval(trigger.timeInterval), for: alarm.id, in: Self.snoozeKey)
         // Say so straight away, rather than leaving a silent gap until it returns.
         SnoozeNotice.post(alarmID: alarm.id, task: alarm.task, minutes: minutes)
     }
@@ -148,13 +178,19 @@ final class AlarmScheduler: AlarmScheduling {
         content.userInfo = ["alarmID": alarm.id.uuidString]
         content.interruptionLevel = alarm.overridesSilent ? .critical : .timeSensitive
 
-        let soundName = UNNotificationSoundName(rawValue: tone.fileName)
-        if alarm.overridesSilent {
-            // The alarm's own level, independent of the ringer.
-            content.sound = .criticalSoundNamed(soundName, withAudioVolume: Float(alarm.volume))
+        if alarm.overridesSilent && Self.criticalAlertsEnabled {
+            // The alarm's own level, independent of the ringer. An imported tone is
+            // not in the bundle, so it plays from a full-level copy in Library/Sounds,
+            // where the system looks.
+            let name = tone.source == .imported
+                ? ScaledSound.fileName(for: tone, volume: 1) ?? tone.fileName
+                : tone.fileName
+            content.sound = .criticalSoundNamed(UNNotificationSoundName(rawValue: name),
+                                                withAudioVolume: Float(alarm.volume))
         } else {
-            // A normal notification sound follows the ringer, so the task's level is
-            // baked into the file instead: a 30% task gets a file 30% as loud.
+            // A normal notification sound follows the ringer — as does a critical one
+            // iOS was not approved to play — so the task's level is baked into the
+            // file instead: a 30% task gets a file 30% as loud.
             let name = ScaledSound.fileName(for: tone, volume: alarm.volume) ?? tone.fileName
             content.sound = UNNotificationSound(named: UNNotificationSoundName(rawValue: name))
         }
@@ -172,11 +208,15 @@ final class AlarmScheduler: AlarmScheduling {
 
     // MARK: Cancellation
 
+    /// Every request an alarm's own schedule can make — all but its snooze.
+    private static let scheduleSuffixes = ["once"] + Weekday.allCases.map { "d\($0.rawValue)" }
+
     func cancel(_ alarm: Alarm) {
-        let ids = ["once", "snooze"] + Weekday.allCases.map { "d\($0.rawValue)" }
         center.removePendingNotificationRequests(
-            withIdentifiers: ids.map { identifier(for: alarm, suffix: $0) }
+            withIdentifiers: (Self.scheduleSuffixes + ["snooze"]).map { identifier(for: alarm, suffix: $0) }
         )
+        setDate(nil, for: alarm.id, in: Self.onceKey)
+        setDate(nil, for: alarm.id, in: Self.snoozeKey)
     }
 
     func cancelSnooze(_ alarm: Alarm) {
@@ -186,11 +226,47 @@ final class AlarmScheduler: AlarmScheduling {
         center.removeDeliveredNotifications(
             withIdentifiers: [identifier(for: alarm, suffix: "snooze")]
         )
+        setDate(nil, for: alarm.id, in: Self.snoozeKey)
         SnoozeNotice.clear(alarmID: alarm.id)
     }
 
-    func cancelAll() {
-        center.removeAllPendingNotificationRequests()
+    func cancelAll(_ alarms: [Alarm]) {
+        reportFinishedOneShots()
+        center.removePendingNotificationRequests(
+            withIdentifiers: alarms.flatMap { alarm in
+                Self.scheduleSuffixes.map { identifier(for: alarm, suffix: $0) }
+            }
+        )
+    }
+
+    // MARK: Finished one-shots
+
+    /// A one-shot whose time — and any snooze after it — has passed has rung, whether
+    /// or not anyone tapped Stop. Reported so the store can switch it off; otherwise
+    /// every re-arm would set it for the next day.
+    func reportFinishedOneShots(now: Date = Date()) {
+        let snoozes = dates(Self.snoozeKey)
+        var once = dates(Self.onceKey)
+        let finished = once.filter { id, due in
+            due <= now && (snoozes[id].map { $0 <= now } ?? true)
+        }.keys
+        guard !finished.isEmpty else { return }
+        finished.forEach { once[$0] = nil }
+        defaults.set(once, forKey: Self.onceKey)
+        finished.compactMap(UUID.init(uuidString:)).forEach { id in
+            setDate(nil, for: id, in: Self.snoozeKey)
+            onFinished?(id)
+        }
+    }
+
+    private func dates(_ key: String) -> [String: Date] {
+        defaults.dictionary(forKey: key) as? [String: Date] ?? [:]
+    }
+
+    private func setDate(_ date: Date?, for id: UUID, in key: String) {
+        var all = dates(key)
+        all[id.uuidString] = date
+        defaults.set(all, forKey: key)
     }
 
     private func identifier(for alarm: Alarm, suffix: String) -> String {
