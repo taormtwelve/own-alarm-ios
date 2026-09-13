@@ -25,70 +25,47 @@
 
   <div style="padding: 0 20px 10px 20px; font-size: 10px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #938A7E; flex-shrink: 0;">Clock</div>
 
-  <div style="margin: 0 20px; background: #FFFFFF; border: 1px solid #E8E1D6; border-radius: 20px; display: flex; flex-direction: column; flex-shrink: 0;">
-    <div style="display: flex; align-items: center; gap: 12px; height: 48px; padding: 0 16px;">
-      <span style="font-size: 15px; color: #4A443C; flex-grow: 1;">Time format</span>
-      <span class="num" style="font-size: 15px; font-weight: 600;">24-hour</span>
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#A39A8E" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"></path></svg>
-    </div>
-  </div>
-
-  <div style="padding: 18px 20px 10px 20px; font-size: 10px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #938A7E; flex-shrink: 0;">New alarm defaults</div>
-
-  <div style="margin: 0 20px; background: #FFFFFF; border: 1px solid #E8E1D6; border-radius: 20px; display: flex; flex-direction: column; flex-shrink: 0;">
-    <div style="display: flex; align-items: center; gap: 12px; height: 48px; padding: 0 16px; border-bottom: 1px solid #F0EAE0;">
-      <span style="font-size: 15px; color: #4A443C; flex-grow: 1;">Volume</span>
-      <div style="display: flex; align-items: flex-end; gap: 3px; height: 14px;">
-        <span style="width: 4px; height: 6px; border-radius: 2px; background: #E8940F;"></span>
-        <span style="width: 4px; height: 8px; border-radius: 2px; background: #E8940F;"></span>
-        <span style="width: 4px; height: 10px; border-radius: 2px; background: #E8940F;"></span>
-        <span style="width: 4px; height: 12px; border-radius: 2px; background: #E8940F;"></span>
-        <span style="width: 4px; height: 14px; border-radius: 2px; background: #E3DBCE;"></span>
+  <div style="margin: 0 20px; background: #FFFFFF; border: 1px solid #E8E1D6; border-radius: 20px; padding: 14px 16px; display: flex; flex-direction: column; gap: 10px; flex-shrink: 0;">
+    <span style="font-size: 15px; color: #4A443C;">Time format</span>
+    <div style="background: #F1EAE0; border-radius: 14px; padding: 4px; display: flex; gap: 4px;">
+      <div style="flex-grow: 1; height: 36px; border-radius: 11px; display: flex; align-items: center; justify-content: center;">
+        <span style="font-size: 13px; font-weight: 500; color: #7D746A;">24-hour</span>
       </div>
-      <span class="num" style="font-size: 15px; font-weight: 600;">70%</span>
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#A39A8E" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"></path></svg>
-    </div>
-    <div style="display: flex; align-items: center; gap: 12px; height: 48px; padding: 0 16px; border-bottom: 1px solid #F0EAE0;">
-      <span style="font-size: 15px; color: #4A443C; flex-grow: 1;">Fade in</span>
-      <span class="num" style="font-size: 15px; font-weight: 600;">30 s</span>
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#A39A8E" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"></path></svg>
-    </div>
-    <div style="display: flex; align-items: center; gap: 12px; height: 48px; padding: 0 16px; border-bottom: 1px solid #F0EAE0;">
-      <span style="font-size: 15px; color: #4A443C; flex-grow: 1;">Sound</span>
-      <span style="font-size: 15px; font-weight: 600;">Marimba</span>
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#A39A8E" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"></path></svg>
-    </div>
-    <div style="display: flex; align-items: center; gap: 12px; height: 48px; padding: 0 16px;">
-      <span style="font-size: 15px; color: #4A443C; flex-grow: 1;">Snooze</span>
-      <span class="num" style="font-size: 15px; font-weight: 600;">9 min</span>
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#A39A8E" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"></path></svg>
+      <div style="flex-grow: 1; height: 36px; border-radius: 11px; display: flex; align-items: center; justify-content: center;">
+        <span style="font-size: 13px; font-weight: 500; color: #7D746A;">AM / PM</span>
+      </div>
+      <div style="flex-grow: 1; height: 36px; border-radius: 11px; background: #FFFFFF; display: flex; align-items: center; justify-content: center;">
+        <span style="font-size: 13px; font-weight: 600;">Match device</span>
+      </div>
     </div>
   </div>
 
   <div style="padding: 18px 20px 10px 20px; font-size: 10px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #938A7E; flex-shrink: 0;">When an alarm rings</div>
 
   <div style="margin: 0 20px; background: #FFFFFF; border: 1px solid #E8E1D6; border-radius: 20px; display: flex; flex-direction: column; flex-shrink: 0;">
-    <div style="display: flex; align-items: center; gap: 12px; height: 48px; padding: 0 16px; border-bottom: 1px solid #F0EAE0;">
-      <span style="font-size: 15px; color: #4A443C; flex-grow: 1;">Show on Lock Screen</span>
+    <div style="display: flex; align-items: center; gap: 12px; min-height: 62px; padding: 10px 16px; box-sizing: border-box; border-bottom: 1px solid #F0EAE0;">
+      <div style="flex-grow: 1; display: flex; flex-direction: column; gap: 2px;">
+        <span style="font-size: 15px; color: #4A443C;">Show on Lock Screen</span>
+        <span style="font-size: 12px; color: #7D746A;">Off, the alarm only takes over inside the app</span>
+      </div>
       <div style="width: 51px; height: 31px; border-radius: 16px; background: #E8940F; display: flex; align-items: center; justify-content: flex-end; padding: 2px; box-sizing: border-box; flex-shrink: 0;">
         <span style="width: 27px; height: 27px; border-radius: 50%; background: #FFFFFF;"></span>
       </div>
     </div>
-    <div style="display: flex; align-items: center; gap: 12px; height: 48px; padding: 0 16px; border-bottom: 1px solid #F0EAE0;">
-      <span style="font-size: 15px; color: #4A443C; flex-grow: 1;">Override Silent &amp; Focus</span>
+    <div style="display: flex; align-items: center; gap: 12px; min-height: 62px; padding: 10px 16px; box-sizing: border-box; border-bottom: 1px solid #F0EAE0;">
+      <div style="flex-grow: 1; display: flex; flex-direction: column; gap: 2px;">
+        <span style="font-size: 15px; color: #4A443C;">Louder after each snooze</span>
+        <span style="font-size: 12px; color: #7D746A;">Adds 10% every time</span>
+      </div>
       <div style="width: 51px; height: 31px; border-radius: 16px; background: #E8940F; display: flex; align-items: center; justify-content: flex-end; padding: 2px; box-sizing: border-box; flex-shrink: 0;">
         <span style="width: 27px; height: 27px; border-radius: 50%; background: #FFFFFF;"></span>
       </div>
     </div>
-    <div style="display: flex; align-items: center; gap: 12px; height: 48px; padding: 0 16px; border-bottom: 1px solid #F0EAE0;">
-      <span style="font-size: 15px; color: #4A443C; flex-grow: 1;">Louder after each snooze</span>
-      <span class="num" style="font-size: 13px; color: #7D746A;">+10%</span>
-      <div style="width: 51px; height: 31px; border-radius: 16px; background: #E8940F; display: flex; align-items: center; justify-content: flex-end; padding: 2px; box-sizing: border-box; flex-shrink: 0;">
-        <span style="width: 27px; height: 27px; border-radius: 50%; background: #FFFFFF;"></span>
+    <div style="display: flex; align-items: center; gap: 12px; min-height: 62px; padding: 10px 16px; box-sizing: border-box;">
+      <div style="flex-grow: 1; display: flex; flex-direction: column; gap: 2px;">
+        <span style="font-size: 15px; color: #4A443C;">Alarms permission</span>
+        <span style="font-size: 12px; color: #7D746A;">What lets an alarm ring through Silent</span>
       </div>
-    </div>
-    <div style="display: flex; align-items: center; gap: 12px; height: 48px; padding: 0 16px;">
-      <span style="font-size: 15px; color: #4A443C; flex-grow: 1;">Critical Alerts permission</span>
       <span style="font-size: 15px; font-weight: 600; color: #B0710A;">Allowed</span>
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#A39A8E" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"></path></svg>
     </div>
@@ -100,11 +77,11 @@
     <div style="flex-grow: 1; height: 40px; border-radius: 14px; display: flex; align-items: center; justify-content: center;">
       <span style="font-size: 14px; font-weight: 500; color: #7D746A;">Dark</span>
     </div>
-    <div style="flex-grow: 1; height: 40px; border-radius: 14px; background: #FFFFFF; display: flex; align-items: center; justify-content: center;">
-      <span style="font-size: 14px; font-weight: 600;">Light</span>
-    </div>
     <div style="flex-grow: 1; height: 40px; border-radius: 14px; display: flex; align-items: center; justify-content: center;">
-      <span style="font-size: 14px; font-weight: 500; color: #7D746A;">Auto</span>
+      <span style="font-size: 14px; font-weight: 500; color: #7D746A;">Light</span>
+    </div>
+    <div style="flex-grow: 1; height: 40px; border-radius: 14px; background: #FFFFFF; display: flex; align-items: center; justify-content: center;">
+      <span style="font-size: 14px; font-weight: 600;">Auto</span>
     </div>
   </div>
 

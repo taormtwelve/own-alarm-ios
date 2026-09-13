@@ -1,63 +1,77 @@
 {
   "artboards": [
     { "file": "MainLight.dc.html", "x": 0, "y": 0, "w": 390, "h": 844, "title": "Alarms" },
-    { "file": "EditAlarmLight.dc.html", "x": 490, "y": 0, "w": 390, "h": 844, "title": "Edit alarm" },
+    { "file": "EditAlarmLight.dc.html", "x": 490, "y": 0, "w": 390, "h": 960, "title": "Edit alarm" },
     { "file": "SoundSheetLight.dc.html", "x": 980, "y": 0, "w": 390, "h": 844, "title": "Sound & loudness" },
     { "file": "RingingLight.dc.html", "x": 1470, "y": 0, "w": 390, "h": 844, "title": "Ringing — in app" },
-    { "file": "LockScreenLight.dc.html", "x": 1960, "y": 0, "w": 390, "h": 844, "title": "Ringing — Lock Screen" },
+    { "file": "LockScreenLight.dc.html", "x": 1960, "y": 0, "w": 390, "h": 844, "title": "Snoozed — Lock Screen" },
     { "file": "SoundsLight.dc.html", "x": 2450, "y": 0, "w": 390, "h": 844, "title": "Sounds tab" },
     { "file": "SettingsLight.dc.html", "x": 2940, "y": 0, "w": 390, "h": 844, "title": "Settings tab" },
 
-    { "file": "Main.dc.html", "x": 0, "y": 1104, "w": 390, "h": 844, "title": "Alarms — dark" },
-    { "file": "EditAlarm.dc.html", "x": 490, "y": 1104, "w": 390, "h": 844, "title": "Edit alarm — dark" },
-    { "file": "SoundSheet.dc.html", "x": 980, "y": 1104, "w": 390, "h": 844, "title": "Sound & loudness — dark" },
-    { "file": "Ringing.dc.html", "x": 1470, "y": 1104, "w": 390, "h": 844, "title": "Ringing — in app — dark" },
-    { "file": "LockScreen.dc.html", "x": 1960, "y": 1104, "w": 390, "h": 844, "title": "Ringing — Lock Screen — dark" },
-    { "file": "Sounds.dc.html", "x": 2450, "y": 1104, "w": 390, "h": 844, "title": "Sounds tab — dark" },
-    { "file": "Settings.dc.html", "x": 2940, "y": 1104, "w": 390, "h": 844, "title": "Settings tab — dark" }
+    { "file": "Main.dc.html", "x": 0, "y": 1220, "w": 390, "h": 844, "title": "Alarms — dark" },
+    { "file": "EditAlarm.dc.html", "x": 490, "y": 1220, "w": 390, "h": 960, "title": "Edit alarm — dark" },
+    { "file": "SoundSheet.dc.html", "x": 980, "y": 1220, "w": 390, "h": 844, "title": "Sound & loudness — dark" },
+    { "file": "Ringing.dc.html", "x": 1470, "y": 1220, "w": 390, "h": 844, "title": "Ringing — in app — dark" },
+    { "file": "LockScreen.dc.html", "x": 1960, "y": 1220, "w": 390, "h": 844, "title": "Snoozed — Lock Screen — dark" },
+    { "file": "Sounds.dc.html", "x": 2450, "y": 1220, "w": 390, "h": 844, "title": "Sounds tab — dark" },
+    { "file": "Settings.dc.html", "x": 2940, "y": 1220, "w": 390, "h": 844, "title": "Settings tab — dark" }
   ],
   "annotations": [
     {
       "id": "volume-model",
       "x": 0,
-      "y": -200,
+      "y": -220,
       "w": 390,
-      "text": "Volume belongs to the task, not the phone.\nEvery alarm stores its own 0-100% level, its own fade-in, and whether it overrides Silent. The list shows that level as a meter so you can scan it at a glance."
+      "text": "Volume belongs to the task, not the phone.\nEvery alarm keeps its own level. While a level plays in the app — dragging a slider, previewing a tone, an alarm ringing on screen — the phone's volume is set to it and put back afterwards. Swipe left on a row to delete."
     },
     {
       "id": "clock-note",
       "x": 490,
-      "y": -200,
-      "w": 830,
-      "text": "24-hour is the default.\nSettings > Clock > Time format switches the whole app between 24-hour and AM/PM — the picker loses its AM/PM wheel in 24-hour mode, and every time on the list, the ringing screen and the Lock Screen follows the same setting. Worth deciding: should first launch read iOS's own region setting instead of hard-defaulting to 24-hour?"
+      "y": -220,
+      "w": 390,
+      "text": "Editing an alarm.\nNew alarms open on the current time, carrying the volume, sound, snooze and fade-in of the last alarm saved. Saving switches an alarm on. Fade-in starts off; switched on, it ramps over 10 s. The editor scrolls — this artboard is taller to show all of it."
+    },
+    {
+      "id": "sheet-note",
+      "x": 980,
+      "y": -220,
+      "w": 390,
+      "text": "Picking a sound.\nThe fade-in curve appears only when fade-in is on. iOS does not share its own tone library with apps, so the choices are the bundled tones and your own audio from Music or Files."
     },
     {
       "id": "ringing-note",
       "x": 1470,
-      "y": -200,
-      "w": 830,
-      "text": "Two ways an alarm can arrive.\nSettings > Show on Lock Screen is the switch. On, it fires as a full-width Lock Screen alert with Stop and Snooze right there. Off, it only takes over inside the app. The wallpaper and the big clock on the Lock Screen artboard are the system's — only the card is ours."
+      "y": -220,
+      "w": 390,
+      "text": "Ringing in the app.\nA small Snooze, and Stop as a slide so a stray tap cannot silence the alarm. On the Lock Screen, iOS draws the ringing alarm itself; apps only set its button text, icon and colour."
+    },
+    {
+      "id": "snooze-note",
+      "x": 1960,
+      "y": -220,
+      "w": 390,
+      "text": "Snoozed, on the Lock Screen.\nThe dark card is the app's Live Activity counting down to when the alarm returns; it keeps the same colours in both themes. The notice below it is posted the moment you snooze, so a snooze is never invisible."
     },
     {
       "id": "tabs-note",
       "x": 2450,
-      "y": -200,
-      "w": 830,
-      "text": "Sounds can come from iOS.\nBoth the Sounds tab and the per-alarm picker open the system sound library alongside your own imports. Worth checking early: iOS only exposes the standard tone library to apps in limited ways, so this row may need to become a bundled set plus Music/Files import rather than a true system browser."
+      "y": -220,
+      "w": 880,
+      "text": "Sounds and Settings.\nSounds auditions any tone at any level — drag to hear it live. Settings holds the clock, what happens when an alarm rings, and the theme. New-alarm defaults are learned from saved alarms rather than set here, and on iOS 26 every alarm rings through Silent, so the Override Silent switch is gone."
     },
     {
       "id": "row-light",
       "x": -440,
       "y": 300,
       "w": 360,
-      "text": "Light — default\nWarm paper neutrals. Amber deepens for text and icons so it holds contrast on white; fills stay bright with near-black ink on top."
+      "text": "Light\nWhen the phone is in light mode. Appearance is Auto on first launch, so the app follows the phone — as does the clock, which starts on Match device. Warm paper neutrals; amber deepens for text and icons so it holds contrast on white."
     },
     {
       "id": "row-dark",
       "x": -440,
-      "y": 1404,
+      "y": 1520,
       "w": 360,
-      "text": "Dark\nSame layout, opt-in from Settings > Appearance. Worth keeping sharp: this is what you actually see when an alarm goes off at 6am."
+      "text": "Dark\nWhen the phone is in dark mode. Same layout; either theme can be pinned in Settings › Appearance."
     }
   ],
   "launch": { "view": "canvas" }
