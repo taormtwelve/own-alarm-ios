@@ -2,7 +2,6 @@ import SwiftUI
 
 struct EditAlarmView: View {
     @EnvironmentObject private var store: AlarmStore
-    @EnvironmentObject private var player: AlarmPlayer
     @Environment(\.dismiss) private var dismiss
 
     @State private var alarm: Alarm
@@ -152,53 +151,8 @@ struct EditAlarmView: View {
             // real alarm a few seconds from now, with what is on screen.
             TestRingButton(alarm: alarm)
 
-            Toggle(isOn: Binding(
-                get: { alarm.fadeInSeconds > 0 },
-                set: { alarm.fadeInSeconds = $0 ? store.settings.defaults.fadeInWhenSwitchedOn : 0 }
-            )) {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("Fade in")
-                        .font(Typo.body(14, relativeTo: .subheadline, weight: .semibold))
-                        .foregroundStyle(Tokens.textPrimary)
-                    Text(fadeDescription)
-                        .font(Typo.caption)
-                        .foregroundStyle(Tokens.textMuted)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-            }
-            .toggleStyle(.alarm)
-
-            if alarm.fadeInSeconds > 0 {
-                Stepper(
-                    "Fade over \(alarm.fadeInSeconds) seconds",
-                    value: $alarm.fadeInSeconds,
-                    in: 5...120,
-                    step: 5
-                )
-                .font(Typo.caption)
-                .foregroundStyle(Tokens.textSecondary)
-            }
-
-            Toggle(isOn: $alarm.vibrates) {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("Vibrate")
-                        .font(Typo.body(14, relativeTo: .subheadline, weight: .semibold))
-                        .foregroundStyle(Tokens.textPrimary)
-                    // Said up front, so a Lock Screen buzz with this off does not
-                    // look like a bug: iOS gives apps no vibration control there.
-                    Text("Buzzes while it rings · on the Lock Screen, iOS's Haptics setting decides")
-                        .font(Typo.caption)
-                        .foregroundStyle(Tokens.textMuted)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-            }
-            .toggleStyle(.alarm)
-            // Switching it on buzzes once, so the choice can be felt.
-            .onChange(of: alarm.vibrates) { on in
-                if on { player.buzzOnce() }
-            }
-
-            // On iOS 26+ every alarm rings through Silent, so there is nothing to choose.
+            // With AlarmKit (iOS 26+, Alarms allowed) every alarm rings through
+            // Silent, so there is nothing to choose.
             if !RingPermission.alwaysRingsThroughSilent {
                 Toggle(isOn: $alarm.overridesSilent) {
                     VStack(alignment: .leading, spacing: 2) {
@@ -222,12 +176,6 @@ struct EditAlarmView: View {
         )
     }
 
-    private var fadeDescription: String {
-        guard alarm.fadeInSeconds > 0 else { return "Starts at full volume" }
-        let start = Int((alarm.startingVolume * 100).rounded())
-        return "Starts at \(start)%, reaches \(alarm.volumePercent)% over \(alarm.fadeInSeconds)s"
-    }
-
     // MARK: Snooze
 
     private var snoozeCard: some View {
@@ -242,21 +190,10 @@ struct EditAlarmView: View {
                 .accessibilityLabel("Snooze")
             }
             if alarm.snoozeMinutes > 0 {
-                SettingsRow(title: "Snooze length") {
+                SettingsRow(title: "Snooze length", showsDivider: false) {
                     Stepper("\(alarm.snoozeMinutes) min", value: $alarm.snoozeMinutes, in: 1...30)
                         .font(Typo.rowValue)
                         .fixedSize()
-                }
-                SettingsRow(
-                    title: "Louder after each snooze",
-                    // On iOS 26 the system runs the snooze and replays the same
-                    // sound, so the "+10%" promise is not one the app can keep there.
-                    subtitle: RingPermission.systemRunsSnooze ? nil : "Adds 10% every time you put it off",
-                    showsDivider: false
-                ) {
-                    Toggle("Louder after each snooze", isOn: $alarm.louderAfterSnooze)
-                        .toggleStyle(.alarm)
-                        .labelsHidden()
                 }
             }
         }

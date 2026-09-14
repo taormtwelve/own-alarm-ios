@@ -43,9 +43,6 @@ struct VolumeMeter: View {
 /// VoiceOver's adjustable trait and Switch Control all keep working.
 struct VolumeSlider: View {
     @Binding var volume: Double
-    /// `true` when a drag starts, `false` when it ends — the hook for playing the
-    /// tone live while the level is being set.
-    var onEditingChanged: (Bool) -> Void = { _ in }
 
     var body: some View {
         // Whole percents, but not via `step:` — on iOS 26 a stepped slider draws a
@@ -55,8 +52,6 @@ struct VolumeSlider: View {
                               set: { volume = ($0 * 100).rounded() / 100 }),
                in: 0...1) {
             Text("Alarm volume")
-        } onEditingChanged: { editing in
-            onEditingChanged(editing)
         }
         .tint(Tokens.accentFill)
         .frame(minHeight: Metrics.minTapTarget)
@@ -227,30 +222,41 @@ struct PrimaryButton: View {
 
 /// Rings the alarm for real in a few seconds — same route, sound and volume as the
 /// scheduled alarm — the one way to hear exactly what has been set. While one is
-/// on its way the button cancels it and a countdown says when it rings.
+/// on its way the button cancels it and a countdown says when it rings; one ringing
+/// inside the app can be stopped here.
 struct TestRingButton: View {
     @EnvironmentObject private var store: AlarmStore
     let alarm: Alarm
 
     var body: some View {
         VStack(spacing: 8) {
-            if let due = store.testRingsAt {
+            if store.testRingingInApp != nil {
+                PrimaryButton(title: "Stop test", systemImage: "stop.fill") {
+                    store.stopTestInApp()
+                }
+            } else if let due = store.testRingsAt {
                 PrimaryButton(title: "Cancel test", systemImage: "xmark") {
                     store.cancelTestRing()
                 }
-                (Text("Rings in ") + Text(due, style: .timer)
-                    + Text(" · lock the phone to hear it as the Lock Screen alarm"))
-                    .font(Typo.caption)
-                    .foregroundStyle(Tokens.textMuted)
-                    .monospacedDigit()
-                    .fixedSize(horizontal: false, vertical: true)
+                caption(Text("Rings in ") + Text(due, style: .timer)
+                        + Text(" · lock the phone to hear it as the Lock Screen alarm"))
             } else {
                 PrimaryButton(title: "Test real alarm at \(alarm.volumePercent)%", systemImage: "bell.fill") {
                     store.testRing(alarm)
                 }
+                if store.testBlocked {
+                    caption(Text("Nothing can ring yet — allow Alarms or Notifications for OwnAlarm in Settings."))
+                }
             }
         }
-        .accessibilityIdentifier("testRing")
+    }
+
+    private func caption(_ text: Text) -> some View {
+        text
+            .font(Typo.caption)
+            .foregroundStyle(Tokens.textMuted)
+            .monospacedDigit()
+            .fixedSize(horizontal: false, vertical: true)
     }
 }
 

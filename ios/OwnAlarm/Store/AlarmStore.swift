@@ -16,10 +16,26 @@ final class AlarmStore: ObservableObject {
     /// When a test ring is due, while one is pending.
     @Published private(set) var testRingsAt: Date?
 
+    /// The last test ring could not be set up: neither Alarms nor Notifications may
+    /// ring for this app. Said on screen rather than counting down to silence.
+    @Published private(set) var testBlocked = false
+
+    /// A test that came due while the app was open on the notification route. A real
+    /// alarm rings inside the app there (media volume, through Silent), so the test
+    /// does too: the root view plays it while this is set.
+    @Published private(set) var testRingingInApp: Alarm?
+
     /// How far ahead a test ring is set: long enough to lock the phone and hear it
     /// as the Lock Screen alarm.
     static let testLead: TimeInterval = 5
+
+    /// How long a test ringing inside the app lasts before it stops by itself.
+    static let testInAppSeconds: TimeInterval = 30
+
+    /// The copy the pending test rings with.
+    private var pendingTest: Alarm?
     private var testClear: DispatchWorkItem?
+    private var testInAppStop: DispatchWorkItem?
 
     private let scheduler: AlarmScheduling
     private let fileURL: URL
@@ -27,9 +43,6 @@ final class AlarmStore: ObservableObject {
     private let seed: [Alarm]
     private let settingsKey = AppSettings.storageKey
     private let tonesKey = "ownalarm.importedTones"
-    /// The level each snoozed alarm last returned at, so "louder after each snooze"
-    /// keeps climbing. Cleared when the alarm is stopped or changed.
-    private let snoozeLevelsKey = "ownalarm.snoozeLevels"
 
     /// `fileURL` and `defaults` are injectable so tests — and UI-test launches —
     /// get their own storage instead of trampling the real app's data.
@@ -109,14 +122,13 @@ final class AlarmStore: ObservableObject {
         guard let index = alarms.firstIndex(where: { $0.id == alarm.id }) else { return }
         alarms[index] = alarm
         persist()
-        setSnoozeLevel(nil, for: alarm.id)
         reschedule(alarm)
     }
 
-    /// Saving from the editor. Stores the alarm, then remembers its volume, sound,
-    /// snooze and fade-in as the starting point for the next new alarm, so a routine
-    /// is set up once rather than re-dialled every time. Switching an alarm on or off
-    /// goes through `setEnabled` and deliberately does not count.
+    /// Saving from the editor. Stores the alarm, then remembers its volume, sound and
+    /// snooze as the starting point for the next new alarm, so a routine is set up
+    /// once rather than re-dialled every time. Switching an alarm on or off goes
+    /// through `setEnabled` and deliberately does not count.
     func save(_ alarm: Alarm, isNew: Bool) {
         if isNew { add(alarm) } else { update(alarm) }
 
@@ -124,8 +136,6 @@ final class AlarmStore: ObservableObject {
         remembered.volume = alarm.volume
         remembered.toneID = alarm.toneID
         remembered.snoozeMinutes = alarm.snoozeMinutes
-        remembered.fadeInSeconds = alarm.fadeInSeconds
-        remembered.vibrates = alarm.vibrates
         settings.defaults = remembered   // one write, one persist
     }
 
@@ -159,39 +169,83 @@ final class AlarmStore: ObservableObject {
 
     // MARK: Test ring
 
+    /// A throwaway copy of `alarm` to ring as a test: its own id, so nothing done to
+    /// the test — Stop, Snooze, finishing — reaches the real alarm; no snooze, since
+    /// there is nothing to come back to; and named as a test.
+    nonisolated static func testCopy(of alarm: Alarm) -> Alarm {
+        var test = alarm
+        test.id = UUID()
+        test.snoozeMinutes = 0
+        test.task = "Test · \(alarm.task.isEmpty ? "Alarm" : alarm.task)"
+        return test
+    }
+
     /// Rings `alarm` for real in `testLead` seconds — its tone at its level, through
     /// the same route as the scheduled alarm — without touching the alarm itself.
     /// The alarm need not be saved: the editor passes what is on screen.
     func testRing(_ alarm: Alarm) {
-        scheduler.scheduleTest(alarm, tone: tone(for: alarm), in: Self.testLead)
+        stopTestInApp()
+        let test = Self.testCopy(of: alarm)
+        pendingTest = test
+        testBlocked = false
+        scheduler.scheduleTest(test, tone: tone(for: alarm), in: Self.testLead)
         testRingsAt = Date().addingTimeInterval(Self.testLead)
         testClear?.cancel()
         let work = DispatchWorkItem { [weak self] in self?.testRingsAt = nil }
         testClear = work
         DispatchQueue.main.asyncAfter(deadline: .now() + Self.testLead, execute: work)
+
+        // Without permission nothing will ring; say so instead of counting down.
+        Task { [weak self, scheduler] in
+            guard await !scheduler.canRingTest() else { return }
+            guard let self, self.pendingTest?.id == test.id else { return }
+            self.cancelTestRing()
+            self.testBlocked = true
+        }
     }
 
     func cancelTestRing() {
         scheduler.cancelTest()
+        pendingTest = nil
         testClear?.cancel()
         testClear = nil
         testRingsAt = nil
+        stopTestInApp()
+    }
+
+    /// The pending test came due while the app was open, on the notification route:
+    /// it rings in the app, as a real alarm would there. False when no test is
+    /// pending — one already cancelled — so the caller can let the notification be.
+    @discardableResult
+    func testArrivedInApp() -> Bool {
+        guard let test = pendingTest else { return false }
+        pendingTest = nil
+        testClear?.cancel()
+        testClear = nil
+        testRingsAt = nil
+        testRingingInApp = test
+        testInAppStop?.cancel()
+        let work = DispatchWorkItem { [weak self] in self?.stopTestInApp() }
+        testInAppStop = work
+        DispatchQueue.main.asyncAfter(deadline: .now() + Self.testInAppSeconds, execute: work)
+        return true
+    }
+
+    func stopTestInApp() {
+        testInAppStop?.cancel()
+        testInAppStop = nil
+        testRingingInApp = nil
     }
 
     // MARK: Ringing
 
     func snooze(_ alarm: Alarm) {
         ringing = nil
-        var copy = alarm
-        let lastLevel = snoozeLevels[alarm.id.uuidString] ?? alarm.volume
-        copy.volume = alarm.louderAfterSnooze ? min(1.0, lastLevel + 0.10) : lastLevel
-        setSnoozeLevel(copy.volume, for: alarm.id)
-        scheduler.scheduleSnooze(copy, tone: tone(for: alarm), minutes: alarm.snoozeMinutes)
+        scheduler.scheduleSnooze(alarm, tone: tone(for: alarm), minutes: alarm.snoozeMinutes)
     }
 
     func stop(_ alarm: Alarm) {
         ringing = nil
-        setSnoozeLevel(nil, for: alarm.id)
         scheduler.cancelSnooze(alarm)
         // A one-shot alarm has done its job; a repeating one stays armed.
         if alarm.repeatDays.isEmpty {
@@ -221,6 +275,20 @@ final class AlarmStore: ObservableObject {
         for alarm in alarms where alarm.isEnabled {
             scheduler.schedule(alarm, tone: tone(for: alarm), showOnLockScreen: settings.showOnLockScreen)
         }
+        discardUnusedSounds()
+    }
+
+    /// Scaled copies nothing will ring — levels tested but never saved, alarms since
+    /// changed or deleted — are deleted, so Library/Sounds does not grow with every
+    /// test. Runs after a re-arm, once every copy in use has been rendered.
+    private func discardUnusedSounds() {
+        var keep = Set(alarms.filter(\.isEnabled).map { ScaledSound.name(for: tone(for: $0), volume: $0.volume) })
+        // Critical alerts play an imported tone from its full-level copy.
+        keep.formUnion(tones.filter { $0.source == .imported }.map { ScaledSound.name(for: $0, volume: 1) })
+        for test in [pendingTest, testRingingInApp].compactMap({ $0 }) {
+            keep.insert(ScaledSound.name(for: tone(for: test), volume: test.volume))
+        }
+        ScaledSound.discardCopies(except: keep)
     }
 
     private func reschedule(_ alarm: Alarm) {
@@ -270,16 +338,5 @@ final class AlarmStore: ObservableObject {
     private func persistTones() {
         guard let data = try? JSONEncoder().encode(tones.filter { $0.source == .imported }) else { return }
         defaults.set(data, forKey: tonesKey)
-    }
-
-    private var snoozeLevels: [String: Double] {
-        defaults.dictionary(forKey: snoozeLevelsKey) as? [String: Double] ?? [:]
-    }
-
-    private func setSnoozeLevel(_ level: Double?, for id: UUID) {
-        var levels = snoozeLevels
-        guard levels[id.uuidString] != level else { return }
-        levels[id.uuidString] = level
-        defaults.set(levels, forKey: snoozeLevelsKey)
     }
 }

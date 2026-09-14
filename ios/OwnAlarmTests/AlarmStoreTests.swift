@@ -12,6 +12,8 @@ final class SpyScheduler: AlarmScheduling {
     var cancelAllCount: Int { cancelledAll.count }
     private(set) var tests: [(alarm: Alarm, tone: AlarmTone, seconds: TimeInterval)] = []
     private(set) var cancelledTestCount = 0
+    /// Whether a test ring could make a sound — the permission answer.
+    var canRing = true
     var onFinished: ((UUID) -> Void)?
 
     func schedule(_ alarm: Alarm, tone: AlarmTone, showOnLockScreen: Bool) {
@@ -27,6 +29,7 @@ final class SpyScheduler: AlarmScheduling {
         tests.append((alarm, tone, seconds))
     }
     func cancelTest() { cancelledTestCount += 1 }
+    func canRingTest() async -> Bool { canRing }
 }
 
 @MainActor
@@ -87,7 +90,6 @@ final class AlarmStoreTests: XCTestCase {
         let store = makeStore()
         var alarm = makeAlarm(volume: 0.42, toneID: "whisper")
         alarm.snoozeMinutes = 5
-        alarm.fadeInSeconds = 15
 
         store.save(alarm, isNew: true)
 
@@ -95,7 +97,6 @@ final class AlarmStoreTests: XCTestCase {
         XCTAssertEqual(next.volume, 0.42, accuracy: 0.0001)
         XCTAssertEqual(next.toneID, "whisper")
         XCTAssertEqual(next.snoozeMinutes, 5)
-        XCTAssertEqual(next.fadeInSeconds, 15)
     }
 
     func testEditingAnAlarmAlsoUpdatesWhatIsRemembered() {
@@ -196,63 +197,18 @@ final class AlarmStoreTests: XCTestCase {
         XCTAssertEqual(spy.scheduled.last?.lockScreen, false)
     }
 
-    // MARK: Snooze — the volume rule
+    // MARK: Snooze
 
-    func testSnoozeReturnsTenPercentLouder() throws {
+    func testSnoozeRingsAgainAtTheAlarmsOwnLevel() throws {
         let store = makeStore()
-        let alarm = makeAlarm(volume: 0.50, louderAfterSnooze: true)
-        store.add(alarm)
-
-        store.snooze(alarm)
-
-        let snoozed = try XCTUnwrap(spy.snoozed.last)
-        XCTAssertEqual(snoozed.alarm.volume, 0.60, accuracy: 0.0001)
-        XCTAssertEqual(snoozed.minutes, alarm.snoozeMinutes)
-    }
-
-    func testSnoozeKeepsVolumeWhenTheRuleIsOff() throws {
-        let store = makeStore()
-        let alarm = makeAlarm(volume: 0.50, louderAfterSnooze: false)
-        store.add(alarm)
-
-        store.snooze(alarm)
-
-        XCTAssertEqual(try XCTUnwrap(spy.snoozed.last).alarm.volume, 0.50, accuracy: 0.0001)
-    }
-
-    func testSnoozeNeverExceedsFullVolume() throws {
-        let store = makeStore()
-        let alarm = makeAlarm(volume: 0.97, louderAfterSnooze: true)
-        store.add(alarm)
-
-        store.snooze(alarm)
-
-        XCTAssertEqual(try XCTUnwrap(spy.snoozed.last).alarm.volume, 1.0, accuracy: 0.0001)
-    }
-
-    func testEachSnoozeReturnsLouderThanTheLast() {
-        let store = makeStore()
-        let alarm = makeAlarm(volume: 0.50, louderAfterSnooze: true)
+        let alarm = makeAlarm(volume: 0.50)
         store.add(alarm)
 
         store.snooze(alarm)
         store.snooze(alarm)
-        store.snooze(alarm)
 
-        XCTAssertEqual(spy.snoozed.map { ($0.alarm.volume * 100).rounded() }, [60, 70, 80])
-    }
-
-    func testStoppingStartsTheNextSnoozeFromTheAlarmsOwnLevel() throws {
-        let store = makeStore()
-        let alarm = makeAlarm(volume: 0.50, days: [.monday], louderAfterSnooze: true)
-        store.add(alarm)
-        store.snooze(alarm)
-        store.snooze(alarm)
-
-        store.stop(alarm)
-        store.snooze(alarm)
-
-        XCTAssertEqual(try XCTUnwrap(spy.snoozed.last).alarm.volume, 0.60, accuracy: 0.0001)
+        XCTAssertEqual(spy.snoozed.map(\.alarm.volume), [0.50, 0.50], "Every snooze at the alarm's own level")
+        XCTAssertEqual(try XCTUnwrap(spy.snoozed.last).minutes, alarm.snoozeMinutes)
     }
 
     func testSnoozeRingsWithTheAlarmsImportedTone() throws {
@@ -292,11 +248,74 @@ final class AlarmStoreTests: XCTestCase {
         store.testRing(draft)
 
         let test = try XCTUnwrap(spy.tests.last)
+        XCTAssertNotEqual(test.alarm.id, draft.id, "Its own id, so Stop on the test never reaches the alarm")
         XCTAssertEqual(test.alarm.volume, 0.35, accuracy: 0.0001)
         XCTAssertEqual(test.tone, mine, "The imported tone, not a bundled fallback")
         XCTAssertEqual(test.seconds, AlarmStore.testLead)
         XCTAssertTrue(store.alarms.isEmpty, "A test ring saves nothing")
         XCTAssertNotNil(store.testRingsAt)
+    }
+
+    func testATestCopyIsNamedAsATestWithNothingToSnoozeTo() {
+        var alarm = makeAlarm(task: "Morning run", volume: 0.6)
+        alarm.snoozeMinutes = 9
+
+        let test = AlarmStore.testCopy(of: alarm)
+
+        XCTAssertNotEqual(test.id, alarm.id)
+        XCTAssertEqual(test.task, "Test · Morning run")
+        XCTAssertEqual(test.snoozeMinutes, 0)
+        XCTAssertEqual(test.volume, alarm.volume)
+        XCTAssertEqual(test.toneID, alarm.toneID)
+        XCTAssertEqual(AlarmStore.testCopy(of: makeAlarm(task: "")).task, "Test · Alarm")
+    }
+
+    func testWithoutPermissionATestRingSaysSoInsteadOfCountingDown() {
+        let store = makeStore()
+        spy.canRing = false
+
+        store.testRing(makeAlarm())
+
+        let blocked = NSPredicate { _, _ in store.testBlocked && store.testRingsAt == nil }
+        expectation(for: blocked, evaluatedWith: nil)
+        waitForExpectations(timeout: 2)
+        XCTAssertGreaterThanOrEqual(spy.cancelledTestCount, 1, "Nothing left scheduled")
+    }
+
+    func testATestThatComesDueWithTheAppOpenRingsInTheApp() throws {
+        let store = makeStore()
+        store.testRing(makeAlarm())
+        let scheduled = try XCTUnwrap(spy.tests.last).alarm
+
+        XCTAssertTrue(store.testArrivedInApp())
+
+        XCTAssertEqual(store.testRingingInApp?.id, scheduled.id, "The same copy the scheduler got")
+        XCTAssertNil(store.testRingsAt, "No countdown once it is ringing")
+        store.stopTestInApp()
+        XCTAssertNil(store.testRingingInApp)
+    }
+
+    func testACancelledTestThatArrivesAnywayIsJustANotification() {
+        let store = makeStore()
+        store.testRing(makeAlarm())
+        store.cancelTestRing()
+
+        XCTAssertFalse(store.testArrivedInApp())
+        XCTAssertNil(store.testRingingInApp)
+    }
+
+    func testReArmingDiscardsSoundCopiesNothingWillRing() throws {
+        let store = makeStore()
+        let siren = AlarmTone.tone(id: "siren", in: AlarmTone.bundled)
+        store.add(makeAlarm(volume: 0.7, toneID: "siren"))
+        let inUse = try XCTUnwrap(ScaledSound.fileName(for: siren, volume: 0.7))
+        let triedOnce = try XCTUnwrap(ScaledSound.fileName(for: siren, volume: 0.37))
+
+        store.rescheduleAll()
+
+        let exists = { FileManager.default.fileExists(atPath: ScaledSound.directory.appendingPathComponent($0).path) }
+        XCTAssertTrue(exists(inUse), "An enabled alarm's copy stays")
+        XCTAssertFalse(exists(triedOnce), "A level only tested is not kept")
     }
 
     func testCancellingATestRingClearsIt() {
@@ -429,10 +448,9 @@ final class AlarmStoreTests: XCTestCase {
                            minute: Int = 0,
                            volume: Double = 0.7,
                            days: Set<Weekday> = [],
-                           toneID: String = "siren",
-                           louderAfterSnooze: Bool = true) -> Alarm {
+                           toneID: String = "siren") -> Alarm {
         Alarm(task: task, hour: hour, minute: minute, repeatDays: days,
-              volume: volume, fadeInSeconds: 0, overridesSilent: true,
-              toneID: toneID, snoozeMinutes: 9, louderAfterSnooze: louderAfterSnooze)
+              volume: volume, overridesSilent: true,
+              toneID: toneID, snoozeMinutes: 9)
     }
 }

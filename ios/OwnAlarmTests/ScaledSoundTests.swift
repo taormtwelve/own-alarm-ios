@@ -59,6 +59,22 @@ final class ScaledSoundTests: XCTestCase {
         XCTAssertTrue(exists(bellCopy), "Other tones keep theirs")
     }
 
+    func testTheNameIsTheCopysFileName() throws {
+        XCTAssertEqual(try XCTUnwrap(ScaledSound.fileName(for: siren, volume: 0.42)),
+                       ScaledSound.name(for: siren, volume: 0.42))
+    }
+
+    func testDiscardingKeepsOnlyTheCopiesInUse() throws {
+        let used = try XCTUnwrap(ScaledSound.fileName(for: siren, volume: 0.61))
+        let unused = try XCTUnwrap(ScaledSound.fileName(for: siren, volume: 0.62))
+
+        ScaledSound.discardCopies(except: [used])
+
+        let exists = { FileManager.default.fileExists(atPath: ScaledSound.directory.appendingPathComponent($0).path) }
+        XCTAssertTrue(exists(used))
+        XCTAssertFalse(exists(unused), "Tried once, never saved: gone")
+    }
+
     // MARK: The formula
 
     func testFullVolumeIsTheLoudestTheToneCanGo() {

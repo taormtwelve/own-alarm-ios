@@ -129,9 +129,7 @@ private struct AlarmRow: View {
     }
 
     private var summary: String {
-        alarm.fadeInSeconds > 0
-            ? "\(tone.name) · ramp \(alarm.fadeInSeconds)s"
-            : "\(tone.name) · no ramp"
+        tone.name
     }
 
     private var toggle: some View {

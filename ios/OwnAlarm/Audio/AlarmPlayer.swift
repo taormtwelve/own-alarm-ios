@@ -1,72 +1,82 @@
-import AudioToolbox
 import AVFoundation
 import Combine
 
-/// Plays the alarm itself while the app is open — the in-app ringing screen.
+/// Plays sound inside the app: the alarm itself while the app is open — the in-app
+/// ringing screen, or a test ring that comes due there — and a short preview of a
+/// tone as it is picked.
 ///
-/// Hearing a level *before* it rings is not done here: no app can play a sound the
-/// way the Lock Screen alarm will (at the Ringer & Alerts volume, through Silent).
-/// So the app rings the real alarm instead, a few seconds ahead — `AlarmStore.testRing`.
+/// A picked tone is previewed as media: at the phone's media volume as it is, never
+/// changed, only so the sound can be recognised. The level is heard truly by ringing
+/// the real alarm a few seconds ahead — `AlarmStore.testRing` — since no app can play
+/// a sound the way the Lock Screen alarm will.
 ///
-/// An alarm ringing inside the app has to loop until stopped, fade in and ring
-/// through Silent. It plays under `AVAudioSession(.playback)`, with `SystemVolume`
-/// setting the phone's volume to the alarm's level and putting the user's own back
-/// when it stops. A ringing alarm set to vibrate also buzzes, every
-/// `vibrationInterval`, until it is stopped.
+/// An alarm ringing inside the app has to loop until stopped and ring through
+/// Silent. It plays under `AVAudioSession(.playback)`, with `SystemVolume` setting the
+/// phone's volume to the alarm's level and putting the user's own back when it stops.
 @MainActor
 final class AlarmPlayer: ObservableObject {
     @Published private(set) var playingToneID: String?
 
-    /// How often the phone buzzes while a vibrating alarm rings.
-    static let vibrationInterval: TimeInterval = 1.6
+    /// The tone being previewed, if any.
+    @Published private(set) var previewingToneID: String?
+
+    /// How long a preview plays before it stops by itself.
+    static let previewSeconds: TimeInterval = 6
 
     private var player: AVAudioPlayer?
-    private var vibrationTimer: Timer?
+    private var previewPlayer: AVAudioPlayer?
+    private var previewStop: DispatchWorkItem?
     private let system: SystemVolume
-    private let vibrate: () -> Void
 
-    /// Tests pass their own `vibrate` to count buzzes; the app uses the real motor.
-    init(system: SystemVolume = .shared,
-         vibrate: @escaping () -> Void = { AudioServicesPlaySystemSound(kSystemSoundID_Vibrate) }) {
+    /// Tests pass a pretend phone volume; the app uses the real one.
+    init(system: SystemVolume = .shared) {
         self.system = system
-        self.vibrate = vibrate
     }
 
-    /// One buzz — what switching Vibrate on in the editor feels like.
-    func buzzOnce() {
-        vibrate()
+    // MARK: Preview
+
+    /// Plays `tone` for a few seconds so it can be recognised — as media, at the media
+    /// volume as it is. Never over an alarm that is ringing.
+    func preview(_ tone: AlarmTone) {
+        guard player == nil else { return }
+        stopPreview()
+        guard let url = tone.fileURL else { return }
+        do {
+            let session = AVAudioSession.sharedInstance()
+            // Alongside whatever else is playing; `.playback` is heard through Silent.
+            try session.setCategory(.playback, mode: .default, options: [.mixWithOthers])
+            try session.setActive(true)
+            let preview = try AVAudioPlayer(contentsOf: url)
+            preview.numberOfLoops = -1
+            guard preview.play() else { return }
+            previewPlayer = preview
+            previewingToneID = tone.id
+            let work = DispatchWorkItem { [weak self] in self?.stopPreview() }
+            previewStop = work
+            DispatchQueue.main.asyncAfter(deadline: .now() + Self.previewSeconds, execute: work)
+        } catch {
+            print("AlarmPlayer could not preview \(tone.id): \(error.localizedDescription)")
+        }
+    }
+
+    /// Ends a preview at once — another tone picked, the screen or tab left, the app
+    /// backgrounded. A ringing alarm is not a preview and is left alone.
+    func stopPreview() {
+        previewStop?.cancel()
+        previewStop = nil
+        guard let preview = previewPlayer else { return }
+        preview.stop()
+        previewPlayer = nil
+        previewingToneID = nil
+        if player == nil {
+            try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
+        }
     }
 
     // MARK: Ringing
 
     func startRinging(_ alarm: Alarm, tone: AlarmTone) {
-        play(tone,
-             level: alarm.volume,
-             fadeFrom: alarm.fadeInSeconds > 0 ? Alarm.fadeInFloor : nil,
-             fadeSeconds: TimeInterval(alarm.fadeInSeconds))
-        // Independent of the sound: an alarm that cannot play still buzzes.
-        if alarm.vibrates { startVibrating() }
-    }
-
-    /// Stops the sound and the buzzing, and hands the phone's volume back.
-    func stop() {
-        vibrationTimer?.invalidate()
-        vibrationTimer = nil
-        player?.stop()
-        player = nil
-        playingToneID = nil
-        system.restore()
-        try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
-    }
-
-    // MARK: Engine
-
-    /// `level` is 0...1 of the phone's media volume. With `fadeFrom`, the player
-    /// ramps from that fraction of the level up to all of it.
-    private func play(_ tone: AlarmTone,
-                      level: Double,
-                      fadeFrom: Double?,
-                      fadeSeconds: TimeInterval) {
+        stopPreview()
         player?.stop()
         player = nil
 
@@ -84,16 +94,12 @@ final class AlarmPlayer: ObservableObject {
 
             // The phone's volume becomes the alarm's level; the player runs at full
             // scale on top.
-            system.takeOver(at: Float(min(1, max(0, level))))
+            system.takeOver(at: Float(min(1, max(0, alarm.volume))))
 
             let player = try AVAudioPlayer(contentsOf: url)
             player.numberOfLoops = -1
-            player.volume = Float(fadeFrom ?? 1)
             player.prepareToPlay()
             player.play()
-            if fadeFrom != nil, fadeSeconds > 0 {
-                player.setVolume(1, fadeDuration: fadeSeconds)
-            }
             self.player = player
             playingToneID = tone.id
         } catch {
@@ -101,12 +107,13 @@ final class AlarmPlayer: ObservableObject {
         }
     }
 
-    /// Buzzes now, then every `vibrationInterval` until `stop()`.
-    private func startVibrating() {
-        vibrationTimer?.invalidate()
-        let buzz = vibrate
-        buzz()
-        vibrationTimer = Timer.scheduledTimer(withTimeInterval: Self.vibrationInterval,
-                                              repeats: true) { _ in buzz() }
+    /// Stops the alarm and any preview, and hands the phone's volume back.
+    func stop() {
+        stopPreview()
+        player?.stop()
+        player = nil
+        playingToneID = nil
+        system.restore()
+        try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
     }
 }

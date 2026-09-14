@@ -25,8 +25,8 @@ import ActivityKit
 /// the user's permission.
 ///
 /// AlarmKit has no volume parameter, so the task's level is baked into the sound
-/// file (`ScaledSound`) — the same sound previews play, at the same Ringer & Alerts
-/// volume, so it rings as it sounded when the level was set.
+/// file (`ScaledSound`), which plays at the Ringer & Alerts volume. A test ring
+/// (`scheduleTest`) goes through here too, so it sounds exactly like the alarm.
 ///
 /// Snooze is an AlarmKit countdown, drawn live on the Lock Screen and in the Dynamic
 /// Island by the OwnAlarmWidgets extension. AlarmKit also reveals when an alarm has
@@ -62,9 +62,11 @@ final class AlarmKitScheduler: AlarmScheduling {
     /// that lands after a newer request knows it is out of date.
     private var requests: [UUID: (number: Int, wanted: Bool)] = [:]
     private var requestCount = 0
-    /// The test ring pending, if any — never in `armed`, so its stopping is not
-    /// read as an alarm finishing.
+    /// The test ring pending, if any — never in `armed`, so its stopping is not read
+    /// as an alarm finishing — and a count of test requests, so a schedule still on
+    /// its way when the test is cancelled or replaced knows to undo itself.
     private var testID: UUID?
+    private var testRequest = 0
 
     init(fallback: AlarmScheduling, defaults: UserDefaults = .standard) {
         self.fallback = fallback
@@ -156,20 +158,19 @@ final class AlarmKitScheduler: AlarmScheduling {
             fallback.scheduleTest(alarm, tone: tone, in: seconds)
             return
         }
-        // Its own id — so its Stop button stops it, not the real alarm it copies —
-        // Stop only, since there is nothing to snooze, and named as a test.
-        let id = UUID()
-        var test = alarm
-        test.id = id
-        test.snoozeMinutes = 0
-        test.task = "Test · \(alarm.task.isEmpty ? "Alarm" : alarm.task)"
-        testID = id
-        let configuration = makeConfiguration(for: test, tone: tone,
+        // `alarm` is the store's test copy: its own id, so its Stop button stops the
+        // test and nothing else, and no snooze.
+        let id = alarm.id
+        let request = claimTest(id).request
+        let configuration = makeConfiguration(for: alarm, tone: tone,
                                               schedule: .fixed(Date().addingTimeInterval(seconds)))
-        Task { [manager, fallback] in
+        Task { [weak self, manager, fallback] in
             do {
                 _ = try await manager.schedule(id: id, configuration: configuration)
+                // Cancelled or replaced while this was on its way: undo it.
+                if self?.isCurrentTest(request) != true { try? manager.cancel(id: id) }
             } catch {
+                guard self?.isCurrentTest(request) == true else { return }
                 print("AlarmKit refused the test ring: \(error). Using a notification instead.")
                 fallback.scheduleTest(alarm, tone: tone, in: seconds)
             }
@@ -177,18 +178,23 @@ final class AlarmKitScheduler: AlarmScheduling {
     }
 
     func cancelTest() {
-        if let id = testID {
-            try? manager.cancel(id: id)
-            testID = nil
+        if let previous = claimTest(nil).previous {
+            try? manager.cancel(id: previous)
         }
         fallback.cancelTest()
+    }
+
+    func canRingTest() async -> Bool {
+        if isAuthorized { return true }
+        return await fallback.canRingTest()
     }
 
     func cancelAll(_ alarms: [Alarm]) {
         // Alarms are re-armed on every launch; that must not cancel one that is
         // snoozing or ringing at this moment — nor a test ring on its way.
+        let test = currentTestID
         for scheduled in (try? manager.alarms) ?? [] {
-            guard case .scheduled = scheduled.state, scheduled.id != testID else { continue }
+            guard case .scheduled = scheduled.state, scheduled.id != test else { continue }
             record(scheduled.id, wanted: false)
             setArmed(scheduled.id, false)
             try? manager.cancel(id: scheduled.id)
@@ -211,6 +217,30 @@ final class AlarmKitScheduler: AlarmScheduling {
         lock.lock()
         defer { lock.unlock() }
         return requests[id]
+    }
+
+    /// Makes `id` the current test (nil: none), returning the new request number and
+    /// the test it replaces.
+    @discardableResult
+    private func claimTest(_ id: UUID?) -> (request: Int, previous: UUID?) {
+        lock.lock()
+        defer { lock.unlock() }
+        let previous = testID
+        testRequest += 1
+        testID = id
+        return (testRequest, previous)
+    }
+
+    private func isCurrentTest(_ request: Int) -> Bool {
+        lock.lock()
+        defer { lock.unlock() }
+        return testRequest == request
+    }
+
+    private var currentTestID: UUID? {
+        lock.lock()
+        defer { lock.unlock() }
+        return testID
     }
 
     private func isActive(_ id: UUID) -> Bool {
@@ -352,19 +382,18 @@ private extension Weekday {
 /// apps Apple has approved for the entitlement; for everyone else iOS skips the
 /// question silently, which is why iOS 26's AlarmKit is the route that matters.
 enum RingPermission {
-    /// True where every alarm rings through Silent and Focus on its own (AlarmKit,
-    /// iOS 26+). A per-alarm "override Silent" choice means nothing there, so the
-    /// switch for it is hidden.
+    /// True where every alarm rings through Silent and Focus on its own: AlarmKit, on
+    /// iOS 26+ with the Alarms permission granted. A per-alarm "override Silent"
+    /// choice means nothing there, so the switch for it is hidden. Without the
+    /// permission alarms fall back to notifications, where the choice matters again.
     static var alwaysRingsThroughSilent: Bool {
         #if canImport(AlarmKit)
-        if #available(iOS 26.0, *) { return true }
+        if #available(iOS 26.0, *) {
+            return AlarmManager.shared.authorizationState == .authorized
+        }
         #endif
         return false
     }
-
-    /// True where the system runs the snooze itself (AlarmKit, iOS 26+) and replays
-    /// the same sound, so "louder after each snooze" cannot be promised there.
-    static var systemRunsSnooze: Bool { alwaysRingsThroughSilent }
 
     static var name: String {
         #if canImport(AlarmKit)

@@ -61,7 +61,8 @@ final class AlarmSchedulerTests: XCTestCase {
     func testATestRingIsTheAlarmsOwnNotificationMarkedAsATest() {
         let alarm = makeAlarm(task: "Morning run", volume: 0.6)
         let real = scheduler.content(for: alarm, tone: tone, showOnLockScreen: true)
-        let test = scheduler.testContent(for: alarm, tone: tone)
+        // The store names the copy; the scheduler rings what it is given.
+        let test = scheduler.testContent(for: AlarmStore.testCopy(of: alarm), tone: tone)
 
         // UNNotificationSound gives nothing to compare by; the body it shares with
         // the real notification ("60% · Siren") shows it was built the same way.
@@ -122,7 +123,7 @@ final class AlarmSchedulerTests: XCTestCase {
                            volume: Double = 0.7,
                            overridesSilent: Bool = true) -> Alarm {
         Alarm(task: task, hour: 7, minute: 0, repeatDays: [],
-              volume: volume, fadeInSeconds: 0, overridesSilent: overridesSilent,
+              volume: volume, overridesSilent: overridesSilent,
               toneID: "siren")
     }
 }

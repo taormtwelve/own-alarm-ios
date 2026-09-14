@@ -102,7 +102,7 @@ final class AlarmKitSchedulerTests: XCTestCase {
     // test file imports both, so the app's has to be named in full.
     private func sample() -> OwnAlarm.Alarm {
         OwnAlarm.Alarm(task: "Wake", hour: 6, minute: 30, repeatDays: [],
-                       volume: 0.6, fadeInSeconds: 0, overridesSilent: true, toneID: "siren")
+                       volume: 0.6, overridesSilent: true, toneID: "siren")
     }
 }
 #endif

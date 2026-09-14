@@ -78,24 +78,11 @@ struct Alarm: Identifiable, Codable, Equatable {
     /// The whole point of the app: each alarm owns its level, 0...1, independent of
     /// the ringer. Persisted per alarm, never read from the system volume.
     var volume: Double
-    /// Seconds to ramp from `fadeInFloor` to `volume`. Zero means no ramp.
-    var fadeInSeconds: Int
     /// Ring even when the phone is muted or in a Focus. Requires Critical Alerts.
     var overridesSilent: Bool
 
     var toneID: String
     var snoozeMinutes: Int = 9
-    var louderAfterSnooze: Bool = true
-    /// Buzz while the alarm rings in the app. On the Lock Screen iOS decides, from its
-    /// own Sounds & Haptics settings — no API lets an app choose there.
-    var vibrates: Bool = true
-
-    /// Where a fade-in starts from, as a fraction of the target volume.
-    static let fadeInFloor: Double = 0.24
-
-    var startingVolume: Double {
-        fadeInSeconds > 0 ? volume * Alarm.fadeInFloor : volume
-    }
 
     var volumePercent: Int { Int((volume * 100).rounded()) }
 
@@ -143,12 +130,9 @@ struct Alarm: Identifiable, Codable, Equatable {
             minute: parts.minute ?? 0,
             repeatDays: [],
             volume: defaults.volume,
-            fadeInSeconds: defaults.fadeInSeconds,
             overridesSilent: defaults.overridesSilent,
             toneID: defaults.toneID,
-            snoozeMinutes: defaults.snoozeMinutes,
-            louderAfterSnooze: defaults.louderAfterSnooze,
-            vibrates: defaults.vibrates
+            snoozeMinutes: defaults.snoozeMinutes
         )
     }
 }
@@ -157,15 +141,15 @@ struct Alarm: Identifiable, Codable, Equatable {
 
 extension Alarm {
     enum CodingKeys: String, CodingKey {
-        case id, task, hour, minute, repeatDays, isEnabled, volume, fadeInSeconds
-        case overridesSilent, toneID, snoozeMinutes, louderAfterSnooze, vibrates
+        case id, task, hour, minute, repeatDays, isEnabled, volume
+        case overridesSilent, toneID, snoozeMinutes
     }
 
     /// Alarms are saved to disk, and a field added in a later version is missing from
     /// every alarm saved before it. Swift's generated decoding would then reject the
     /// whole file — and the app would start with no alarms. Fields added after the
-    /// first release are therefore read leniently, falling back to how the app
-    /// behaved before they existed.
+    /// first release are therefore read leniently. Fields since removed — fade-in,
+    /// louder after snooze, vibrate — are simply ignored in older saves.
     init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
         id = try c.decode(UUID.self, forKey: .id)
@@ -175,13 +159,9 @@ extension Alarm {
         repeatDays = try c.decode(Set<Weekday>.self, forKey: .repeatDays)
         isEnabled = try c.decode(Bool.self, forKey: .isEnabled)
         volume = try c.decode(Double.self, forKey: .volume)
-        fadeInSeconds = try c.decode(Int.self, forKey: .fadeInSeconds)
         overridesSilent = try c.decode(Bool.self, forKey: .overridesSilent)
         toneID = try c.decode(String.self, forKey: .toneID)
         snoozeMinutes = try c.decode(Int.self, forKey: .snoozeMinutes)
-        louderAfterSnooze = try c.decode(Bool.self, forKey: .louderAfterSnooze)
-        // Added later: older alarms vibrate, as they always did.
-        vibrates = try c.decodeIfPresent(Bool.self, forKey: .vibrates) ?? true
     }
 }
 
@@ -193,15 +173,15 @@ extension Alarm {
     static let starter: [Alarm] = [
         Alarm(task: "Morning run", hour: 6, minute: 45,
               repeatDays: [.monday, .tuesday, .wednesday, .thursday, .friday],
-              volume: 0.85, fadeInSeconds: 0, overridesSilent: true, toneID: "siren"),
+              volume: 0.85, overridesSilent: true, toneID: "siren"),
         Alarm(task: "Take medication", hour: 7, minute: 30,
               repeatDays: Set(Weekday.allCases),
-              volume: 0.30, fadeInSeconds: 30, overridesSilent: true, toneID: "soft-bell"),
+              volume: 0.30, overridesSilent: true, toneID: "soft-bell"),
         Alarm(task: "Stand-up call", hour: 13, minute: 15,
               repeatDays: [.tuesday, .thursday],
-              volume: 0.55, fadeInSeconds: 10, overridesSilent: false, toneID: "marimba"),
+              volume: 0.55, overridesSilent: false, toneID: "marimba"),
         Alarm(task: "Wind down & charge phone", hour: 22, minute: 0,
               repeatDays: [.sunday], isEnabled: false,
-              volume: 0.15, fadeInSeconds: 0, overridesSilent: false, toneID: "whisper"),
+              volume: 0.15, overridesSilent: false, toneID: "whisper"),
     ]
 }

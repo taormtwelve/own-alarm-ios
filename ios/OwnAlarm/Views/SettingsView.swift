@@ -36,7 +36,7 @@ struct SettingsView: View {
                                     .labelsHidden()
                             }
 
-                            // Hidden on iOS 26+, where every alarm rings through Silent.
+                            // Hidden where AlarmKit rings every alarm through Silent.
                             if !RingPermission.alwaysRingsThroughSilent {
                                 SettingsRow(
                                     title: "Override Silent & Focus",
@@ -46,15 +46,6 @@ struct SettingsView: View {
                                         .toggleStyle(.alarm)
                                         .labelsHidden()
                                 }
-                            }
-
-                            SettingsRow(
-                                title: "Louder after each snooze",
-                                subtitle: "Adds 10% every time"
-                            ) {
-                                Toggle("Louder after each snooze", isOn: $store.settings.defaults.louderAfterSnooze)
-                                    .toggleStyle(.alarm)
-                                    .labelsHidden()
                             }
 
                             Button {

@@ -2,11 +2,12 @@ import AVFoundation
 import SwiftUI
 import UIKit
 
-/// The per-alarm sound sheet: fade-in curve on top, tone list beneath, and a way
-/// to hear the tone at exactly the level this alarm is set to — by ringing the real
-/// alarm a few seconds from now.
+/// The per-alarm sound sheet: the tone list — tapping one picks it and plays a short
+/// preview as media, so it can be recognised — and a way to hear it at exactly the
+/// level this alarm is set to, by ringing the real alarm a few seconds from now.
 struct SoundPickerView: View {
     @EnvironmentObject private var store: AlarmStore
+    @EnvironmentObject private var player: AlarmPlayer
     @Environment(\.dismiss) private var dismiss
 
     @Binding var alarm: Alarm
@@ -15,16 +16,15 @@ struct SoundPickerView: View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: 16) {
-                    if alarm.fadeInSeconds > 0 {
-                        FadeCurveCard(alarm: alarm)
-                    }
-
                     SectionLabel(text: "Alarm tones")
 
                     VStack(spacing: 8) {
                         ForEach(store.tones) { tone in
-                            ToneRow(tone: tone, isSelected: tone.id == alarm.toneID) {
+                            ToneRow(tone: tone,
+                                    isSelected: tone.id == alarm.toneID,
+                                    isPlaying: player.previewingToneID == tone.id) {
                                 alarm.toneID = tone.id
+                                player.preview(tone)
                             }
                         }
 
@@ -50,91 +50,9 @@ struct SoundPickerView: View {
                         .fontWeight(.bold)
                 }
             }
+            // Previews only: a ringing alarm is not stopped by leaving here.
+            .onDisappear { player.stopPreview() }
         }
-    }
-}
-
-// MARK: - Fade curve
-
-private struct FadeCurveCard: View {
-    let alarm: Alarm
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack {
-                Text("Fade-in curve")
-                    .font(Typo.body(13, relativeTo: .footnote, weight: .semibold))
-                    .foregroundStyle(Tokens.textSecondary)
-                Spacer()
-                Text("\(Int(alarm.startingVolume * 100))% → \(alarm.volumePercent)% over \(alarm.fadeInSeconds)s")
-                    .font(Typo.caption)
-                    .foregroundStyle(Tokens.textMuted)
-            }
-
-            FadeCurve(startFraction: Alarm.fadeInFloor)
-                .frame(height: 68)
-                .accessibilityLabel("Volume rises from \(Int(alarm.startingVolume * 100)) to \(alarm.volumePercent) percent over \(alarm.fadeInSeconds) seconds")
-
-            HStack {
-                Text("0s")
-                Spacer()
-                Text("\(alarm.fadeInSeconds / 2)s")
-                Spacer()
-                Text("\(alarm.fadeInSeconds)s")
-            }
-            .font(Typo.caption)
-            .foregroundStyle(Tokens.textFaint)
-        }
-        .padding(16)
-        .cardSurface()
-    }
-}
-
-private struct FadeCurve: View {
-    let startFraction: Double
-
-    var body: some View {
-        GeometryReader { geo in
-            let size = geo.size
-            ZStack {
-                area(in: size)
-                    .fill(Tokens.accentFill.opacity(0.18))
-                line(in: size)
-                    .stroke(Tokens.accentText, style: StrokeStyle(lineWidth: 2.5, lineCap: .round))
-                Circle()
-                    .fill(Tokens.accentText)
-                    .frame(width: 9, height: 9)
-                    .position(endPoint(in: size))
-            }
-        }
-    }
-
-    private func startPoint(in size: CGSize) -> CGPoint {
-        CGPoint(x: 0, y: size.height * (1 - startFraction))
-    }
-
-    private func endPoint(in size: CGSize) -> CGPoint {
-        CGPoint(x: size.width, y: size.height * 0.08)
-    }
-
-    private func line(in size: CGSize) -> Path {
-        var path = Path()
-        let start = startPoint(in: size)
-        path.move(to: start)
-        path.addCurve(
-            to: endPoint(in: size),
-            control1: CGPoint(x: size.width * 0.42, y: start.y),
-            control2: CGPoint(x: size.width * 0.62, y: size.height * 0.18)
-        )
-        return path
-    }
-
-    private func area(in size: CGSize) -> Path {
-        var path = line(in: size)
-        path.addLine(to: CGPoint(x: size.width, y: size.height))
-        path.addLine(to: CGPoint(x: 0, y: size.height))
-        path.closeSubpath()
-        return path
     }
 }
 
@@ -143,12 +61,14 @@ private struct FadeCurve: View {
 struct ToneRow: View {
     let tone: AlarmTone
     let isSelected: Bool
+    var isPlaying = false
     let select: () -> Void
 
     var body: some View {
         Button(action: select) {
             HStack(spacing: 13) {
-                Image(systemName: tone.source == .imported ? "music.note" : "waveform")
+                Image(systemName: isPlaying ? "speaker.wave.2.fill"
+                      : tone.source == .imported ? "music.note" : "waveform")
                     .font(.system(size: 15, weight: .semibold))
                     .foregroundStyle(isSelected ? Tokens.inkOnAccent : Tokens.textSecondary)
                     .frame(width: 38, height: 38)

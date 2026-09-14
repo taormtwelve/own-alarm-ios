@@ -81,6 +81,6 @@ final class NotificationResponseTests: XCTestCase {
 
     private func oneShot() -> Alarm {
         Alarm(task: "Once", hour: 7, minute: 0, repeatDays: [],
-              volume: 0.5, fadeInSeconds: 0, overridesSilent: true, toneID: "siren")
+              volume: 0.5, overridesSilent: true, toneID: "siren")
     }
 }

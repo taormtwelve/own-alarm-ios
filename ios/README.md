@@ -1,7 +1,7 @@
 # OwnAlarm — iOS
 
 An alarm app where **volume belongs to the task, not the phone**. Every alarm stores
-its own level, fade-in and Silent-mode override, so a medication reminder can stay at
+its own level and Silent-mode override, so a medication reminder can stay at
 30% while a wake-up sits at 85%.
 
 Built from the approved design canvas. SwiftUI, iOS 16+.
@@ -50,7 +50,7 @@ OwnAlarm/
   Model/AppSettings.swift  Time format, theme, defaults, time formatting
   Store/AlarmStore.swift   Source of truth; persistence; keeps the schedule in step
   Audio/AlarmScheduler.swift  Notification scheduling — where per-alarm volume lives
-  Audio/AlarmPlayer.swift  In-app playback, previews, fade-in
+  Audio/AlarmPlayer.swift  In-app ringing, and a short preview of a picked tone
   Views/                   One file per screen, plus Components.swift
 ```
 
@@ -72,10 +72,13 @@ Two paths, because iOS has two:
   one-off AlarmKit alarm — or, on iOS 16–25 / without permission, a notification
   marked `test` that plays with its sound even in the foreground — 5 s ahead,
   with the tone and level on screen, saving nothing. Same route, same file, same
-  volume: what you hear is what wakes you. The slider itself is silent; the
-  captions say 100% is the Ringer & Alerts volume and where to raise it.
-- **An alarm ringing in the app** — it has to loop, fade in and ring through Silent,
-  which a system sound cannot, so it plays under `AVAudioSession(.playback)`.
+  volume: what you hear is what wakes you. With the app open on the notification
+  route the test rings in the app, as a real alarm does there. The slider itself
+  is silent; tapping a tone only previews it as media, at the media volume as it
+  is, to recognise it. The captions say 100% is the Ringer & Alerts volume and
+  where to raise it.
+- **An alarm ringing in the app** — it has to loop and ring through Silent, so it
+  plays under `AVAudioSession(.playback)`.
   `SystemVolume` remembers the phone's media volume, sets it to the alarm's level,
   and puts it back when it stops (and on the next launch, if the app was closed
   mid-way). There is no public API for system volume: this uses the slider inside
@@ -134,22 +137,20 @@ The mockups were fixed 390×844 frames. None of that survived into the code:
   picker would be the durable fix if the setting matters a lot.
 - **No iOS system sounds.** Apple does not expose the standard tone library to
   third-party apps, so the app ships its own tones plus Music/Files import.
-- **Fade-in while terminated.** A notification sound plays at one fixed volume —
-  `fadeInSeconds` only ramps for a foreground alarm. A background fade would mean
-  chaining several notifications at rising volumes, which is doable but noisy.
 - **Ringing on the Lock Screen needs iOS 26.** There, alarms go through AlarmKit:
   full screen, sounding until stopped, through Silent and Focus. AlarmKit has no
   volume parameter, so each task's level is baked into a scaled copy of its sound
   (`ScaledSound`), which iOS plays at the Ringer & Alerts volume. 100% is the tone
   as loud as it can go without clipping; every other level is that share of it
-  (50% is half as loud). Previews play the same copy at the same volume, so they match — and
+  (50% is half as loud). Test real alarm rings the same copy at the same volume — and
   how loud 100% is depends on the ringer volume, which apps cannot set. On iOS 16–25 the
   app falls back to notifications, which play once (30 s at most) and stay silent
   in Silent mode without the Critical Alerts entitlement.
-- **Vibration is the app's to set only while it rings in the app.** There the
-  per-alarm Vibrate switch buzzes every 1.6 s until Stop. On the Lock Screen iOS
-  gives apps no vibration control, so its Sounds & Haptics settings decide — the
-  switch's caption says so.
+- **No fade-in, vibration or louder snooze.** All three were removed: iOS plays
+  Lock Screen alarm sounds at one fixed level, decides vibration from its own
+  Sounds & Haptics settings, and replays the same sound on an AlarmKit snooze, so
+  none could be promised where it matters. Old saves still load; the fields are
+  ignored.
 - **Saved data must outlive updates.** Alarms and settings are decoded leniently
   (`Alarm.init(from:)`, `AlarmDefaults.init(from:)`): a field added in a later
   version falls back to the old behaviour instead of making the whole save

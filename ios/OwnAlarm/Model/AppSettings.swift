@@ -61,30 +61,20 @@ enum ThemePreference: String, Codable, CaseIterable, Identifiable {
     #endif
 }
 
-/// What a freshly created alarm starts from: half volume, fade-in off, a 9-minute
-/// snooze at first — then whatever the user last saved. `AlarmStore.save` copies
-/// each saved alarm's volume, sound, snooze and fade-in back into these.
+/// What a freshly created alarm starts from: half volume and a 9-minute snooze at
+/// first — then whatever the user last saved. `AlarmStore.save` copies each saved
+/// alarm's volume, sound and snooze back into these.
 struct AlarmDefaults: Codable, Equatable {
-    /// Fade length when fade-in is switched on and none has been remembered.
-    static let standardFadeInSeconds = 10
     /// Snooze length when snooze is switched on and none has been remembered.
     static let standardSnoozeMinutes = 9
 
     var volume: Double = 0.50
-    var fadeInSeconds: Int = 0
     var overridesSilent: Bool = true
     var toneID: String = "marimba"
     var snoozeMinutes: Int = AlarmDefaults.standardSnoozeMinutes
-    var louderAfterSnooze: Bool = true
-    var vibrates: Bool = true
 
-    /// Fade length when the user switches fade-in on. The remembered value is 0
-    /// whenever their last alarm had no fade, which would leave the switch stuck off.
-    var fadeInWhenSwitchedOn: Int {
-        fadeInSeconds > 0 ? fadeInSeconds : Self.standardFadeInSeconds
-    }
-
-    /// Snooze length when the user switches snooze on — same reasoning.
+    /// Snooze length when the user switches snooze on. The remembered value is 0
+    /// whenever their last alarm had no snooze, which would leave the switch stuck off.
     var snoozeWhenSwitchedOn: Int {
         snoozeMinutes > 0 ? snoozeMinutes : Self.standardSnoozeMinutes
     }
@@ -92,22 +82,20 @@ struct AlarmDefaults: Codable, Equatable {
 
 extension AlarmDefaults {
     enum CodingKeys: String, CodingKey {
-        case volume, fadeInSeconds, overridesSilent, toneID, snoozeMinutes, louderAfterSnooze, vibrates
+        case volume, overridesSilent, toneID, snoozeMinutes
     }
 
     /// Every field falls back to its factory value when missing, so settings saved
     /// by an older version — before a field existed — still load instead of being
-    /// thrown away.
+    /// thrown away. Fields since removed (fade-in, louder after snooze, vibrate) are
+    /// ignored.
     init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
         let factory = AlarmDefaults()
         volume = try c.decodeIfPresent(Double.self, forKey: .volume) ?? factory.volume
-        fadeInSeconds = try c.decodeIfPresent(Int.self, forKey: .fadeInSeconds) ?? factory.fadeInSeconds
         overridesSilent = try c.decodeIfPresent(Bool.self, forKey: .overridesSilent) ?? factory.overridesSilent
         toneID = try c.decodeIfPresent(String.self, forKey: .toneID) ?? factory.toneID
         snoozeMinutes = try c.decodeIfPresent(Int.self, forKey: .snoozeMinutes) ?? factory.snoozeMinutes
-        louderAfterSnooze = try c.decodeIfPresent(Bool.self, forKey: .louderAfterSnooze) ?? factory.louderAfterSnooze
-        vibrates = try c.decodeIfPresent(Bool.self, forKey: .vibrates) ?? factory.vibrates
     }
 }
 

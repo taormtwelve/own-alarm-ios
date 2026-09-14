@@ -78,18 +78,24 @@ enum ScaledSound {
     /// original file.
     static func fileName(for tone: AlarmTone, volume: Double) -> String? {
         discardOutdatedCopies()
-        let level = percent(volume)
-        let name = "\(tone.id)-\(level).caf"
+        let name = name(for: tone, volume: volume)
         let destination = directory.appendingPathComponent(name)
         if FileManager.default.fileExists(atPath: destination.path) { return name }
         try? FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
-        return render(tone, percent: level, to: destination) ? name : nil
+        return render(tone, percent: percent(volume), to: destination) ? name : nil
+    }
+
+    /// The name the copy for this tone and level has, rendered or not.
+    static func name(for tone: AlarmTone, volume: Double) -> String {
+        "\(tone.id)-\(percent(volume)).caf"
     }
 
     private static func render(_ tone: AlarmTone, percent: Int, to destination: URL) -> Bool {
         guard let source = tone.fileURL,
-              let loudest = peak(of: tone),
               let buffer = read(source, seconds: maxSeconds) else { return false }
+        // One decode serves both the measure and the copy.
+        let loudest = peaks[tone.id] ?? loudestSample(in: buffer)
+        peaks[tone.id] = loudest
 
         let gain = copyGain(for: Double(percent) / 100, peak: loudest)
         if let channels = buffer.floatChannelData {
@@ -133,13 +139,18 @@ enum ScaledSound {
     static func peak(of tone: AlarmTone) -> Float? {
         if let cached = peaks[tone.id] { return cached }
         guard let source = tone.fileURL, let buffer = read(source, seconds: maxSeconds) else { return nil }
+        let loudest = loudestSample(in: buffer)
+        peaks[tone.id] = loudest
+        return loudest
+    }
+
+    private static func loudestSample(in buffer: AVAudioPCMBuffer) -> Float {
         var loudest: Float = 0
         if let channels = buffer.floatChannelData {
             for channel in 0..<Int(buffer.format.channelCount) {
                 for i in 0..<Int(buffer.frameLength) { loudest = max(loudest, abs(channels[channel][i])) }
             }
         }
-        peaks[tone.id] = loudest
         return loudest
     }
 
@@ -162,6 +173,15 @@ enum ScaledSound {
         let files = (try? FileManager.default.contentsOfDirectory(atPath: directory.path)) ?? []
         for file in files where file.hasPrefix("\(toneID)-") && file.hasSuffix(".caf") {
             guard Int(file.dropFirst(toneID.count + 1).dropLast(4)) != nil else { continue }
+            try? FileManager.default.removeItem(at: directory.appendingPathComponent(file))
+        }
+    }
+
+    /// Deletes every copy not named in `keep` — levels tested but never saved, alarms
+    /// since changed or deleted. The store passes the copies still in use.
+    static func discardCopies(except keep: Set<String>) {
+        let files = (try? FileManager.default.contentsOfDirectory(atPath: directory.path)) ?? []
+        for file in files where file.hasSuffix(".caf") && !keep.contains(file) {
             try? FileManager.default.removeItem(at: directory.appendingPathComponent(file))
         }
     }

@@ -11,10 +11,14 @@ protocol AlarmScheduling: AnyObject {
     func cancelAll(_ alarms: [Alarm])
 
     /// Rings `alarm` for real in `seconds` — the same route, sound and volume as a
-    /// scheduled alarm — so the user hears exactly what they have set. One at a
-    /// time: a new test replaces a pending one. The alarm itself is untouched.
+    /// scheduled alarm — so the user hears exactly what they have set. `alarm` is a
+    /// throwaway copy with its own id (`AlarmStore.testCopy`). One at a time: a new
+    /// test replaces a pending one, and a cancel stops one still being set up.
     func scheduleTest(_ alarm: Alarm, tone: AlarmTone, in seconds: TimeInterval)
     func cancelTest()
+    /// Whether a test ring can make a sound at all — permission to ring, by AlarmKit
+    /// or by a notification with sound.
+    func canRingTest() async -> Bool
 
     /// Set by the store. Called with an alarm's id when the system reports that the
     /// alarm has rung and been stopped. Only AlarmKit can tell; other schedulers
@@ -192,12 +196,18 @@ final class AlarmScheduler: AlarmScheduling {
         center.removeDeliveredNotifications(withIdentifiers: [Self.testIdentifier])
     }
 
-    /// The alarm's own notification, marked as a test: no Stop / Snooze buttons
-    /// (there is no alarm to act on) and no alarm id, so the router shows it with
-    /// its sound even while the app is open instead of opening the ringing screen.
+    func canRingTest() async -> Bool {
+        let settings = await center.notificationSettings()
+        // Provisional notifications arrive quietly; only full permission rings.
+        return settings.authorizationStatus == .authorized && settings.soundSetting == .enabled
+    }
+
+    /// The alarm's own notification — `alarm` is already the named test copy —
+    /// marked as a test: no Stop / Snooze buttons (there is no alarm to act on) and
+    /// no alarm id. With the app open the router rings it in the app, as a real
+    /// alarm rings there.
     func testContent(for alarm: Alarm, tone: AlarmTone) -> UNNotificationContent {
         let content = self.content(for: alarm, tone: tone, showOnLockScreen: true)
-        content.title = "Test · \(alarm.task.isEmpty ? "Alarm" : alarm.task)"
         content.categoryIdentifier = ""
         content.userInfo = ["test": true]
         return content
@@ -225,7 +235,7 @@ final class AlarmScheduler: AlarmScheduling {
         } else {
             // A normal notification sound follows the ringer — as does a critical one
             // iOS was not approved to play — so the task's level is baked into the
-            // file instead — the same sound previews play (see `ScaledSound`).
+            // file instead (see `ScaledSound`).
             let name = ScaledSound.fileName(for: tone, volume: alarm.volume) ?? tone.fileName
             content.sound = UNNotificationSound(named: UNNotificationSoundName(rawValue: name))
         }

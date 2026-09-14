@@ -2,6 +2,7 @@ import SwiftUI
 
 struct RootView: View {
     @EnvironmentObject private var store: AlarmStore
+    @EnvironmentObject private var player: AlarmPlayer
     @State private var tab: Tab = .alarms
 
     private enum Tab: Hashable {
@@ -23,6 +24,19 @@ struct RootView: View {
                 .tag(Tab.settings)
         }
         .tint(Tokens.accentText)
+        // Changing tab ends a preview at once. A tab is not reliably told it has
+        // disappeared the moment you leave it, so this does not wait to be told.
+        .onChange(of: tab) { _ in player.stopPreview() }
+        // A test ring that came due with the app open rings here, as a real alarm
+        // would inside the app — unless a real one is ringing already.
+        .onChange(of: store.testRingingInApp?.id) { _ in
+            guard store.ringing == nil else { return }
+            if let test = store.testRingingInApp {
+                player.startRinging(test, tone: store.tone(for: test))
+            } else {
+                player.stop()
+            }
+        }
         // The theme preference wins over the system setting; `.automatic` returns
         // nil, which hands control back to iOS.
         .preferredColorScheme(store.settings.theme.colorScheme)
@@ -31,7 +45,7 @@ struct RootView: View {
         .fullScreenCover(item: $store.ringing) { alarm in
             RingingView(alarm: alarm)
         }
-        // Lets the app set the phone's volume while it plays, without the HUD.
+        // Lets the app set the phone's volume while an alarm rings, without the HUD.
         .hostsSystemVolume()
     }
 }

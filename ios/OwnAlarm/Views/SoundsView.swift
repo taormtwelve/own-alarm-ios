@@ -1,9 +1,11 @@
 import SwiftUI
 
-/// The Sounds tab: the tone library, and a place to hear a tone at a chosen level
-/// before you trust it to wake you — by ringing the real alarm a few seconds from now.
+/// The Sounds tab: the tone library — tap a tone to hear it as media — and a place to
+/// hear it at a chosen level before you trust it to wake you, by ringing the real
+/// alarm a few seconds from now.
 struct SoundsView: View {
     @EnvironmentObject private var store: AlarmStore
+    @EnvironmentObject private var player: AlarmPlayer
 
     @State private var testLevel: Double = 0.5
     @State private var testToneID: String = AlarmTone.bundled.first?.id ?? "siren"
@@ -20,9 +22,11 @@ struct SoundsView: View {
                             LibraryRow(
                                 tone: tone,
                                 usage: store.usageCount(of: tone),
-                                isSelected: tone.id == testToneID
+                                isSelected: tone.id == testToneID,
+                                isPlaying: player.previewingToneID == tone.id
                             ) {
                                 testToneID = tone.id
+                                player.preview(tone)
                             }
                         }
                         SourceChoices()
@@ -34,6 +38,8 @@ struct SoundsView: View {
             }
             .background(Tokens.background)
             .navigationTitle("Sounds")
+            // Previews only: a ringing alarm is not stopped by leaving here.
+            .onDisappear { player.stopPreview() }
         }
     }
 
@@ -41,7 +47,7 @@ struct SoundsView: View {
     /// needs; it is never saved.
     private var testAlarm: Alarm {
         Alarm(task: "Sound test", hour: 0, minute: 0, repeatDays: [],
-              volume: testLevel, fadeInSeconds: 0, overridesSilent: true, toneID: testToneID)
+              volume: testLevel, overridesSilent: true, toneID: testToneID)
     }
 
     private var testCard: some View {
@@ -51,7 +57,7 @@ struct SoundsView: View {
                     .font(Typo.sectionLabel)
                     .tracking(1.1)
                     .foregroundStyle(Tokens.accentLabel)
-                Text("Pick a tone below and set a level · it rings in \(Int(AlarmStore.testLead)) s as a real alarm. 100% is your Ringer & Alerts volume — raise it in Settings › Sounds & Haptics if you want louder.")
+                Text("Tap a tone below to hear it · set a level and it rings in \(Int(AlarmStore.testLead)) s as a real alarm. 100% is your Ringer & Alerts volume — raise it in Settings › Sounds & Haptics if you want louder.")
                     .font(Typo.caption)
                     .foregroundStyle(Tokens.textMuted)
                     .fixedSize(horizontal: false, vertical: true)
@@ -88,12 +94,14 @@ private struct LibraryRow: View {
     let tone: AlarmTone
     let usage: Int
     let isSelected: Bool
+    let isPlaying: Bool
     let select: () -> Void
 
     var body: some View {
         Button(action: select) {
             HStack(spacing: 13) {
-                Image(systemName: tone.source == .imported ? "music.note" : "waveform")
+                Image(systemName: isPlaying ? "speaker.wave.2.fill"
+                      : tone.source == .imported ? "music.note" : "waveform")
                     .font(.system(size: 15, weight: .semibold))
                     .foregroundStyle(isSelected ? Tokens.inkOnAccent : Tokens.textSecondary)
                     .frame(width: 40, height: 40)
