@@ -29,14 +29,14 @@
       "x": 490,
       "y": -220,
       "w": 390,
-      "text": "Editing an alarm.\nNew alarms open on the current time, carrying the volume, sound, snooze, fade-in and vibration of the last alarm saved. Saving switches an alarm on. Fade-in starts off; switched on, it ramps over 10 s. Vibrate buzzes while the alarm rings in the app; on the Lock Screen, iOS's Haptics setting decides. Dragging the slider plays the alarm's own sound at the Ringer & Alerts volume; with the Silent switch on it is muted, and a line under the slider says so (not drawn here). The editor scrolls — this artboard is taller to show all of it."
+      "text": "Editing an alarm.\nOn iOS 26 the system runs snoozes and replays the same sound, so Louder after each snooze carries no \"+10%\" caption there (this artboard). New alarms open on the current time, carrying the volume, sound, snooze, fade-in and vibration of the last alarm saved. Saving switches an alarm on. Fade-in starts off; switched on, it ramps over 10 s. Vibrate buzzes while the alarm rings in the app; on the Lock Screen, iOS's Haptics setting decides. Dragging the slider plays the alarm's own sound at the Ringer & Alerts volume; with the Silent switch on it is muted, and a line under the slider says so (not drawn here). The editor scrolls — this artboard is taller to show all of it."
     },
     {
       "id": "sheet-note",
       "x": 980,
       "y": -220,
       "w": 390,
-      "text": "Picking a sound.\nThe fade-in curve appears only when fade-in is on. iOS does not share its own tone library with apps, so the choices are the bundled tones and your own audio from Music or Files."
+      "text": "Picking a sound.\nThe fade-in curve appears only when fade-in is on. iOS does not share its own tone library with apps, so the choices are the bundled tones and your own audio from Music or Files. iOS caps alarm sounds at 30 s: a longer song rings from its start and stops at 29 s — the import says so at once, and the tone's row keeps saying it."
     },
     {
       "id": "ringing-note",
