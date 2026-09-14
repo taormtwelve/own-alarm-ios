@@ -156,11 +156,13 @@ final class AlarmKitScheduler: AlarmScheduling {
             fallback.scheduleTest(alarm, tone: tone, in: seconds)
             return
         }
-        // Stop only — there is nothing to snooze — and named as a test.
+        // Its own id — so its Stop button stops it, not the real alarm it copies —
+        // Stop only, since there is nothing to snooze, and named as a test.
+        let id = UUID()
         var test = alarm
+        test.id = id
         test.snoozeMinutes = 0
         test.task = "Test · \(alarm.task.isEmpty ? "Alarm" : alarm.task)"
-        let id = UUID()
         testID = id
         let configuration = makeConfiguration(for: test, tone: tone,
                                               schedule: .fixed(Date().addingTimeInterval(seconds)))
