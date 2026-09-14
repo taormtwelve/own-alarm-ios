@@ -1,8 +1,9 @@
 name: Build OwnAlarm
 
-# Runs for dev and prod. Every push builds the .ipa and runs every test; only a push
-# to prod goes on to publish a release, and only if every test passed. Merging dev
-# into prod is the deploy.
+# Runs for uat and prod — not dev, where work lands without spending build minutes.
+# Every push builds the .ipa and runs every test; only a push to prod goes on to
+# publish a release, and only if every test passed. Merging dev into uat is the test
+# build; merging into prod is the deploy.
 #
 # Three jobs run side by side, so a run waits only for the slowest of them:
 #   core-tests  (Linux)  model tests, no Apple SDK needed
@@ -15,7 +16,7 @@ name: Build OwnAlarm
 
 on:
   push:
-    branches: [dev, prod]
+    branches: [uat, prod]
   # Manual runs from the Actions tab, on any branch, when you want one.
   workflow_dispatch:
 
