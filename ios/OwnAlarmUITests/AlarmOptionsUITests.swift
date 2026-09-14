@@ -49,6 +49,9 @@ final class AlarmOptionsUITests: XCTestCase {
 
     func testSnoozeSwitchShowsAndHidesTheLength() {
         openMorningRun()
+        // The snooze card sits below a tall volume card; two swipes reach it on
+        // every simulator size, and a swipe past the end does no harm.
+        app.swipeUp()
         app.swipeUp()
 
         let snooze = app.switches["Snooze"]

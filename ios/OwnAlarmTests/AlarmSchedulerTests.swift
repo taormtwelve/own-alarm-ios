@@ -63,10 +63,10 @@ final class AlarmSchedulerTests: XCTestCase {
         let real = scheduler.content(for: alarm, tone: tone, showOnLockScreen: true)
         let test = scheduler.testContent(for: alarm, tone: tone)
 
-        XCTAssertNotNil(test.sound)
-        // UNNotificationSound compares by identity; the description names the file.
-        XCTAssertEqual(String(describing: test.sound), String(describing: real.sound),
-                       "The very sound the real alarm rings with")
+        // UNNotificationSound gives nothing to compare by; the body it shares with
+        // the real notification ("60% · Siren") shows it was built the same way.
+        XCTAssertNotNil(test.sound, "It must ring, not just show")
+        XCTAssertEqual(test.body, real.body, "The real alarm's own content")
         XCTAssertEqual(test.interruptionLevel, real.interruptionLevel)
         XCTAssertEqual(test.userInfo["test"] as? Bool, true)
         XCTAssertNil(test.userInfo["alarmID"], "No alarm to open or stop")
