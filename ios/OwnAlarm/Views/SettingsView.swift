@@ -3,21 +3,22 @@ import UIKit
 
 struct SettingsView: View {
     @EnvironmentObject private var store: AlarmStore
+    @Environment(\.appLanguage) private var t
     @State private var criticalAlertsGranted: Bool?
 
     var body: some View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: 18) {
-                    section("Clock") {
+                    section(t("Clock")) {
                         CardGroup {
                             VStack(alignment: .leading, spacing: 10) {
-                                Text("Time format")
+                                Text(t("Time format"))
                                     .font(Typo.rowLabel)
                                     .foregroundStyle(Tokens.textSecondary)
                                 SegmentedChoice(
                                     options: TimeFormat.allCases,
-                                    label: \.label,
+                                    label: { t($0.label) },
                                     selection: $store.settings.timeFormat
                                 )
                             }
@@ -25,13 +26,13 @@ struct SettingsView: View {
                         }
                     }
 
-                    section("When an alarm rings") {
+                    section(t("When an alarm rings")) {
                         CardGroup {
                             SettingsRow(
-                                title: "Show on Lock Screen",
-                                subtitle: "Off, the alarm only takes over inside the app"
+                                title: t("Show on Lock Screen"),
+                                subtitle: t("Off, the alarm only takes over inside the app")
                             ) {
-                                Toggle("Show on Lock Screen", isOn: $store.settings.showOnLockScreen)
+                                Toggle(t("Show on Lock Screen"), isOn: $store.settings.showOnLockScreen)
                                     .toggleStyle(.alarm)
                                     .labelsHidden()
                             }
@@ -39,10 +40,10 @@ struct SettingsView: View {
                             // Hidden where AlarmKit rings every alarm through Silent.
                             if !RingPermission.alwaysRingsThroughSilent {
                                 SettingsRow(
-                                    title: "Override Silent & Focus",
-                                    subtitle: "Applied to new alarms"
+                                    title: t("Override Silent & Focus"),
+                                    subtitle: t("Applied to new alarms")
                                 ) {
-                                    Toggle("Override Silent & Focus", isOn: $store.settings.defaults.overridesSilent)
+                                    Toggle(t("Override Silent & Focus"), isOn: $store.settings.defaults.overridesSilent)
                                         .toggleStyle(.alarm)
                                         .labelsHidden()
                                 }
@@ -52,7 +53,7 @@ struct SettingsView: View {
                                 openSettings()
                             } label: {
                                 SettingsRow(
-                                    title: RingPermission.name,
+                                    title: t(RingPermission.name),
                                     subtitle: permissionExplanation,
                                     showsDivider: false
                                 ) {
@@ -63,12 +64,25 @@ struct SettingsView: View {
                         }
                     }
 
-                    section("Appearance") {
+                    section(t("Appearance")) {
                         CardGroup {
                             SegmentedChoice(
                                 options: ThemePreference.allCases,
-                                label: \.label,
+                                label: { t($0.label) },
                                 selection: $store.settings.theme
+                            )
+                            .padding(8)
+                        }
+                    }
+
+                    // Each language is named in itself, so it can be found by someone
+                    // who reads only that one.
+                    section(t("Language")) {
+                        CardGroup {
+                            SegmentedChoice(
+                                options: AppLanguage.allCases,
+                                label: \.label,
+                                selection: $store.settings.language
                             )
                             .padding(8)
                         }
@@ -79,11 +93,16 @@ struct SettingsView: View {
                 .readableWidth()
             }
             .background(Tokens.background)
-            .navigationTitle("Settings")
+            .navigationTitle(t("Settings"))
             .task {
                 criticalAlertsGranted = await RingPermission.isGranted()
             }
             .onChange(of: store.settings.showOnLockScreen) { _ in
+                store.rescheduleAll()
+            }
+            // Lock Screen alerts and notifications are written when an alarm is
+            // armed, so re-arming puts them in the new language.
+            .onChange(of: store.settings.language) { _ in
                 store.rescheduleAll()
             }
         }
@@ -99,16 +118,16 @@ struct SettingsView: View {
 
     private var permissionLabel: String {
         switch criticalAlertsGranted {
-        case .some(true): return "Allowed"
-        case .some(false): return "Not allowed"
-        case nil: return "Checking…"
+        case .some(true): return t("Allowed")
+        case .some(false): return t("Not allowed")
+        case nil: return t("Checking…")
         }
     }
 
     private var permissionExplanation: String {
         criticalAlertsGranted == true
-            ? "What lets an alarm ring at its own volume through Silent"
-            : "Without it, alarms follow the ringer and the mute switch"
+            ? t("What lets an alarm ring at its own volume through Silent")
+            : t("Without it, alarms follow the ringer and the mute switch")
     }
 
     private func openSettings() {

@@ -34,20 +34,40 @@ final class AlarmTests: XCTestCase {
     // MARK: Repeat summary
 
     func testRepeatSummaryNamesCommonPatterns() {
-        XCTAssertEqual(makeAlarm(days: []).repeatSummary, "Once")
-        XCTAssertEqual(makeAlarm(days: Set(Weekday.allCases)).repeatSummary, "Every day")
+        XCTAssertEqual(makeAlarm(days: []).repeatSummary(in: .english), "Once")
+        XCTAssertEqual(makeAlarm(days: Set(Weekday.allCases)).repeatSummary(in: .english), "Every day")
         XCTAssertEqual(
-            makeAlarm(days: [.monday, .tuesday, .wednesday, .thursday, .friday]).repeatSummary,
+            makeAlarm(days: [.monday, .tuesday, .wednesday, .thursday, .friday]).repeatSummary(in: .english),
             "Mon – Fri"
         )
-        XCTAssertEqual(makeAlarm(days: [.saturday, .sunday]).repeatSummary, "Weekends")
+        XCTAssertEqual(makeAlarm(days: [.saturday, .sunday]).repeatSummary(in: .english), "Weekends")
     }
 
     func testRepeatSummaryListsIrregularDaysInWeekOrder() {
-        let summary = makeAlarm(days: [.thursday, .tuesday]).repeatSummary
-        let tuesday = Weekday.tuesday.shortSymbol
-        let thursday = Weekday.thursday.shortSymbol
+        let summary = makeAlarm(days: [.thursday, .tuesday]).repeatSummary(in: .english)
+        let tuesday = Weekday.tuesday.shortSymbol(in: .english)
+        let thursday = Weekday.thursday.shortSymbol(in: .english)
         XCTAssertEqual(summary, "\(tuesday), \(thursday)")
+    }
+
+    func testRepeatSummaryReadsInThai() {
+        XCTAssertEqual(makeAlarm(days: []).repeatSummary(in: .thai), "ครั้งเดียว")
+        XCTAssertEqual(makeAlarm(days: Set(Weekday.allCases)).repeatSummary(in: .thai), "ทุกวัน")
+        XCTAssertEqual(
+            makeAlarm(days: [.monday, .tuesday, .wednesday, .thursday, .friday]).repeatSummary(in: .thai),
+            "จันทร์ – ศุกร์"
+        )
+        XCTAssertEqual(makeAlarm(days: [.saturday, .sunday]).repeatSummary(in: .thai), "สุดสัปดาห์")
+
+        let tuesday = Weekday.tuesday.shortSymbol(in: .thai)
+        let thursday = Weekday.thursday.shortSymbol(in: .thai)
+        XCTAssertEqual(makeAlarm(days: [.thursday, .tuesday]).repeatSummary(in: .thai), "\(tuesday), \(thursday)")
+        XCTAssertNotEqual(tuesday, Weekday.tuesday.shortSymbol(in: .english), "Thai day names, not English")
+    }
+
+    func testThaiDayPillsAreSevenDifferentDays() {
+        let pills = Weekday.allCases.map { $0.narrowSymbol(in: .thai) }
+        XCTAssertEqual(Set(pills).count, 7, "got \(pills)")
     }
 
     // MARK: Next fire date
@@ -126,6 +146,7 @@ final class AlarmTests: XCTestCase {
         settings.theme = .dark
         settings.showOnLockScreen = false
         settings.defaults.volume = 0.33
+        settings.language = .thai
 
         let data = try JSONEncoder().encode(settings)
         XCTAssertEqual(try JSONDecoder().decode(AppSettings.self, from: data), settings)
@@ -146,7 +167,7 @@ final class AlarmTests: XCTestCase {
     // MARK: Clock
 
     func testTwentyFourHourFormatDropsTheMeridiem() {
-        let text = TimeText.string(hour: 6, minute: 45, format: .twentyFourHour,
+        let text = TimeText.string(hour: 6, minute: 45, format: .twentyFourHour, language: .english,
                                    locale: Locale(identifier: "en_GB"), calendar: calendar)
         XCTAssertTrue(text.contains("45"), "got \(text)")
         XCTAssertFalse(text.uppercased().contains("AM"), "got \(text)")
@@ -154,17 +175,31 @@ final class AlarmTests: XCTestCase {
     }
 
     func testAfternoonIsTwentyFourHourNotTwelve() {
-        let text = TimeText.string(hour: 13, minute: 15, format: .twentyFourHour,
+        let text = TimeText.string(hour: 13, minute: 15, format: .twentyFourHour, language: .english,
                                    locale: Locale(identifier: "en_GB"), calendar: calendar)
         XCTAssertTrue(text.contains("13"), "expected a 13 in \(text)")
     }
 
     func testTwelveHourFormatKeepsTheMeridiem() {
-        let text = TimeText.string(hour: 13, minute: 15, format: .twelveHour,
+        let text = TimeText.string(hour: 13, minute: 15, format: .twelveHour, language: .english,
                                    locale: Locale(identifier: "en_US"), calendar: calendar)
         XCTAssertTrue(text.uppercased().contains("PM"), "got \(text)")
         XCTAssertTrue(text.hasPrefix("1:15"), "got \(text)")
         XCTAssertFalse(text.contains("13"), "got \(text)")
+    }
+
+    func testThaiTimesKeepTheClockSettingAndSpeakThai() {
+        // An English-region phone with the app in Thai: the setting decides the hour
+        // cycle, the language the words.
+        let twentyFour = TimeText.string(hour: 13, minute: 15, format: .twentyFourHour, language: .thai,
+                                         locale: Locale(identifier: "en_US"), calendar: calendar)
+        XCTAssertTrue(twentyFour.contains("13:15"), "got \(twentyFour)")
+
+        let twelve = TimeText.string(hour: 13, minute: 15, format: .twelveHour, language: .thai,
+                                     locale: Locale(identifier: "en_US"), calendar: calendar)
+        XCTAssertTrue(twelve.contains("1:15"), "got \(twelve)")
+        XCTAssertFalse(twelve.uppercased().contains("PM"), "Thai, not English: \(twelve)")
+        XCTAssertTrue(twelve.contains("เที่ยง"), "Thai's afternoon marker: \(twelve)")
     }
 
     func testAutomaticFollowsTheLocale() {
@@ -176,11 +211,13 @@ final class AlarmTests: XCTestCase {
 
     func testRelativeCountdownReads() {
         let now = reference()
-        XCTAssertEqual(TimeText.relative(to: now.addingTimeInterval(6 * 3600 + 12 * 60), from: now),
-                       "in 6h 12m")
-        XCTAssertEqual(TimeText.relative(to: now.addingTimeInterval(45 * 60), from: now), "in 45m")
-        XCTAssertEqual(TimeText.relative(to: now.addingTimeInterval(2 * 3600), from: now), "in 2h")
-        XCTAssertEqual(TimeText.relative(to: now.addingTimeInterval(-500), from: now), "in 0m")
+        XCTAssertEqual(TimeText.relative(to: now.addingTimeInterval(6 * 3600 + 12 * 60), from: now,
+                                         language: .english), "in 6h 12m")
+        XCTAssertEqual(TimeText.relative(to: now.addingTimeInterval(45 * 60), from: now, language: .english), "in 45m")
+        XCTAssertEqual(TimeText.relative(to: now.addingTimeInterval(2 * 3600), from: now, language: .english), "in 2h")
+        XCTAssertEqual(TimeText.relative(to: now.addingTimeInterval(-500), from: now, language: .english), "in 0m")
+        XCTAssertEqual(TimeText.relative(to: now.addingTimeInterval(6 * 3600 + 12 * 60), from: now,
+                                         language: .thai), "อีก 6 ชม. 12 นาที")
     }
 
     // MARK: New alarms
@@ -227,26 +264,43 @@ final class AlarmTests: XCTestCase {
         XCTAssertEqual(settings.timeFormat, .automatic, "Clock follows the phone's region")
         XCTAssertEqual(settings.theme, .automatic, "Theme follows the phone's light or dark mode")
         XCTAssertTrue(settings.showOnLockScreen)
+        XCTAssertEqual(settings.language, AppLanguage.preferred(), "Language follows the phone's")
     }
 
     func testEveryOptionHasALabel() {
         XCTAssertEqual(TimeFormat.allCases.map(\.label), ["24-hour", "AM / PM", "Match device"])
         XCTAssertEqual(ThemePreference.allCases.map(\.label), ["Light", "Dark", "Auto"])
+        XCTAssertEqual(AppLanguage.allCases.map(\.label), ["English", "ไทย"], "Each named in itself")
+
+        let thai = AppLanguage.thai
+        XCTAssertEqual(TimeFormat.allCases.map { thai($0.label) }, ["24 ชั่วโมง", "12 ชั่วโมง", "ตามเครื่อง"])
+        XCTAssertEqual(ThemePreference.allCases.map { thai($0.label) }, ["สว่าง", "มืด", "อัตโนมัติ"])
     }
 
     // MARK: Snooze notice
 
     func testSnoozeNoticeSaysWhenTheAlarmReturns() {
         let now = reference().addingTimeInterval(30 * 60)   // 08:30
-        let body = SnoozeText.body(minutes: 9, now: now, format: .twentyFourHour,
+        let body = SnoozeText.body(minutes: 9, now: now, format: .twentyFourHour, language: .english,
                                    locale: Locale(identifier: "en_GB"), calendar: calendar)
         XCTAssertTrue(body.contains("08:39"), "got \(body)")
         XCTAssertTrue(body.contains("9 min"), "got \(body)")
     }
 
     func testSnoozeNoticeNamesTheTask() {
-        XCTAssertEqual(SnoozeText.title(task: "Morning run"), "Morning run · snoozed")
-        XCTAssertEqual(SnoozeText.title(task: ""), "Alarm snoozed")
+        XCTAssertEqual(SnoozeText.title(task: "Morning run", language: .english), "Morning run · snoozed")
+        XCTAssertEqual(SnoozeText.title(task: "", language: .english), "Alarm snoozed")
+    }
+
+    func testSnoozeNoticeReadsInThai() {
+        let now = reference().addingTimeInterval(30 * 60)   // 08:30
+        let body = SnoozeText.body(minutes: 9, now: now, format: .twentyFourHour, language: .thai,
+                                   locale: Locale(identifier: "en_GB"), calendar: calendar)
+        XCTAssertTrue(body.hasPrefix("ปลุกอีกครั้งเวลา "), "got \(body)")
+        XCTAssertTrue(body.contains("08:39"), "got \(body)")
+        XCTAssertTrue(body.hasSuffix("อีก 9 นาที"), "got \(body)")
+        XCTAssertEqual(SnoozeText.title(task: "วิ่งตอนเช้า", language: .thai), "วิ่งตอนเช้า · เลื่อนปลุกแล้ว")
+        XCTAssertEqual(SnoozeText.title(task: "", language: .thai), "เลื่อนปลุกแล้ว")
     }
 
     func testStoredSettingsFallBackToDefaultsThenReadWhatWasSaved() throws {
@@ -320,6 +374,19 @@ final class AlarmTests: XCTestCase {
         XCTAssertEqual(settings.defaults.toneID, "whisper")
         XCTAssertEqual(settings.defaults.snoozeMinutes, 5)
         XCTAssertTrue(settings.defaults.vibrates, "Missing in the save: vibration on, as before")
+        XCTAssertEqual(settings.language, AppLanguage.preferred(), "Saved before languages: the phone's")
+    }
+
+    func testALanguageThisVersionDoesNotKnowCostsNothingElse() throws {
+        let json = """
+        {"timeFormat":"twelveHour","theme":"dark","showOnLockScreen":false,"language":"ja",\
+        "defaults":{"volume":0.4,"overridesSilent":true,"toneID":"whisper","snoozeMinutes":5,"vibrates":true}}
+        """
+        let settings = try JSONDecoder().decode(AppSettings.self, from: Data(json.utf8))
+
+        XCTAssertEqual(settings.language, AppLanguage.preferred())
+        XCTAssertEqual(settings.timeFormat, .twelveHour)
+        XCTAssertEqual(settings.defaults.toneID, "whisper")
     }
 
     // MARK: Weekdays
@@ -330,7 +397,81 @@ final class AlarmTests: XCTestCase {
         XCTAssertEqual(Set(ordered).count, 7)
     }
 
+    // MARK: Languages
+
+    func testFirstUseTakesThaiFromAThaiPhoneAndEnglishFromAnyOther() {
+        XCTAssertEqual(AppLanguage.preferred(from: ["th-TH", "en-US"]), .thai)
+        XCTAssertEqual(AppLanguage.preferred(from: ["th"]), .thai)
+        XCTAssertEqual(AppLanguage.preferred(from: ["en-GB", "th-TH"]), .english)
+        XCTAssertEqual(AppLanguage.preferred(from: ["ja-JP", "th-TH"]), .english, "Not offered: English")
+        XCTAssertEqual(AppLanguage.preferred(from: []), .english)
+    }
+
+    func testEveryThaiLineIsThaiAndKeepsItsPlaceholders() {
+        let keys = AppLanguage.thaiLines.map { $0.0 }
+        XCTAssertEqual(Set(keys).count, keys.count, "A line entered twice")
+        for (english, thai) in AppLanguage.thaiLines {
+            XCTAssertNotEqual(thai, english, "Untranslated: \(english)")
+            XCTAssertTrue(thai.unicodeScalars.contains { (0x0E00...0x0E7F).contains($0.value) },
+                          "No Thai in: \(thai)")
+            XCTAssertEqual(placeholders(in: thai), placeholders(in: english), "Placeholders differ: \(english)")
+        }
+    }
+
+    func testLinesTranslateAndTakeTheirNumbers() {
+        let thai = AppLanguage.thai
+        let english = AppLanguage.english
+        XCTAssertEqual(thai("Save"), "บันทึก")
+        XCTAssertEqual(thai("Snooze {0} min", 9), "เลื่อนปลุก 9 นาที")
+        XCTAssertEqual(english("Snooze {0} min", 9), "Snooze 9 min")
+        XCTAssertEqual(english("{0} · used by {1} alarms", "Warm", 2), "Warm · used by 2 alarms")
+        XCTAssertEqual(thai("A line with no Thai yet"), "A line with no Thai yet", "Missing: shown in English")
+        XCTAssertEqual(english("{0} alarm", "Pay {1}"), "Pay {1} alarm", "An argument is never filled in itself")
+    }
+
+    func testALineAroundALiveCountdownSplitsAtItsPlaceholder() {
+        let line = AppLanguage.thai.around("Rings in {0} · lock the phone to hear it as the Lock Screen alarm")
+        XCTAssertEqual(line.before, "ดังในอีก ")
+        XCTAssertTrue(line.after.hasPrefix(" · "), "got \(line.after)")
+    }
+
+    func testEveryBundledToneAndOptionReadsInThai() {
+        let thai = AppLanguage.thai
+        for tone in AlarmTone.bundled {
+            XCTAssertNotEqual(tone.name(in: .thai), tone.name, "Untranslated tone: \(tone.name)")
+            XCTAssertNotEqual(tone.character(in: .thai), tone.character, "Untranslated: \(tone.character)")
+        }
+        for label in TimeFormat.allCases.map(\.label) + ThemePreference.allCases.map(\.label) {
+            XCTAssertNotEqual(thai(label), label, "Untranslated option: \(label)")
+        }
+        for name in ["Alarms permission", "Critical Alerts permission"] {
+            XCTAssertNotEqual(thai(name), name, "Untranslated: \(name)")
+        }
+    }
+
+    func testAnImportedToneKeepsItsNameAndItsLineIsReadInThai() {
+        var tone = AlarmTone(id: "song.m4a", name: "Siren", character: "Yours · first 29 s rings",
+                             peak: 2, fileName: "song.m4a", source: .imported)
+        XCTAssertEqual(tone.name(in: .thai), "Siren", "A file's name is the user's, never translated")
+        XCTAssertEqual(tone.character(in: .thai), "ของคุณ · ดังเพียง 29 วินาทีแรก")
+        XCTAssertEqual(tone.character(in: .english), "Yours · first 29 s rings")
+
+        tone.character = "Yours"
+        XCTAssertEqual(tone.character(in: .thai), "ของคุณ")
+    }
+
     // MARK: Helpers
+
+    /// "{0}", "{1}"… in a line, sorted, so two languages can be compared.
+    private func placeholders(in text: String) -> [String] {
+        var found: [String] = []
+        var rest = text[...]
+        while let open = rest.firstIndex(of: "{"), let close = rest[open...].firstIndex(of: "}") {
+            found.append(String(rest[open...close]))
+            rest = rest[rest.index(after: close)...]
+        }
+        return found.sorted()
+    }
 
     private func makeAlarm(hour: Int = 7,
                            minute: Int = 0,

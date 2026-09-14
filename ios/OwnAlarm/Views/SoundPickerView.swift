@@ -9,6 +9,7 @@ struct SoundPickerView: View {
     @EnvironmentObject private var store: AlarmStore
     @EnvironmentObject private var player: AlarmPlayer
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.appLanguage) private var t
 
     @Binding var alarm: Alarm
 
@@ -16,7 +17,7 @@ struct SoundPickerView: View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: 16) {
-                    SectionLabel(text: "Alarm tones")
+                    SectionLabel(text: t("Alarm tones"))
 
                     VStack(spacing: 8) {
                         ForEach(store.tones) { tone in
@@ -36,7 +37,7 @@ struct SoundPickerView: View {
                 .readableWidth()
             }
             .background(Tokens.background)
-            .navigationTitle("Sound & loudness")
+            .navigationTitle(t("Sound & loudness"))
             .navigationBarTitleDisplayMode(.inline)
             .safeAreaInset(edge: .bottom) {
                 TestRingButton(alarm: alarm)
@@ -46,7 +47,7 @@ struct SoundPickerView: View {
             }
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Done") { dismiss() }
+                    Button(t("Done")) { dismiss() }
                         .fontWeight(.bold)
                 }
             }
@@ -63,6 +64,7 @@ struct ToneRow: View {
     let isSelected: Bool
     var isPlaying = false
     let select: () -> Void
+    @Environment(\.appLanguage) private var t
 
     var body: some View {
         Button(action: select) {
@@ -78,10 +80,10 @@ struct ToneRow: View {
                     .accessibilityHidden(true)
 
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(tone.name)
+                    Text(tone.name(in: t))
                         .font(Typo.rowValue)
                         .foregroundStyle(Tokens.textPrimary)
-                    Text(tone.character)
+                    Text(tone.character(in: t))
                         .font(Typo.caption)
                         .foregroundStyle(Tokens.textMuted)
                         .fixedSize(horizontal: false, vertical: true)
@@ -115,6 +117,7 @@ struct SourceChoices: View {
     /// A song just imported that is longer than an alarm sound may be.
     @State private var trimmedName: String?
     @EnvironmentObject private var store: AlarmStore
+    @Environment(\.appLanguage) private var t
 
     private static let limit = Int(ScaledSound.maxSeconds)
 
@@ -131,17 +134,18 @@ struct SourceChoices: View {
             }
             // iOS caps alarm sounds at 30 s; a longer song rings from its start and
             // stops there, which is better said now than discovered at 6 a.m.
-            .alert("Only the first \(Self.limit) seconds will ring",
+            .alert(t("Only the first {0} seconds will ring", Self.limit),
                    isPresented: Binding(get: { trimmedName != nil },
                                         set: { if !$0 { trimmedName = nil } })) {
-                Button("OK") {}
+                Button(t("OK")) {}
             } message: {
-                Text("\(trimmedName ?? "This song") is longer than iOS allows for an alarm sound. It plays from the start and stops at \(Self.limit) seconds.")
+                Text(t("{0} is longer than iOS allows for an alarm sound. It plays from the start and stops at {1} seconds.",
+                       trimmedName ?? t("This song"), Self.limit))
             }
     }
 
     private var importTile: some View {
-        SourceTile(systemImage: "plus", title: "Music or Files") {
+        SourceTile(systemImage: "plus", title: t("Music or Files")) {
             showingImporter = true
         }
     }
@@ -167,8 +171,11 @@ struct SourceChoices: View {
             AlarmTone(
                 id: url.lastPathComponent,
                 name: name,
-                // Said on the row too, so the cut is never a surprise later.
-                character: tooLong ? "Yours · first \(Self.limit) s rings" : "Yours",
+                // Said on the row too, so the cut is never a surprise later. Saved in
+                // English, shown in the app's language (`AlarmTone.character(in:)`).
+                character: tooLong
+                    ? AppLanguage.english.callAsFunction("Yours · first {0} s rings", Self.limit)
+                    : "Yours",
                 peak: 2,
                 fileName: url.lastPathComponent,
                 source: .imported

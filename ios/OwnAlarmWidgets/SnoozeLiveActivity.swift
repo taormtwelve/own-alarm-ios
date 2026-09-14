@@ -16,7 +16,9 @@ struct OwnAlarmWidgets: WidgetBundle {
 struct SnoozeLiveActivity: Widget {
     var body: some WidgetConfiguration {
         ActivityConfiguration(for: AlarmAttributes<OwnAlarmMetadata>.self) { context in
-            LockScreenSnooze(task: taskName(context.attributes.metadata), state: context.state)
+            LockScreenSnooze(task: taskName(context.attributes.metadata),
+                             t: language(of: context.attributes.metadata),
+                             state: context.state)
                 .padding(16)
                 .activityBackgroundTint(ink)
                 .activitySystemActionForegroundColor(.white)
@@ -29,12 +31,13 @@ struct SnoozeLiveActivity: Widget {
                         .lineLimit(1)
                 }
                 DynamicIslandExpandedRegion(.trailing) {
-                    Countdown(state: context.state)
+                    Countdown(state: context.state, t: language(of: context.attributes.metadata))
                         .font(.title2.weight(.semibold))
                         .foregroundStyle(amber)
                 }
                 DynamicIslandExpandedRegion(.bottom) {
-                    Text("Snoozed — rings again when the timer ends")
+                    Text(language(of: context.attributes.metadata)
+                        .callAsFunction("Snoozed — rings again when the timer ends"))
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
@@ -42,7 +45,7 @@ struct SnoozeLiveActivity: Widget {
                 Image(systemName: "alarm.fill")
                     .foregroundStyle(amber)
             } compactTrailing: {
-                Countdown(state: context.state)
+                Countdown(state: context.state, t: language(of: context.attributes.metadata))
                     .foregroundStyle(amber)
                     .frame(maxWidth: 56)
             } minimal: {
@@ -59,12 +62,21 @@ private let ink = Color(red: 0.07, green: 0.06, blue: 0.05)
 /// Takes the metadata as optional so this reads the same whether AlarmKit hands it
 /// over optional or not.
 private func taskName(_ metadata: OwnAlarmMetadata?) -> String {
-    guard let task = metadata?.task, !task.isEmpty else { return "Alarm" }
+    guard let task = metadata?.task, !task.isEmpty else {
+        return language(of: metadata).callAsFunction("Alarm")
+    }
     return task
+}
+
+/// The app's language when the alarm was set; English for alarms set before there
+/// was a choice.
+private func language(of metadata: OwnAlarmMetadata?) -> AppLanguage {
+    metadata?.language ?? .english
 }
 
 private struct LockScreenSnooze: View {
     let task: String
+    let t: AppLanguage
     let state: AlarmPresentationState
 
     var body: some View {
@@ -78,14 +90,14 @@ private struct LockScreenSnooze: View {
                     .font(.headline)
                     .foregroundStyle(.white)
                     .lineLimit(1)
-                Text("Snoozed")
+                Text(t("Snoozed"))
                     .font(.subheadline)
                     .foregroundStyle(.white.opacity(0.7))
             }
 
             Spacer(minLength: 8)
 
-            Countdown(state: state)
+            Countdown(state: state, t: t)
                 .font(.system(size: 34, weight: .semibold, design: .rounded))
                 .foregroundStyle(amber)
         }
@@ -95,6 +107,7 @@ private struct LockScreenSnooze: View {
 /// Counts down to the moment the snoozed alarm rings again.
 private struct Countdown: View {
     let state: AlarmPresentationState
+    let t: AppLanguage
 
     var body: some View {
         switch state.mode {
@@ -104,9 +117,9 @@ private struct Countdown: View {
                 .monospacedDigit()
                 .multilineTextAlignment(.trailing)
         case .paused:
-            Text("Paused")
+            Text(t("Paused"))
         default:
-            Text("Ringing")
+            Text(t("Ringing"))
         }
     }
 }

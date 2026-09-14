@@ -4,6 +4,7 @@ struct EditAlarmView: View {
     @EnvironmentObject private var store: AlarmStore
     @EnvironmentObject private var player: AlarmPlayer
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.appLanguage) private var t
 
     @State private var alarm: Alarm
     @State private var time: Date
@@ -32,14 +33,14 @@ struct EditAlarmView: View {
             }
             .background(Tokens.background)
             .scrollDismissesKeyboard(.interactively)
-            .navigationTitle(isNew ? "New alarm" : alarm.task.isEmpty ? "Alarm" : alarm.task)
+            .navigationTitle(isNew ? t("New alarm") : alarm.task.isEmpty ? t("Alarm") : alarm.task)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") { dismiss() }
+                    Button(t("Cancel")) { dismiss() }
                 }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Save") { save() }
+                    Button(t("Save")) { save() }
                         .fontWeight(.bold)
                 }
             }
@@ -52,7 +53,7 @@ struct EditAlarmView: View {
     // MARK: Time
 
     private var timePicker: some View {
-        DatePicker("Alarm time", selection: $time, displayedComponents: .hourAndMinute)
+        DatePicker(t("Alarm time"), selection: $time, displayedComponents: .hourAndMinute)
             .datePickerStyle(.wheel)
             .labelsHidden()
             // `DatePicker` takes its 12/24-hour cycle from the locale, not from us,
@@ -63,11 +64,13 @@ struct EditAlarmView: View {
             .padding(.vertical, 4)
     }
 
+    /// The app's language, with the hour cycle the Clock setting resolves to.
     private var pickerLocale: Locale {
-        switch store.settings.timeFormat {
-        case .twentyFourHour: return Locale(identifier: "en_GB")
-        case .twelveHour: return Locale(identifier: "en_US")
-        case .automatic: return .current
+        let twentyFour = store.settings.timeFormat.uses24Hour
+        switch t {
+        case .english: return Locale(identifier: twentyFour ? "en_GB" : "en_US")
+        // Thai clocks run 24-hour; the keyword asks for AM / PM instead.
+        case .thai: return Locale(identifier: twentyFour ? "th_TH" : "th_TH@hours=h12")
         }
     }
 
@@ -75,8 +78,8 @@ struct EditAlarmView: View {
 
     private var detailsCard: some View {
         CardGroup {
-            SettingsRow(title: "Task") {
-                TextField("What is this alarm for?", text: $alarm.task)
+            SettingsRow(title: t("Task")) {
+                TextField(t("What is this alarm for?"), text: $alarm.task)
                     .font(Typo.rowValue)
                     .foregroundStyle(Tokens.textPrimary)
                     .multilineTextAlignment(.trailing)
@@ -84,7 +87,7 @@ struct EditAlarmView: View {
             }
 
             VStack(alignment: .leading, spacing: 10) {
-                Text("Repeat")
+                Text(t("Repeat"))
                     .font(Typo.rowLabel)
                     .foregroundStyle(Tokens.textSecondary)
                     .frame(maxWidth: .infinity, alignment: .leading)
@@ -103,7 +106,7 @@ struct EditAlarmView: View {
                     }
                 }
 
-                Text(alarm.repeatSummary)
+                Text(alarm.repeatSummary(in: t))
                     .font(Typo.caption)
                     .foregroundStyle(Tokens.textMuted)
             }
@@ -114,8 +117,8 @@ struct EditAlarmView: View {
             Button {
                 showingSoundPicker = true
             } label: {
-                SettingsRow(title: "Sound", showsDivider: false) {
-                    RowValue(value: store.tone(for: alarm).name)
+                SettingsRow(title: t("Sound"), showsDivider: false) {
+                    RowValue(value: store.tone(for: alarm).name(in: t))
                 }
             }
             .buttonStyle(.plain)
@@ -129,11 +132,11 @@ struct EditAlarmView: View {
         VStack(alignment: .leading, spacing: 14) {
             HStack(alignment: .lastTextBaseline) {
                 VStack(alignment: .leading, spacing: 3) {
-                    Text("Volume for this task")
+                    Text(t("Volume for this task"))
                         .font(Typo.sectionLabel)
                         .tracking(1.1)
                         .foregroundStyle(Tokens.accentLabel)
-                    Text("Only this alarm rings at this level — every other alarm keeps its own. 100% is your Ringer & Alerts volume — raise it in Settings › Sounds & Haptics if you want louder.")
+                    Text(t("Only this alarm rings at this level — every other alarm keeps its own. 100% is your Ringer & Alerts volume — raise it in Settings › Sounds & Haptics if you want louder."))
                         .font(Typo.caption)
                         .foregroundStyle(Tokens.textMuted)
                         .fixedSize(horizontal: false, vertical: true)
@@ -154,12 +157,12 @@ struct EditAlarmView: View {
 
             Toggle(isOn: $alarm.vibrates) {
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("Vibrate")
+                    Text(t("Vibrate"))
                         .font(Typo.body(14, relativeTo: .subheadline, weight: .semibold))
                         .foregroundStyle(Tokens.textPrimary)
                     // Said up front, so a Lock Screen buzz with this off does not
                     // look like a bug: iOS gives apps no vibration control there.
-                    Text("Buzzes while it rings · on the Lock Screen, iOS's Haptics setting decides")
+                    Text(t("Buzzes while it rings · on the Lock Screen, iOS's Haptics setting decides"))
                         .font(Typo.caption)
                         .foregroundStyle(Tokens.textMuted)
                         .fixedSize(horizontal: false, vertical: true)
@@ -176,10 +179,10 @@ struct EditAlarmView: View {
             if !RingPermission.alwaysRingsThroughSilent {
                 Toggle(isOn: $alarm.overridesSilent) {
                     VStack(alignment: .leading, spacing: 2) {
-                        Text("Override Silent & Focus")
+                        Text(t("Override Silent & Focus"))
                             .font(Typo.body(14, relativeTo: .subheadline, weight: .semibold))
                             .foregroundStyle(Tokens.textPrimary)
-                        Text("Rings even when the phone is muted")
+                        Text(t("Rings even when the phone is muted"))
                             .font(Typo.caption)
                             .foregroundStyle(Tokens.textMuted)
                             .fixedSize(horizontal: false, vertical: true)
@@ -200,18 +203,18 @@ struct EditAlarmView: View {
 
     private var snoozeCard: some View {
         CardGroup {
-            SettingsRow(title: "Snooze", showsDivider: alarm.snoozeMinutes > 0) {
+            SettingsRow(title: t("Snooze"), showsDivider: alarm.snoozeMinutes > 0) {
                 Toggle("", isOn: Binding(
                     get: { alarm.snoozeMinutes > 0 },
                     set: { alarm.snoozeMinutes = $0 ? store.settings.defaults.snoozeWhenSwitchedOn : 0 }
                 ))
                 .toggleStyle(.alarm)
                 .labelsHidden()
-                .accessibilityLabel("Snooze")
+                .accessibilityLabel(t("Snooze"))
             }
             if alarm.snoozeMinutes > 0 {
-                SettingsRow(title: "Snooze length", showsDivider: false) {
-                    Stepper("\(alarm.snoozeMinutes) min", value: $alarm.snoozeMinutes, in: 1...30)
+                SettingsRow(title: t("Snooze length"), showsDivider: false) {
+                    Stepper(t("{0} min", alarm.snoozeMinutes), value: $alarm.snoozeMinutes, in: 1...30)
                         .font(Typo.rowValue)
                         .fixedSize()
                 }
@@ -224,7 +227,7 @@ struct EditAlarmView: View {
             store.delete(alarm)
             dismiss()
         } label: {
-            Text("Delete alarm")
+            Text(t("Delete alarm"))
                 .font(Typo.body(16, relativeTo: .headline, weight: .semibold))
                 .frame(maxWidth: .infinity)
                 .frame(minHeight: 52)
@@ -243,7 +246,7 @@ struct EditAlarmView: View {
         alarm.hour = parts.hour ?? alarm.hour
         alarm.minute = parts.minute ?? alarm.minute
         if alarm.task.trimmingCharacters(in: .whitespaces).isEmpty {
-            alarm.task = "Alarm"
+            alarm.task = t("Alarm")
         }
         store.save(alarm, isNew: isNew)
         dismiss()
@@ -263,10 +266,11 @@ private struct DayPill: View {
     let day: Weekday
     let isOn: Bool
     let toggle: () -> Void
+    @Environment(\.appLanguage) private var t
 
     var body: some View {
         Button(action: toggle) {
-            Text(day.narrowSymbol)
+            Text(day.narrowSymbol(in: t))
                 .font(Typo.body(14, relativeTo: .subheadline, weight: .semibold))
                 .foregroundStyle(isOn ? Tokens.inkOnAccent : Tokens.textSecondary)
                 .lineLimit(1)
@@ -277,7 +281,7 @@ private struct DayPill: View {
                 .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
         }
         .buttonStyle(.plain)
-        .accessibilityLabel(day.shortSymbol)
+        .accessibilityLabel(day.shortSymbol(in: t))
         .accessibilityAddTraits(isOn ? [.isSelected, .isButton] : .isButton)
     }
 }

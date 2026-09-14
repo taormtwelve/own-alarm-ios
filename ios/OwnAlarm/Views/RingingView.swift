@@ -7,6 +7,7 @@ struct RingingView: View {
     @EnvironmentObject private var player: AlarmPlayer
     @Environment(\.colorScheme) private var scheme
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.appLanguage) private var t
 
     let alarm: Alarm
 
@@ -54,7 +55,7 @@ struct RingingView: View {
             Circle()
                 .fill(Tokens.accentFill)
                 .frame(width: 7, height: 7)
-            Text("Alarm ringing")
+            Text(t("Alarm ringing"))
                 .font(Typo.sectionLabel)
                 .tracking(1.6)
                 .foregroundStyle(Tokens.accentLabel)
@@ -95,7 +96,7 @@ struct RingingView: View {
     private var dialContents: some View {
         VStack(spacing: 10) {
             Text(TimeText.string(hour: alarm.hour, minute: alarm.minute,
-                                 format: store.settings.timeFormat))
+                                 format: store.settings.timeFormat, language: t))
                 .font(Typo.body(17, relativeTo: .headline, weight: .semibold))
                 .monospacedDigit()
                 .foregroundStyle(Tokens.accentLabel)
@@ -119,7 +120,7 @@ struct RingingView: View {
                 .monospacedDigit()
                 .foregroundStyle(Tokens.accentText)
             Circle().fill(Tokens.textFaint.opacity(0.6)).frame(width: 3, height: 3)
-            Text("\(tone.name), at full task volume")
+            Text(t("{0}, at full task volume", tone.name(in: t)))
                 .font(Typo.caption)
                 .foregroundStyle(Tokens.textSecondary)
         }
@@ -140,7 +141,7 @@ struct RingingView: View {
                     player.stop()
                     store.snooze(alarm)
                 } label: {
-                    Label("Snooze \(alarm.snoozeMinutes) min", systemImage: "zzz")
+                    Label(t("Snooze {0} min", alarm.snoozeMinutes), systemImage: "zzz")
                         .font(Typo.body(15, relativeTo: .subheadline, weight: .semibold))
                         .foregroundStyle(Tokens.textSecondary)
                         .padding(.horizontal, 22)

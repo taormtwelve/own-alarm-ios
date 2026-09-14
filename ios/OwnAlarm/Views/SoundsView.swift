@@ -6,6 +6,7 @@ import SwiftUI
 struct SoundsView: View {
     @EnvironmentObject private var store: AlarmStore
     @EnvironmentObject private var player: AlarmPlayer
+    @Environment(\.appLanguage) private var t
 
     @State private var testLevel: Double = 0.5
     @State private var testToneID: String = AlarmTone.bundled.first?.id ?? "siren"
@@ -15,7 +16,7 @@ struct SoundsView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 16) {
                     testCard
-                    SectionLabel(text: "All tones")
+                    SectionLabel(text: t("All tones"))
 
                     VStack(spacing: 8) {
                         ForEach(store.tones) { tone in
@@ -37,7 +38,7 @@ struct SoundsView: View {
                 .readableWidth()
             }
             .background(Tokens.background)
-            .navigationTitle("Sounds")
+            .navigationTitle(t("Sounds"))
             // Previews only: a ringing alarm is not stopped by leaving here.
             .onDisappear { player.stopPreview() }
         }
@@ -46,18 +47,19 @@ struct SoundsView: View {
     /// A stand-in alarm carrying the tone and level chosen here — all a test ring
     /// needs; it is never saved.
     private var testAlarm: Alarm {
-        Alarm(task: "Sound test", hour: 0, minute: 0, repeatDays: [],
+        Alarm(task: t("Sound test"), hour: 0, minute: 0, repeatDays: [],
               volume: testLevel, overridesSilent: true, toneID: testToneID)
     }
 
     private var testCard: some View {
         VStack(alignment: .leading, spacing: 12) {
             VStack(alignment: .leading, spacing: 3) {
-                Text("Try it for real")
+                Text(t("Try it for real"))
                     .font(Typo.sectionLabel)
                     .tracking(1.1)
                     .foregroundStyle(Tokens.accentLabel)
-                Text("Tap a tone below to hear it · set a level and it rings in \(Int(AlarmStore.testLead)) s as a real alarm. 100% is your Ringer & Alerts volume — raise it in Settings › Sounds & Haptics if you want louder.")
+                Text(t("Tap a tone below to hear it · set a level and it rings in {0} s as a real alarm. 100% is your Ringer & Alerts volume — raise it in Settings › Sounds & Haptics if you want louder.",
+                       Int(AlarmStore.testLead)))
                     .font(Typo.caption)
                     .foregroundStyle(Tokens.textMuted)
                     .fixedSize(horizontal: false, vertical: true)
@@ -66,7 +68,7 @@ struct SoundsView: View {
             VolumeSlider(volume: $testLevel)
 
             HStack {
-                Text("Test level")
+                Text(t("Test level"))
                     .font(Typo.caption)
                     .foregroundStyle(Tokens.textMuted)
                 Spacer()
@@ -96,6 +98,7 @@ private struct LibraryRow: View {
     let isSelected: Bool
     let isPlaying: Bool
     let select: () -> Void
+    @Environment(\.appLanguage) private var t
 
     var body: some View {
         Button(action: select) {
@@ -111,7 +114,7 @@ private struct LibraryRow: View {
                     .accessibilityHidden(true)
 
                 VStack(alignment: .leading, spacing: 3) {
-                    Text(tone.name)
+                    Text(tone.name(in: t))
                         .font(Typo.rowValue)
                         .foregroundStyle(Tokens.textPrimary)
                     Text(usageText)
@@ -133,11 +136,11 @@ private struct LibraryRow: View {
     }
 
     private var usageText: String {
-        let character = tone.character
+        let character = tone.character(in: t)
         switch usage {
-        case 0: return "\(character) · not used yet"
-        case 1: return "\(character) · used by 1 alarm"
-        default: return "\(character) · used by \(usage) alarms"
+        case 0: return t("{0} · not used yet", character)
+        case 1: return t("{0} · used by 1 alarm", character)
+        default: return t("{0} · used by {1} alarms", character, usage)
         }
     }
 }
@@ -147,6 +150,7 @@ private struct LibraryRow: View {
 private struct PeakMeter: View {
     let peak: Int
 
+    @Environment(\.appLanguage) private var t
     @ScaledMetric(relativeTo: .caption) private var unit: CGFloat = 1
 
     var body: some View {
@@ -158,6 +162,6 @@ private struct PeakMeter: View {
             }
         }
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel("Recording loudness \(peak) of 3")
+        .accessibilityLabel(t("Recording loudness {0} of 3", peak))
     }
 }

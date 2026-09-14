@@ -9,14 +9,14 @@ enum Weekday: Int, Codable, CaseIterable, Identifiable, Comparable {
 
     static func < (lhs: Weekday, rhs: Weekday) -> Bool { lhs.rawValue < rhs.rawValue }
 
-    /// Single letter for the day pills, localised and taken from the reader's calendar
-    /// so a Monday-first locale reads correctly.
-    var narrowSymbol: String {
-        Calendar.current.veryShortWeekdaySymbols[rawValue - 1]
+    /// Single letter for the day pills, in the app's language.
+    func narrowSymbol(in language: AppLanguage) -> String {
+        language.calendar().veryShortWeekdaySymbols[rawValue - 1]
     }
 
-    var shortSymbol: String {
-        Calendar.current.shortWeekdaySymbols[rawValue - 1]
+    /// "Mon", "Tue"… in the app's language.
+    func shortSymbol(in language: AppLanguage) -> String {
+        language.calendar().shortWeekdaySymbols[rawValue - 1]
     }
 
     /// Weekdays in the order this locale starts its week.
@@ -65,6 +65,26 @@ struct AlarmTone: Identifiable, Codable, Equatable, Hashable {
     }
 }
 
+extension AlarmTone {
+    /// The name as shown: a bundled tone's in the app's language; an imported tone
+    /// keeps its file's name.
+    func name(in language: AppLanguage) -> String {
+        source == .bundled ? language(name) : name
+    }
+
+    /// The line under the name, in the app's language. An imported tone's was saved
+    /// in English when it was added — "Yours", or "Yours · first 29 s rings" — and
+    /// is read back in whichever language is chosen now.
+    func character(in language: AppLanguage) -> String {
+        let prefix = "Yours · first ", suffix = " s rings"
+        if source == .imported, character.hasPrefix(prefix), character.hasSuffix(suffix),
+           let seconds = Int(character.dropFirst(prefix.count).dropLast(suffix.count)) {
+            return language("Yours · first {0} s rings", seconds)
+        }
+        return language(character)
+    }
+}
+
 // MARK: - Alarm
 
 struct Alarm: Identifiable, Codable, Equatable {
@@ -109,16 +129,16 @@ struct Alarm: Identifiable, Codable, Equatable {
             .min()
     }
 
-    /// "Mon – Fri", "Every day", "Tue, Thu", or the date when it never repeats.
-    var repeatSummary: String {
-        if repeatDays.isEmpty { return "Once" }
-        if repeatDays.count == 7 { return "Every day" }
+    /// "Mon – Fri", "Every day", "Tue, Thu", or "Once" — in the app's language.
+    func repeatSummary(in language: AppLanguage) -> String {
+        if repeatDays.isEmpty { return language("Once") }
+        if repeatDays.count == 7 { return language("Every day") }
 
         let weekdays: Set<Weekday> = [.monday, .tuesday, .wednesday, .thursday, .friday]
-        if repeatDays == weekdays { return "Mon – Fri" }
-        if repeatDays == [.saturday, .sunday] { return "Weekends" }
+        if repeatDays == weekdays { return language("Mon – Fri") }
+        if repeatDays == [.saturday, .sunday] { return language("Weekends") }
 
-        return repeatDays.sorted().map(\.shortSymbol).joined(separator: ", ")
+        return repeatDays.sorted().map { $0.shortSymbol(in: language) }.joined(separator: ", ")
     }
 
     /// A new alarm opens on the current time — the picker starts at "now" and the

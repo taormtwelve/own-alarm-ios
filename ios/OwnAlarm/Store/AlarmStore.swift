@@ -6,7 +6,13 @@ import Combine
 @MainActor
 final class AlarmStore: ObservableObject {
     @Published private(set) var alarms: [Alarm] = []
-    @Published var settings = AppSettings() { didSet { persistSettings() } }
+    @Published var settings = AppSettings() {
+        didSet {
+            persistSettings()
+            // Notifications and Lock Screen alerts are written in the app's language.
+            scheduler.language = settings.language
+        }
+    }
     @Published private(set) var tones: [AlarmTone] = AlarmTone.bundled
 
     /// Set when an alarm fires while the app is in the foreground, or when the user
@@ -59,6 +65,7 @@ final class AlarmStore: ObservableObject {
             .urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
             .appendingPathComponent("alarms.json")
         load()
+        scheduler.language = settings.language
         scheduler.onFinished = { [weak self] id in
             Task { @MainActor in self?.alarmFinished(id) }
         }
@@ -173,11 +180,11 @@ final class AlarmStore: ObservableObject {
     /// A throwaway copy of `alarm` to ring as a test: its own id, so nothing done to
     /// the test — Stop, Snooze, finishing — reaches the real alarm; no snooze, since
     /// there is nothing to come back to; and named as a test.
-    nonisolated static func testCopy(of alarm: Alarm) -> Alarm {
+    nonisolated static func testCopy(of alarm: Alarm, language: AppLanguage) -> Alarm {
         var test = alarm
         test.id = UUID()
         test.snoozeMinutes = 0
-        test.task = "Test · \(alarm.task.isEmpty ? "Alarm" : alarm.task)"
+        test.task = language("Test · {0}", alarm.task.isEmpty ? language("Alarm") : alarm.task)
         return test
     }
 
@@ -186,7 +193,7 @@ final class AlarmStore: ObservableObject {
     /// The alarm need not be saved: the editor passes what is on screen.
     func testRing(_ alarm: Alarm) {
         stopTestInApp()
-        let test = Self.testCopy(of: alarm)
+        let test = Self.testCopy(of: alarm, language: settings.language)
         pendingTest = test
         testBlocked = false
         scheduler.scheduleTest(test, tone: tone(for: alarm), in: Self.testLead)
@@ -304,6 +311,10 @@ final class AlarmStore: ObservableObject {
         if let data = defaults.data(forKey: settingsKey),
            let decoded = try? JSONDecoder().decode(AppSettings.self, from: data) {
             settings = decoded
+        } else {
+            // First launch: the language just taken from the phone stays the app's
+            // until it is changed in Settings.
+            persistSettings()
         }
 
         if let data = defaults.data(forKey: tonesKey),

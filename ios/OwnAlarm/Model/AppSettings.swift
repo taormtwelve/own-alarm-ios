@@ -100,13 +100,36 @@ extension AlarmDefaults {
     }
 }
 
-/// First launch follows the phone: its region decides 24-hour or AM/PM, and its
-/// light or dark mode decides the theme. Either can be pinned in Settings.
+/// First launch follows the phone: its region decides 24-hour or AM/PM, its light or
+/// dark mode the theme, and its language the app's — Thai, or else English. Each can
+/// be pinned in Settings.
 struct AppSettings: Codable, Equatable {
     var timeFormat: TimeFormat = .automatic
     var theme: ThemePreference = .automatic
     var showOnLockScreen: Bool = true
     var defaults = AlarmDefaults()
+    var language: AppLanguage = .preferred()
+}
+
+extension AppSettings {
+    enum CodingKeys: String, CodingKey {
+        case timeFormat, theme, showOnLockScreen, defaults, language
+    }
+
+    /// Each field falls back to its first-launch value when missing, so settings saved
+    /// by an older version — before there was a language to choose — still load, and
+    /// take the phone's language.
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        let factory = AppSettings()
+        timeFormat = try c.decodeIfPresent(TimeFormat.self, forKey: .timeFormat) ?? factory.timeFormat
+        theme = try c.decodeIfPresent(ThemePreference.self, forKey: .theme) ?? factory.theme
+        showOnLockScreen = try c.decodeIfPresent(Bool.self, forKey: .showOnLockScreen) ?? factory.showOnLockScreen
+        defaults = try c.decodeIfPresent(AlarmDefaults.self, forKey: .defaults) ?? factory.defaults
+        // A language this version does not know, saved by a newer one, falls back too
+        // rather than costing every other setting.
+        language = (try? c.decodeIfPresent(AppLanguage.self, forKey: .language)) ?? factory.language
+    }
 }
 
 // MARK: - Formatting
@@ -117,6 +140,7 @@ enum TimeText {
     static func string(hour: Int,
                        minute: Int,
                        format: TimeFormat,
+                       language: AppLanguage,
                        locale: Locale = .current,
                        calendar: Calendar = .current) -> String {
         var components = DateComponents()
@@ -127,19 +151,21 @@ enum TimeText {
         let formatter = DateFormatter()
         formatter.calendar = calendar
         formatter.timeZone = calendar.timeZone
-        formatter.locale = locale
+        // In the app's language; 12- or 24-hour by the Clock setting, which
+        // resolves "Match device" against the phone's own region.
+        formatter.locale = language.locale(from: locale)
         formatter.setLocalizedDateFormatFromTemplate(format.uses24Hour(in: locale) ? "Hmm" : "hmm")
         return formatter.string(from: date)
     }
 
     /// "in 6h 12m" — used for the next-alarm banner.
-    static func relative(to date: Date, from now: Date = Date()) -> String {
+    static func relative(to date: Date, from now: Date = Date(), language: AppLanguage) -> String {
         let seconds = max(0, Int(date.timeIntervalSince(now)))
         let hours = seconds / 3600
         let minutes = (seconds % 3600) / 60
-        if hours == 0 { return "in \(minutes)m" }
-        if minutes == 0 { return "in \(hours)h" }
-        return "in \(hours)h \(minutes)m"
+        if hours == 0 { return language("in {0}m", minutes) }
+        if minutes == 0 { return language("in {0}h", hours) }
+        return language("in {0}h {1}m", hours, minutes)
     }
 }
 

@@ -111,6 +111,8 @@ targets:
     sources:
       - OwnAlarmWidgets
       - OwnAlarm/Shared
+      # The Live Activity reads in the app's language.
+      - OwnAlarm/Model/Language.swift
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.ownalarm.app.widgets

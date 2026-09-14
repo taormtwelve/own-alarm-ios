@@ -10,6 +10,7 @@ struct VolumeMeter: View {
     var barCount = 10
     var isDimmed = false
 
+    @Environment(\.appLanguage) private var t
     @ScaledMetric(relativeTo: .caption) private var unit: CGFloat = 1
 
     var body: some View {
@@ -22,8 +23,8 @@ struct VolumeMeter: View {
             }
         }
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel("Volume")
-        .accessibilityValue("\(Int((volume * 100).rounded())) percent")
+        .accessibilityLabel(t("Volume"))
+        .accessibilityValue(t("{0} percent", Int((volume * 100).rounded())))
     }
 
     private func height(at index: Int) -> CGFloat {
@@ -43,6 +44,7 @@ struct VolumeMeter: View {
 /// VoiceOver's adjustable trait and Switch Control all keep working.
 struct VolumeSlider: View {
     @Binding var volume: Double
+    @Environment(\.appLanguage) private var t
 
     var body: some View {
         // Whole percents, but not via `step:` — on iOS 26 a stepped slider draws a
@@ -51,11 +53,11 @@ struct VolumeSlider: View {
         Slider(value: Binding(get: { volume },
                               set: { volume = ($0 * 100).rounded() / 100 }),
                in: 0...1) {
-            Text("Alarm volume")
+            Text(t("Alarm volume"))
         }
         .tint(Tokens.accentFill)
         .frame(minHeight: Metrics.minTapTarget)
-        .accessibilityValue("\(Int((volume * 100).rounded())) percent")
+        .accessibilityValue(t("{0} percent", Int((volume * 100).rounded())))
     }
 }
 
@@ -226,26 +228,27 @@ struct PrimaryButton: View {
 /// inside the app can be stopped here.
 struct TestRingButton: View {
     @EnvironmentObject private var store: AlarmStore
+    @Environment(\.appLanguage) private var t
     let alarm: Alarm
 
     var body: some View {
         VStack(spacing: 8) {
             if store.testRingingInApp != nil {
-                PrimaryButton(title: "Stop test", systemImage: "stop.fill") {
+                PrimaryButton(title: t("Stop test"), systemImage: "stop.fill") {
                     store.stopTestInApp()
                 }
             } else if let due = store.testRingsAt {
-                PrimaryButton(title: "Cancel test", systemImage: "xmark") {
+                PrimaryButton(title: t("Cancel test"), systemImage: "xmark") {
                     store.cancelTestRing()
                 }
-                caption(Text("Rings in ") + Text(due, style: .timer)
-                        + Text(" · lock the phone to hear it as the Lock Screen alarm"))
+                let line = t.around("Rings in {0} · lock the phone to hear it as the Lock Screen alarm")
+                caption(Text(line.before) + Text(due, style: .timer) + Text(line.after))
             } else {
-                PrimaryButton(title: "Test real alarm at \(alarm.volumePercent)%", systemImage: "bell.fill") {
+                PrimaryButton(title: t("Test real alarm at {0}%", alarm.volumePercent), systemImage: "bell.fill") {
                     store.testRing(alarm)
                 }
                 if store.testBlocked {
-                    caption(Text("Nothing can ring yet — allow Alarms or Notifications for OwnAlarm in Settings."))
+                    caption(Text(t("Nothing can ring yet — allow Alarms or Notifications for OwnAlarm in Settings.")))
                 }
             }
         }
@@ -271,6 +274,7 @@ struct SlideToStop: View {
     @State private var offset: CGFloat = 0
     @State private var completed = false
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.appLanguage) private var t
 
     private let knob: CGFloat = 56
     private let inset: CGFloat = 4
@@ -285,7 +289,7 @@ struct SlideToStop: View {
                     .fill(Tokens.accentSurface)
                     .overlay(Capsule().strokeBorder(Tokens.accentBorder, lineWidth: 1))
 
-                Text("Slide to stop")
+                Text(t("Slide to stop"))
                     .font(Typo.body(16, relativeTo: .headline, weight: .semibold))
                     .foregroundStyle(Tokens.accentText)
                     .frame(maxWidth: .infinity)
@@ -323,7 +327,7 @@ struct SlideToStop: View {
         }
         .frame(height: knob + inset * 2)
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel("Stop alarm")
+        .accessibilityLabel(t("Stop alarm"))
         .accessibilityAddTraits(.isButton)
         .accessibilityAction { action() }
         .accessibilityIdentifier("slideToStop")

@@ -46,6 +46,11 @@ final class AlarmKitScheduler: AlarmScheduling {
         }
     }
 
+    var language: AppLanguage = .english {
+        // Alarms that fall back to notifications are written in it too.
+        didSet { fallback.language = language }
+    }
+
     private static let armedKey = "ownalarm.alarmkit.armed"
 
     private let manager = AlarmManager.shared
@@ -299,14 +304,16 @@ final class AlarmKitScheduler: AlarmScheduling {
     private func makeConfiguration(for alarm: Alarm, tone: AlarmTone,
                                    schedule: AlarmKit.Alarm.Schedule? = nil)
         -> AlarmManager.AlarmConfiguration<OwnAlarmMetadata> {
-        let title = alarm.task.isEmpty ? "Alarm" : alarm.task
+        let title = alarm.task.isEmpty ? language("Alarm") : alarm.task
         let snoozes = alarm.snoozeMinutes > 0
 
         let alert = AlarmPresentation.Alert(
-            title: LocalizedStringResource("\(title)"),
-            stopButton: AlarmButton(text: "Stop", textColor: .white, systemImageName: "stop.fill"),
+            title: Self.resource(title),
+            stopButton: AlarmButton(text: Self.resource(language("Stop")), textColor: .white,
+                                    systemImageName: "stop.fill"),
             secondaryButton: snoozes
-                ? AlarmButton(text: "Snooze", textColor: .white, systemImageName: "zzz")
+                ? AlarmButton(text: Self.resource(language("Snooze")), textColor: .white,
+                              systemImageName: "zzz")
                 : nil,
             secondaryButtonBehavior: snoozes ? .countdown : nil
         )
@@ -316,18 +323,19 @@ final class AlarmKitScheduler: AlarmScheduling {
             ? AlarmPresentation(
                 alert: alert,
                 countdown: AlarmPresentation.Countdown(
-                    title: "Snoozed",
-                    pauseButton: AlarmButton(text: "Pause", textColor: .white,
+                    title: Self.resource(language("Snoozed")),
+                    pauseButton: AlarmButton(text: Self.resource(language("Pause")), textColor: .white,
                                              systemImageName: "pause.fill")),
                 paused: AlarmPresentation.Paused(
-                    title: "Paused",
-                    resumeButton: AlarmButton(text: "Resume", textColor: .white,
+                    title: Self.resource(language("Paused")),
+                    resumeButton: AlarmButton(text: Self.resource(language("Resume")), textColor: .white,
                                               systemImageName: "play.fill")))
             : AlarmPresentation(alert: alert)
 
         let attributes = AlarmAttributes<OwnAlarmMetadata>(
             presentation: presentation,
-            metadata: OwnAlarmMetadata(task: title, volumePercent: alarm.volumePercent),
+            metadata: OwnAlarmMetadata(task: title, volumePercent: alarm.volumePercent,
+                                       language: language),
             tintColor: Color(hex: 0xE8940F)
         )
 
@@ -356,6 +364,15 @@ final class AlarmKitScheduler: AlarmScheduling {
                 : nil,
             sound: sound
         )
+    }
+}
+
+@available(iOS 26.0, *)
+private extension AlarmKitScheduler {
+    /// Text already in the app's language, for AlarmKit, which asks for a localizable
+    /// resource. Interpolated, so it shows as it is instead of being looked up.
+    static func resource(_ text: String) -> LocalizedStringResource {
+        LocalizedStringResource("\(text)")
     }
 }
 
