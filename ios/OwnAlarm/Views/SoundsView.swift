@@ -1,10 +1,9 @@
 import SwiftUI
 
 /// The Sounds tab: the tone library, and a place to hear a tone at a chosen level
-/// before you trust it to wake you.
+/// before you trust it to wake you — by ringing the real alarm a few seconds from now.
 struct SoundsView: View {
     @EnvironmentObject private var store: AlarmStore
-    @EnvironmentObject private var player: AlarmPlayer
 
     @State private var testLevel: Double = 0.5
     @State private var testToneID: String = AlarmTone.bundled.first?.id ?? "siren"
@@ -13,7 +12,7 @@ struct SoundsView: View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: 16) {
-                    auditionCard
+                    testCard
                     SectionLabel(text: "All tones")
 
                     VStack(spacing: 8) {
@@ -21,10 +20,9 @@ struct SoundsView: View {
                             LibraryRow(
                                 tone: tone,
                                 usage: store.usageCount(of: tone),
-                                isPlaying: player.playingToneID == tone.id
+                                isSelected: tone.id == testToneID
                             ) {
                                 testToneID = tone.id
-                                player.preview(tone, at: testLevel)
                             }
                         }
                         SourceChoices()
@@ -36,60 +34,30 @@ struct SoundsView: View {
             }
             .background(Tokens.background)
             .navigationTitle("Sounds")
-            // Previews only: a ringing alarm's cover also makes this disappear.
-            .onDisappear { player.stopPreviews() }
         }
     }
 
-    private var auditionCard: some View {
+    /// A stand-in alarm carrying the tone and level chosen here — all a test ring
+    /// needs; it is never saved.
+    private var testAlarm: Alarm {
+        Alarm(task: "Sound test", hour: 0, minute: 0, repeatDays: [],
+              volume: testLevel, fadeInSeconds: 0, overridesSilent: true, toneID: testToneID)
+    }
+
+    private var testCard: some View {
         VStack(alignment: .leading, spacing: 12) {
-            HStack(alignment: .top, spacing: 12) {
-                VStack(alignment: .leading, spacing: 3) {
-                    Text("Try it in this room")
-                        .font(Typo.sectionLabel)
-                        .tracking(1.1)
-                        .foregroundStyle(Tokens.accentLabel)
-                    Text("Drag to hear it live")
-                        .font(Typo.caption)
-                        .foregroundStyle(Tokens.textMuted)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-
-                Button {
-                    let tone = AlarmTone.tone(id: testToneID, in: store.tones)
-                    if player.playingToneID == nil {
-                        player.preview(tone, at: testLevel)
-                    } else {
-                        player.stop()
-                    }
-                } label: {
-                    Image(systemName: player.playingToneID == nil ? "play.fill" : "stop.fill")
-                        .font(.system(size: 17, weight: .bold))
-                        .foregroundStyle(Tokens.inkOnAccent)
-                        .frame(width: 46, height: 46)
-                        .background(Tokens.accentFill)
-                        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-                }
-                .buttonStyle(.plain)
-                .accessibilityLabel(player.playingToneID == nil ? "Play test tone" : "Stop test tone")
-            }
-
-            VolumeSlider(volume: $testLevel) { editing in
-                if editing {
-                    player.beginScrub(AlarmTone.tone(id: testToneID, in: store.tones), at: testLevel)
-                } else {
-                    player.endScrub()
-                }
-            }
-            .onChange(of: testLevel) { player.scrub(to: $0) }
-
-            if player.previewMuted {
-                Text("Silent mode is on — previews are muted. Switch Silent off to hear the level.")
+            VStack(alignment: .leading, spacing: 3) {
+                Text("Try it for real")
+                    .font(Typo.sectionLabel)
+                    .tracking(1.1)
+                    .foregroundStyle(Tokens.accentLabel)
+                Text("Pick a tone below and set a level · it rings in \(Int(AlarmStore.testLead)) s as a real alarm. 100% is your Ringer & Alerts volume — raise it in Settings › Sounds & Haptics if you want louder.")
                     .font(Typo.caption)
                     .foregroundStyle(Tokens.textMuted)
                     .fixedSize(horizontal: false, vertical: true)
             }
+
+            VolumeSlider(volume: $testLevel)
 
             HStack {
                 Text("Test level")
@@ -102,6 +70,8 @@ struct SoundsView: View {
                     .monospacedDigit()
                     .foregroundStyle(Tokens.accentText)
             }
+
+            TestRingButton(alarm: testAlarm)
         }
         .padding(16)
         .cardSurface(radius: Metrics.cardRadius)
@@ -117,19 +87,19 @@ struct SoundsView: View {
 private struct LibraryRow: View {
     let tone: AlarmTone
     let usage: Int
-    let isPlaying: Bool
-    let play: () -> Void
+    let isSelected: Bool
+    let select: () -> Void
 
     var body: some View {
-        Button(action: play) {
+        Button(action: select) {
             HStack(spacing: 13) {
-                Image(systemName: isPlaying ? "speaker.wave.2.fill" : "play.fill")
+                Image(systemName: tone.source == .imported ? "music.note" : "waveform")
                     .font(.system(size: 15, weight: .semibold))
-                    .foregroundStyle(Tokens.textSecondary)
+                    .foregroundStyle(isSelected ? Tokens.inkOnAccent : Tokens.textSecondary)
                     .frame(width: 40, height: 40)
-                    .background(Tokens.track)
+                    .background(isSelected ? Tokens.accentFill : Tokens.track)
                     .clipShape(RoundedRectangle(cornerRadius: 13, style: .continuous))
-                    // Decorative: without this VoiceOver reads "Play" before every name.
+                    // Decorative: the name says it all to VoiceOver.
                     .accessibilityHidden(true)
 
                 VStack(alignment: .leading, spacing: 3) {
@@ -148,9 +118,10 @@ private struct LibraryRow: View {
             .padding(.horizontal, 14)
             .padding(.vertical, 12)
             .frame(minHeight: Metrics.minTapTarget + 18)
-            .cardSurface(radius: 18)
+            .cardSurface(radius: 18, tinted: isSelected)
         }
         .buttonStyle(.plain)
+        .accessibilityAddTraits(isSelected ? [.isSelected, .isButton] : .isButton)
     }
 
     private var usageText: String {

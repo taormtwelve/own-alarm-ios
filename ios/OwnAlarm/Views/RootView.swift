@@ -2,7 +2,6 @@ import SwiftUI
 
 struct RootView: View {
     @EnvironmentObject private var store: AlarmStore
-    @EnvironmentObject private var player: AlarmPlayer
     @State private var tab: Tab = .alarms
 
     private enum Tab: Hashable {
@@ -24,9 +23,6 @@ struct RootView: View {
                 .tag(Tab.settings)
         }
         .tint(Tokens.accentText)
-        // Changing tab ends any preview at once. A tab is not reliably told it has
-        // disappeared the moment you leave it, so this does not wait to be told.
-        .onChange(of: tab) { _ in player.stopPreviews() }
         // The theme preference wins over the system setting; `.automatic` returns
         // nil, which hands control back to iOS.
         .preferredColorScheme(store.settings.theme.colorScheme)

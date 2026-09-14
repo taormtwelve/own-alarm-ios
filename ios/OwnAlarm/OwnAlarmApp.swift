@@ -59,9 +59,6 @@ struct OwnAlarmApp: App {
                     }
                 }
                 .onChange(of: scenePhase) { phase in
-                    // Leaving the app silences previews immediately; a ringing
-                    // alarm keeps going.
-                    if phase != .active { player.appDidLeaveForeground() }
                     // Repeat triggers can drift after a long background spell or a
                     // time-zone change; re-arming on activation keeps them honest.
                     if phase == .active { store.rescheduleAll() }
@@ -80,13 +77,16 @@ final class NotificationRouter: NSObject, UNUserNotificationCenterDelegate {
     weak var store: AlarmStore?
 
     /// Fired while the app is open. An alarm shows our own ringing screen rather than
-    /// a banner; anything else — the "snoozed" notice — shows as a normal banner.
+    /// a banner; a test ring plays as the notification it is, sound and all; anything
+    /// else — the "snoozed" notice — shows as a normal banner.
     func userNotificationCenter(
         _ center: UNUserNotificationCenter,
         willPresent notification: UNNotification
     ) async -> UNNotificationPresentationOptions {
         let content = notification.request.content
-        guard content.userInfo["alarmID"] != nil else { return [.banner, .list] }
+        guard content.userInfo["alarmID"] != nil else {
+            return content.userInfo["test"] as? Bool == true ? [.banner, .list, .sound] : [.banner, .list]
+        }
         await route(content, action: nil)
         return []
     }

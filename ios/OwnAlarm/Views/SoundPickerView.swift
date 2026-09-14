@@ -3,10 +3,10 @@ import SwiftUI
 import UIKit
 
 /// The per-alarm sound sheet: fade-in curve on top, tone list beneath, and a way
-/// to hear the tone at exactly the level this alarm is set to.
+/// to hear the tone at exactly the level this alarm is set to — by ringing the real
+/// alarm a few seconds from now.
 struct SoundPickerView: View {
     @EnvironmentObject private var store: AlarmStore
-    @EnvironmentObject private var player: AlarmPlayer
     @Environment(\.dismiss) private var dismiss
 
     @Binding var alarm: Alarm
@@ -23,13 +23,8 @@ struct SoundPickerView: View {
 
                     VStack(spacing: 8) {
                         ForEach(store.tones) { tone in
-                            ToneRow(
-                                tone: tone,
-                                isSelected: tone.id == alarm.toneID,
-                                isPlaying: player.playingToneID == tone.id
-                            ) {
+                            ToneRow(tone: tone, isSelected: tone.id == alarm.toneID) {
                                 alarm.toneID = tone.id
-                                player.preview(tone, at: alarm.volume)
                             }
                         }
 
@@ -44,32 +39,17 @@ struct SoundPickerView: View {
             .navigationTitle("Sound & loudness")
             .navigationBarTitleDisplayMode(.inline)
             .safeAreaInset(edge: .bottom) {
-                VStack(spacing: 8) {
-                    if player.previewMuted {
-                        Text("Silent mode is on — previews are muted. Switch Silent off to hear it.")
-                            .font(Typo.caption)
-                            .foregroundStyle(Tokens.textMuted)
-                            .fixedSize(horizontal: false, vertical: true)
-                    }
-                    PrimaryButton(title: "Hear it at \(alarm.volumePercent)%", systemImage: "speaker.wave.3.fill") {
-                        player.preview(store.tone(for: alarm), at: alarm.volume)
-                    }
-                }
-                .padding(.horizontal, Metrics.gutter)
-                .padding(.vertical, 12)
-                .background(.bar)
+                TestRingButton(alarm: alarm)
+                    .padding(.horizontal, Metrics.gutter)
+                    .padding(.vertical, 12)
+                    .background(.bar)
             }
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Done") {
-                        player.stop()
-                        dismiss()
-                    }
-                    .fontWeight(.bold)
+                    Button("Done") { dismiss() }
+                        .fontWeight(.bold)
                 }
             }
-            // Previews only: a ringing alarm's cover also makes this disappear.
-            .onDisappear { player.stopPreviews() }
         }
     }
 }
@@ -163,19 +143,18 @@ private struct FadeCurve: View {
 struct ToneRow: View {
     let tone: AlarmTone
     let isSelected: Bool
-    let isPlaying: Bool
     let select: () -> Void
 
     var body: some View {
         Button(action: select) {
             HStack(spacing: 13) {
-                Image(systemName: isPlaying ? "speaker.wave.2.fill" : "play.fill")
+                Image(systemName: tone.source == .imported ? "music.note" : "waveform")
                     .font(.system(size: 15, weight: .semibold))
                     .foregroundStyle(isSelected ? Tokens.inkOnAccent : Tokens.textSecondary)
                     .frame(width: 38, height: 38)
                     .background(isSelected ? Tokens.accentFill : Tokens.track)
                     .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-                    // Decorative: without this VoiceOver reads "Play" before every name.
+                    // Decorative: the name says it all to VoiceOver.
                     .accessibilityHidden(true)
 
                 VStack(alignment: .leading, spacing: 2) {

@@ -32,14 +32,6 @@ struct EditAlarmView: View {
             }
             .background(Tokens.background)
             .scrollDismissesKeyboard(.interactively)
-            // Touching any other control ends a slider preview at once — including
-            // after iOS cancelled the drag without the slider reporting it.
-            .onChange(of: alarm.fadeInSeconds) { _ in player.stopPreviews() }
-            .onChange(of: alarm.overridesSilent) { _ in player.stopPreviews() }
-            .onChange(of: alarm.snoozeMinutes) { _ in player.stopPreviews() }
-            .onChange(of: alarm.louderAfterSnooze) { _ in player.stopPreviews() }
-            .onChange(of: alarm.repeatDays) { _ in player.stopPreviews() }
-            .onChange(of: time) { _ in player.stopPreviews() }
             .navigationTitle(isNew ? "New alarm" : alarm.task.isEmpty ? "Alarm" : alarm.task)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -141,7 +133,7 @@ struct EditAlarmView: View {
                         .font(Typo.sectionLabel)
                         .tracking(1.1)
                         .foregroundStyle(Tokens.accentLabel)
-                    Text("Only this alarm rings at this level — every other alarm keeps its own")
+                    Text("Only this alarm rings at this level — every other alarm keeps its own. 100% is your Ringer & Alerts volume — raise it in Settings › Sounds & Haptics if you want louder.")
                         .font(Typo.caption)
                         .foregroundStyle(Tokens.textMuted)
                         .fixedSize(horizontal: false, vertical: true)
@@ -154,24 +146,11 @@ struct EditAlarmView: View {
                     .accessibilityIdentifier("volumeReadout")
             }
 
-            // Plays the tone while dragging, so the level is set by ear.
-            VolumeSlider(volume: $alarm.volume) { editing in
-                if editing {
-                    player.beginScrub(store.tone(for: alarm), at: alarm.volume)
-                } else {
-                    player.endScrub()
-                }
-            }
-            .onChange(of: alarm.volume) { player.scrub(to: $0) }
-            // Previews only: a ringing alarm's cover also makes this disappear.
-            .onDisappear { player.stopPreviews() }
+            VolumeSlider(volume: $alarm.volume)
 
-            if player.previewMuted {
-                Text("Silent mode is on — previews are muted. Switch Silent off to hear the level.")
-                    .font(Typo.caption)
-                    .foregroundStyle(Tokens.textMuted)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
+            // The level is heard the only way it can be heard truly: by ringing the
+            // real alarm a few seconds from now, with what is on screen.
+            TestRingButton(alarm: alarm)
 
             Toggle(isOn: Binding(
                 get: { alarm.fadeInSeconds > 0 },
@@ -214,10 +193,8 @@ struct EditAlarmView: View {
                 }
             }
             .toggleStyle(.alarm)
-            // Switching it on buzzes once, so the choice can be felt; like any other
-            // control here, it also ends a slider preview.
+            // Switching it on buzzes once, so the choice can be felt.
             .onChange(of: alarm.vibrates) { on in
-                player.stopPreviews()
                 if on { player.buzzOnce() }
             }
 

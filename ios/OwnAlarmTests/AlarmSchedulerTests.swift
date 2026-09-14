@@ -58,6 +58,23 @@ final class AlarmSchedulerTests: XCTestCase {
         XCTAssertNil(content.sound, "Nothing should be audible from the Lock Screen")
     }
 
+    func testATestRingIsTheAlarmsOwnNotificationMarkedAsATest() {
+        let alarm = makeAlarm(task: "Morning run", volume: 0.6)
+        let real = scheduler.content(for: alarm, tone: tone, showOnLockScreen: true)
+        let test = scheduler.testContent(for: alarm, tone: tone)
+
+        XCTAssertNotNil(test.sound)
+        // UNNotificationSound compares by identity; the description names the file.
+        XCTAssertEqual(String(describing: test.sound), String(describing: real.sound),
+                       "The very sound the real alarm rings with")
+        XCTAssertEqual(test.interruptionLevel, real.interruptionLevel)
+        XCTAssertEqual(test.userInfo["test"] as? Bool, true)
+        XCTAssertNil(test.userInfo["alarmID"], "No alarm to open or stop")
+        XCTAssertEqual(test.categoryIdentifier, "", "No Stop / Snooze buttons")
+        XCTAssertTrue(test.title.hasPrefix("Test"), "got \(test.title)")
+        XCTAssertTrue(test.title.contains("Morning run"))
+    }
+
     func testAOneShotIsReportedFinishedOnceItsTimeHasPassed() {
         let scheduler = AlarmScheduler(defaults: UserDefaults(suiteName: UUID().uuidString)!)
         var finished: [UUID] = []

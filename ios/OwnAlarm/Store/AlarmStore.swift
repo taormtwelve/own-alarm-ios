@@ -13,6 +13,14 @@ final class AlarmStore: ObservableObject {
     /// taps its notification — drives the ringing presentation.
     @Published var ringing: Alarm?
 
+    /// When a test ring is due, while one is pending.
+    @Published private(set) var testRingsAt: Date?
+
+    /// How far ahead a test ring is set: long enough to lock the phone and hear it
+    /// as the Lock Screen alarm.
+    static let testLead: TimeInterval = 5
+    private var testClear: DispatchWorkItem?
+
     private let scheduler: AlarmScheduling
     private let fileURL: URL
     private let defaults: UserDefaults
@@ -147,6 +155,27 @@ final class AlarmStore: ObservableObject {
         }
         tones.append(tone)
         persistTones()
+    }
+
+    // MARK: Test ring
+
+    /// Rings `alarm` for real in `testLead` seconds — its tone at its level, through
+    /// the same route as the scheduled alarm — without touching the alarm itself.
+    /// The alarm need not be saved: the editor passes what is on screen.
+    func testRing(_ alarm: Alarm) {
+        scheduler.scheduleTest(alarm, tone: tone(for: alarm), in: Self.testLead)
+        testRingsAt = Date().addingTimeInterval(Self.testLead)
+        testClear?.cancel()
+        let work = DispatchWorkItem { [weak self] in self?.testRingsAt = nil }
+        testClear = work
+        DispatchQueue.main.asyncAfter(deadline: .now() + Self.testLead, execute: work)
+    }
+
+    func cancelTestRing() {
+        scheduler.cancelTest()
+        testClear?.cancel()
+        testClear = nil
+        testRingsAt = nil
     }
 
     // MARK: Ringing

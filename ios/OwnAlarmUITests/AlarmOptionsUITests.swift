@@ -1,8 +1,8 @@
 import XCTest
 
 /// The per-alarm options and the behaviour added after the first release: snooze
-/// and fade-in switches, sound choice, remembered volume, previews stopping when the
-/// app leaves the screen, and what iOS 26 hides.
+/// and fade-in switches, sound choice, remembered volume, the test ring, and what
+/// iOS 26 hides.
 final class AlarmOptionsUITests: XCTestCase {
 
     private var app: XCUIApplication!
@@ -124,26 +124,33 @@ final class AlarmOptionsUITests: XCTestCase {
         XCTAssertTrue(soundRow.label.contains("Whisper"), "Sound row reads: \(soundRow.label)")
     }
 
-    // MARK: Leaving the app
+    // MARK: Hearing the level for real
 
-    func testLeavingTheAppStopsAPreviewAtOnce() throws {
+    private var testRing: XCUIElement {
+        app.buttons.matching(NSPredicate(format: "label BEGINSWITH 'Test real alarm'")).firstMatch
+    }
+
+    func testTheEditorOffersToRingTheRealAlarmAtItsLevel() {
+        openMorningRun()
+
+        XCTAssertTrue(testRing.waitForExistence(timeout: 5), "The editor should offer a test ring")
+        XCTAssertTrue(testRing.label.contains("85%"), "At this alarm's level: \(testRing.label)")
+
+        testRing.tap()
+
+        let cancel = app.buttons["Cancel test"]
+        XCTAssertTrue(cancel.waitForExistence(timeout: 3), "While the ring is on its way it can be cancelled")
+        XCTAssertTrue(beginning(with: "Rings in").exists, "…and a countdown says when")
+        cancel.tap()
+        XCTAssertTrue(testRing.waitForExistence(timeout: 3), "Cancelled: back to the offer")
+    }
+
+    func testTheSoundsTabOffersToRingTheChosenToneForReal() {
         app.tabBars.buttons["Sounds"].tap()
-        let play = app.buttons["Play test tone"]
-        XCTAssertTrue(play.waitForExistence(timeout: 10))
 
-        play.tap()
-        guard app.buttons["Stop test tone"].waitForExistence(timeout: 3) else {
-            throw XCTSkip("No audio output available on this machine")
-        }
-
-        let left = Date()
-        XCUIDevice.shared.press(.home)
-        app.activate()
-        // A preview ends on its own after 6 s; a slower round trip proves nothing.
-        try XCTSkipIf(Date().timeIntervalSince(left) > 5, "Round trip too slow to prove anything")
-
-        XCTAssertTrue(app.buttons["Play test tone"].waitForExistence(timeout: 5),
-                      "The preview should have stopped when the app left the screen")
+        XCTAssertTrue(testRing.waitForExistence(timeout: 10))
+        XCTAssertTrue(testRing.label.contains("50%"), "At the test level, 50% to start: \(testRing.label)")
+        XCTAssertFalse(app.buttons["Play test tone"].exists, "No live preview any more")
     }
 
     // MARK: iOS 26
@@ -188,28 +195,6 @@ final class AlarmOptionsUITests: XCTestCase {
 
         XCTAssertTrue(app.buttons["Dark"].waitForExistence(timeout: 5))
         XCTAssertTrue(app.buttons["Dark"].isSelected)
-    }
-
-    // MARK: Changing tab
-
-    func testChangingTabStopsAPreviewAtOnce() throws {
-        app.tabBars.buttons["Sounds"].tap()
-        let play = app.buttons["Play test tone"]
-        XCTAssertTrue(play.waitForExistence(timeout: 10))
-
-        play.tap()
-        guard app.buttons["Stop test tone"].waitForExistence(timeout: 3) else {
-            throw XCTSkip("No audio output available on this machine")
-        }
-
-        let left = Date()
-        app.tabBars.buttons["Alarms"].tap()
-        app.tabBars.buttons["Sounds"].tap()
-        // A preview ends on its own after 6 s; a slower round trip proves nothing.
-        try XCTSkipIf(Date().timeIntervalSince(left) > 5, "Round trip too slow to prove anything")
-
-        XCTAssertTrue(app.buttons["Play test tone"].waitForExistence(timeout: 2),
-                      "The preview should have stopped when the tab changed")
     }
 
     // MARK: Vibration

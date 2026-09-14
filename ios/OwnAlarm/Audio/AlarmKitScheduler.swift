@@ -62,6 +62,9 @@ final class AlarmKitScheduler: AlarmScheduling {
     /// that lands after a newer request knows it is out of date.
     private var requests: [UUID: (number: Int, wanted: Bool)] = [:]
     private var requestCount = 0
+    /// The test ring pending, if any — never in `armed`, so its stopping is not
+    /// read as an alarm finishing.
+    private var testID: UUID?
 
     init(fallback: AlarmScheduling, defaults: UserDefaults = .standard) {
         self.fallback = fallback
@@ -147,11 +150,43 @@ final class AlarmKitScheduler: AlarmScheduling {
         fallback.cancelSnooze(alarm)
     }
 
+    func scheduleTest(_ alarm: Alarm, tone: AlarmTone, in seconds: TimeInterval) {
+        cancelTest()
+        guard isAuthorized else {
+            fallback.scheduleTest(alarm, tone: tone, in: seconds)
+            return
+        }
+        // Stop only — there is nothing to snooze — and named as a test.
+        var test = alarm
+        test.snoozeMinutes = 0
+        test.task = "Test · \(alarm.task.isEmpty ? "Alarm" : alarm.task)"
+        let id = UUID()
+        testID = id
+        let configuration = makeConfiguration(for: test, tone: tone,
+                                              schedule: .fixed(Date().addingTimeInterval(seconds)))
+        Task { [manager, fallback] in
+            do {
+                _ = try await manager.schedule(id: id, configuration: configuration)
+            } catch {
+                print("AlarmKit refused the test ring: \(error). Using a notification instead.")
+                fallback.scheduleTest(alarm, tone: tone, in: seconds)
+            }
+        }
+    }
+
+    func cancelTest() {
+        if let id = testID {
+            try? manager.cancel(id: id)
+            testID = nil
+        }
+        fallback.cancelTest()
+    }
+
     func cancelAll(_ alarms: [Alarm]) {
         // Alarms are re-armed on every launch; that must not cancel one that is
-        // snoozing or ringing at this moment.
+        // snoozing or ringing at this moment — nor a test ring on its way.
         for scheduled in (try? manager.alarms) ?? [] {
-            guard case .scheduled = scheduled.state else { continue }
+            guard case .scheduled = scheduled.state, scheduled.id != testID else { continue }
             record(scheduled.id, wanted: false)
             setArmed(scheduled.id, false)
             try? manager.cancel(id: scheduled.id)
@@ -227,7 +262,10 @@ final class AlarmKitScheduler: AlarmScheduling {
 
     // MARK: Configuration
 
-    private func makeConfiguration(for alarm: Alarm, tone: AlarmTone)
+    /// `schedule` is the alarm's own weekly or one-off time unless given — a test
+    /// ring passes a fixed moment a few seconds ahead.
+    private func makeConfiguration(for alarm: Alarm, tone: AlarmTone,
+                                   schedule: AlarmKit.Alarm.Schedule? = nil)
         -> AlarmManager.AlarmConfiguration<OwnAlarmMetadata> {
         let title = alarm.task.isEmpty ? "Alarm" : alarm.task
         let snoozes = alarm.snoozeMinutes > 0
@@ -276,7 +314,7 @@ final class AlarmKitScheduler: AlarmScheduling {
                     preAlert: nil,
                     postAlert: TimeInterval(alarm.snoozeMinutes * 60))
                 : nil,
-            schedule: .relative(.init(time: time, repeats: repeats)),
+            schedule: schedule ?? .relative(.init(time: time, repeats: repeats)),
             attributes: attributes,
             // The app's own code behind the Lock Screen buttons: Snooze starts the
             // countdown and posts the "snoozed" notice; Stop clears it.

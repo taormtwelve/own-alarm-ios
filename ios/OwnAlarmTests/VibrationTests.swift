@@ -65,30 +65,6 @@ final class VibrationTests: XCTestCase {
         XCTAssertEqual(counter.buzzes, 0)
     }
 
-    func testLeavingTheAppDoesNotStopARingingAlarmsBuzz() {
-        let counter = Counter()
-        let player = makePlayer(counter)
-        defer { player.stop() }
-
-        player.startRinging(alarm(vibrates: true), tone: siren)
-        player.appDidLeaveForeground()
-
-        let again = NSPredicate { _, _ in counter.buzzes >= 2 }
-        expectation(for: again, evaluatedWith: nil)
-        waitForExpectations(timeout: AlarmPlayer.vibrationInterval + 2)
-    }
-
-    func testPreviewsNeverVibrate() {
-        let counter = Counter()
-        let player = makePlayer(counter)
-        defer { player.stop() }
-
-        player.preview(siren, at: 0.3)
-        player.beginScrub(siren, at: 0.5)
-
-        XCTAssertEqual(counter.buzzes, 0)
-    }
-
     func testSwitchingVibrateOnGivesOneBuzz() {
         let counter = Counter()
         let player = makePlayer(counter)

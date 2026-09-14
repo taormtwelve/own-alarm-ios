@@ -25,10 +25,6 @@ extension AlarmTone {
 /// the level is baked into the file: a copy of the tone with its samples scaled,
 /// written to Library/Sounds, where the system looks for custom sounds.
 ///
-/// Previews play a copy rendered the same way, through the same system player and at
-/// the same volume (`AlarmPlayer`), so what you hear while choosing a level is how
-/// the alarm will ring.
-///
 /// 100% is the Ringer & Alerts volume itself — the tone as loud as it can go without
 /// clipping. Every other level is that share of it: a 50% task is half as loud as
 /// the ringer plays, a 30% task 30%.
@@ -37,14 +33,6 @@ extension AlarmTone {
 enum ScaledSound {
     /// System alert sounds are capped at 30 seconds.
     static let maxSeconds: Double = 29
-
-    /// A preview is a chain of chunks this long, each rendered from where the tone has
-    /// got to; short, so a new level is heard within a fraction of a second.
-    static let previewChunkSeconds: Double = 0.3
-
-    /// Chunks overlap by this much, fading out and in, so the chain plays as one
-    /// unbroken tone.
-    static let previewCrossfade: Double = 0.03
 
     /// The loudest a sample may be at 100% — just under full scale.
     static let ceiling: Float = 0.98
@@ -55,8 +43,7 @@ enum ScaledSound {
     private static let formulaKey = "ownalarm.scaledSound.formula"
     private static var checkedFormula = false
 
-    /// Loudest sample of each tone, so a preview — which renders only the start —
-    /// scales exactly as the full copy does.
+    /// Loudest sample of each tone, so every copy scales from the same measure.
     private static var peaks: [String: Float] = [:]
 
     static var directory: URL {
@@ -86,8 +73,8 @@ enum ScaledSound {
 
     // MARK: Files
 
-    /// File name of the real alarm's copy, rendered on first use and cached by tone
-    /// and percentage. Nil if the tone could not be read — callers fall back to the
+    /// File name of the alarm's copy, rendered on first use and cached by tone and
+    /// percentage. Nil if the tone could not be read — callers fall back to the
     /// original file.
     static func fileName(for tone: AlarmTone, volume: Double) -> String? {
         discardOutdatedCopies()
@@ -96,70 +83,19 @@ enum ScaledSound {
         let destination = directory.appendingPathComponent(name)
         if FileManager.default.fileExists(atPath: destination.path) { return name }
         try? FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
-        return render(tone, percent: level, seconds: maxSeconds, to: destination) ? name : nil
+        return render(tone, percent: level, to: destination) ? name : nil
     }
 
-    /// One chunk of a preview — `previewChunkSeconds` of the tone from `offset`
-    /// (wrapping round at the end), scaled as the real alarm's copy is, with
-    /// `previewCrossfade` faded at each edge. A throwaway file in the temporary
-    /// folder; the caller deletes it when done.
-    static func previewFile(for tone: AlarmTone, volume: Double, startingAt offset: TimeInterval = 0) -> URL? {
-        let url = FileManager.default.temporaryDirectory
-            .appendingPathComponent("ownalarm-preview-\(UUID().uuidString).caf")
-        return render(tone, percent: percent(volume), seconds: previewChunkSeconds, from: offset,
-                      fadeEdges: previewCrossfade, to: url) ? url : nil
-    }
-
-    /// `previewChunkSeconds` of digital silence, for probing the Silent switch:
-    /// muted it ends at once, heard through it takes its full length. Kept in the
-    /// temporary folder and rendered again if the system has cleared it.
-    static func silentProbeFile() -> URL? {
-        let url = FileManager.default.temporaryDirectory.appendingPathComponent("ownalarm-silence.caf")
-        if FileManager.default.fileExists(atPath: url.path) { return url }
-        guard let format = AVAudioFormat(standardFormatWithSampleRate: 44_100, channels: 1),
-              let buffer = AVAudioPCMBuffer(pcmFormat: format,
-                                            frameCapacity: AVAudioFrameCount(44_100 * previewChunkSeconds)) else { return nil }
-        buffer.frameLength = buffer.frameCapacity
-        if let samples = buffer.floatChannelData?[0] {
-            for i in 0..<Int(buffer.frameLength) { samples[i] = 0 }
-        }
-        return write(buffer, to: url) ? url : nil
-    }
-
-    /// How much of the tone the system can play, in seconds.
-    static func duration(of tone: AlarmTone) -> TimeInterval? {
-        guard let source = tone.fileURL, let input = try? AVAudioFile(forReading: source) else { return nil }
-        return min(Double(input.length) / input.processingFormat.sampleRate, maxSeconds)
-    }
-
-    private static func render(_ tone: AlarmTone, percent: Int, seconds: Double,
-                               from offset: TimeInterval = 0, fadeEdges: Double = 0,
-                               to destination: URL) -> Bool {
+    private static func render(_ tone: AlarmTone, percent: Int, to destination: URL) -> Bool {
         guard let source = tone.fileURL,
               let loudest = peak(of: tone),
-              let whole = read(source, seconds: maxSeconds) else { return false }
+              let buffer = read(source, seconds: maxSeconds) else { return false }
 
-        let format = whole.format
-        let total = Int(whole.frameLength)
-        let count = min(total, Int(format.sampleRate * seconds))
-        guard total > 0, count > 0,
-              let buffer = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: AVAudioFrameCount(count)) else { return false }
-        buffer.frameLength = AVAudioFrameCount(count)
-
-        let start = Int((max(0, offset) * format.sampleRate).rounded()) % total
         let gain = copyGain(for: Double(percent) / 100, peak: loudest)
-        // A short linear ramp at each end, so chunks can cross-fade without a click.
-        let ramp = min(Int(fadeEdges * format.sampleRate), count / 2)
-        if let from = whole.floatChannelData, let to = buffer.floatChannelData {
-            for channel in 0..<Int(format.channelCount) {
-                for i in 0..<count {
-                    var edge: Float = 1
-                    if ramp > 0 {
-                        if i < ramp { edge = Float(i) / Float(ramp) }
-                        else if i >= count - ramp { edge = Float(count - i) / Float(ramp) }
-                    }
-                    to[channel][i] = from[channel][(start + i) % total] * gain * edge
-                }
+        if let channels = buffer.floatChannelData {
+            for channel in 0..<Int(buffer.format.channelCount) {
+                let samples = channels[channel]
+                for i in 0..<Int(buffer.frameLength) { samples[i] *= gain }
             }
         }
 

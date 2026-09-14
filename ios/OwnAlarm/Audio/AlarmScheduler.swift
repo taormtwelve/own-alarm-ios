@@ -10,6 +10,12 @@ protocol AlarmScheduling: AnyObject {
     /// each is a countdown the user is waiting on.
     func cancelAll(_ alarms: [Alarm])
 
+    /// Rings `alarm` for real in `seconds` — the same route, sound and volume as a
+    /// scheduled alarm — so the user hears exactly what they have set. One at a
+    /// time: a new test replaces a pending one. The alarm itself is untouched.
+    func scheduleTest(_ alarm: Alarm, tone: AlarmTone, in seconds: TimeInterval)
+    func cancelTest()
+
     /// Set by the store. Called with an alarm's id when the system reports that the
     /// alarm has rung and been stopped. Only AlarmKit can tell; other schedulers
     /// never call it.
@@ -54,6 +60,7 @@ final class AlarmScheduler: AlarmScheduling {
     static let categoryIdentifier = "ownalarm.alarm"
     static let snoozeAction = "ownalarm.snooze"
     static let stopAction = "ownalarm.stop"
+    static let testIdentifier = "ownalarm.test"
 
     /// When each one-shot is due, and when each snooze ends. A notification cannot
     /// say it has been answered, so these are how a one-shot is known to be done.
@@ -168,9 +175,37 @@ final class AlarmScheduler: AlarmScheduling {
         SnoozeNotice.post(alarmID: alarm.id, task: alarm.task, minutes: minutes)
     }
 
+    // MARK: Test ring
+
+    func scheduleTest(_ alarm: Alarm, tone: AlarmTone, in seconds: TimeInterval) {
+        cancelTest()
+        let request = UNNotificationRequest(
+            identifier: Self.testIdentifier,
+            content: testContent(for: alarm, tone: tone),
+            trigger: UNTimeIntervalNotificationTrigger(timeInterval: max(1, seconds), repeats: false)
+        )
+        center.add(request)
+    }
+
+    func cancelTest() {
+        center.removePendingNotificationRequests(withIdentifiers: [Self.testIdentifier])
+        center.removeDeliveredNotifications(withIdentifiers: [Self.testIdentifier])
+    }
+
+    /// The alarm's own notification, marked as a test: no Stop / Snooze buttons
+    /// (there is no alarm to act on) and no alarm id, so the router shows it with
+    /// its sound even while the app is open instead of opening the ringing screen.
+    func testContent(for alarm: Alarm, tone: AlarmTone) -> UNNotificationContent {
+        let content = self.content(for: alarm, tone: tone, showOnLockScreen: true)
+        content.title = "Test · \(alarm.task.isEmpty ? "Alarm" : alarm.task)"
+        content.categoryIdentifier = ""
+        content.userInfo = ["test": true]
+        return content
+    }
+
     // MARK: Content
 
-    func content(for alarm: Alarm, tone: AlarmTone, showOnLockScreen: Bool) -> UNNotificationContent {
+    func content(for alarm: Alarm, tone: AlarmTone, showOnLockScreen: Bool) -> UNMutableNotificationContent {
         let content = UNMutableNotificationContent()
         content.title = alarm.task.isEmpty ? "Alarm" : alarm.task
         content.body = "\(alarm.volumePercent)% · \(tone.name)"

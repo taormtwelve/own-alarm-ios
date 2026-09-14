@@ -223,6 +223,37 @@ struct PrimaryButton: View {
     }
 }
 
+// MARK: - Test ring
+
+/// Rings the alarm for real in a few seconds — same route, sound and volume as the
+/// scheduled alarm — the one way to hear exactly what has been set. While one is
+/// on its way the button cancels it and a countdown says when it rings.
+struct TestRingButton: View {
+    @EnvironmentObject private var store: AlarmStore
+    let alarm: Alarm
+
+    var body: some View {
+        VStack(spacing: 8) {
+            if let due = store.testRingsAt {
+                PrimaryButton(title: "Cancel test", systemImage: "xmark") {
+                    store.cancelTestRing()
+                }
+                (Text("Rings in ") + Text(due, style: .timer)
+                    + Text(" · lock the phone to hear it as the Lock Screen alarm"))
+                    .font(Typo.caption)
+                    .foregroundStyle(Tokens.textMuted)
+                    .monospacedDigit()
+                    .fixedSize(horizontal: false, vertical: true)
+            } else {
+                PrimaryButton(title: "Test real alarm at \(alarm.volumePercent)%", systemImage: "bell.fill") {
+                    store.testRing(alarm)
+                }
+            }
+        }
+        .accessibilityIdentifier("testRing")
+    }
+}
+
 // MARK: - Slide to stop
 
 /// A track you drag across to stop an alarm — a stray tap cannot trigger it. It only

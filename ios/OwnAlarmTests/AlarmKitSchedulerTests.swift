@@ -56,6 +56,20 @@ final class AlarmKitSchedulerTests: XCTestCase {
         XCTAssertEqual(spy.snoozed.last?.minutes, 5)
     }
 
+    func testWithoutPermissionATestRingFallsBackToNotifications() throws {
+        guard #available(iOS 26.0, *) else { throw XCTSkip("AlarmKit needs iOS 26") }
+        try XCTSkipIf(AlarmManager.shared.authorizationState == .authorized,
+                      "Only meaningful when alarms permission has not been granted")
+        let spy = SpyScheduler()
+        let scheduler = AlarmKitScheduler(fallback: spy, defaults: freshDefaults())
+
+        scheduler.scheduleTest(sample(), tone: tone, in: 5)
+
+        XCTAssertEqual(spy.tests.last?.seconds, 5)
+        scheduler.cancelTest()
+        XCTAssertEqual(spy.cancelledTestCount, 2, "Cancelled before scheduling, and on request")
+    }
+
     func testReArmingAlsoClearsTheNotificationFallback() throws {
         guard #available(iOS 26.0, *) else { throw XCTSkip("AlarmKit needs iOS 26") }
         let spy = SpyScheduler()

@@ -10,6 +10,8 @@ final class SpyScheduler: AlarmScheduling {
     private(set) var cancelledSnoozes: [Alarm] = []
     private(set) var cancelledAll: [[Alarm]] = []
     var cancelAllCount: Int { cancelledAll.count }
+    private(set) var tests: [(alarm: Alarm, tone: AlarmTone, seconds: TimeInterval)] = []
+    private(set) var cancelledTestCount = 0
     var onFinished: ((UUID) -> Void)?
 
     func schedule(_ alarm: Alarm, tone: AlarmTone, showOnLockScreen: Bool) {
@@ -21,6 +23,10 @@ final class SpyScheduler: AlarmScheduling {
     func cancel(_ alarm: Alarm) { cancelled.append(alarm) }
     func cancelSnooze(_ alarm: Alarm) { cancelledSnoozes.append(alarm) }
     func cancelAll(_ alarms: [Alarm]) { cancelledAll.append(alarms) }
+    func scheduleTest(_ alarm: Alarm, tone: AlarmTone, in seconds: TimeInterval) {
+        tests.append((alarm, tone, seconds))
+    }
+    func cancelTest() { cancelledTestCount += 1 }
 }
 
 @MainActor
@@ -271,6 +277,45 @@ final class AlarmStoreTests: XCTestCase {
         store.snooze(alarm)
 
         XCTAssertNil(store.ringing)
+    }
+
+    // MARK: Test ring
+
+    func testATestRingUsesWhatIsOnScreenAndLeavesTheAlarmAlone() throws {
+        let store = makeStore()
+        let mine = AlarmTone(id: "mine.m4a", name: "Mine", character: "Yours",
+                             peak: 2, fileName: "mine.m4a", source: .imported)
+        store.addImportedTone(mine)
+        // Never saved: the editor tests what is on screen.
+        let draft = makeAlarm(volume: 0.35, toneID: mine.id)
+
+        store.testRing(draft)
+
+        let test = try XCTUnwrap(spy.tests.last)
+        XCTAssertEqual(test.alarm.volume, 0.35, accuracy: 0.0001)
+        XCTAssertEqual(test.tone, mine, "The imported tone, not a bundled fallback")
+        XCTAssertEqual(test.seconds, AlarmStore.testLead)
+        XCTAssertTrue(store.alarms.isEmpty, "A test ring saves nothing")
+        XCTAssertNotNil(store.testRingsAt)
+    }
+
+    func testCancellingATestRingClearsIt() {
+        let store = makeStore()
+        store.testRing(makeAlarm())
+
+        store.cancelTestRing()
+
+        XCTAssertEqual(spy.cancelledTestCount, 1)
+        XCTAssertNil(store.testRingsAt)
+    }
+
+    func testATestRingIsOverOnceItsTimeHasCome() {
+        let store = makeStore()
+        store.testRing(makeAlarm())
+
+        let over = NSPredicate { _, _ in store.testRingsAt == nil }
+        expectation(for: over, evaluatedWith: nil)
+        waitForExpectations(timeout: AlarmStore.testLead + 2)
     }
 
     // MARK: Stop

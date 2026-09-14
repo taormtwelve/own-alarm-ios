@@ -62,21 +62,18 @@ Two paths, because iOS has two:
   rides on the notification:
   `UNNotificationSound.criticalSoundNamed(_:withAudioVolume:)`. That API is the whole
   reason the feature is possible; it is also why Critical Alerts matters.
-- **Previews** — dragging a slider or auditioning a tone plays the very copy the
-  real alarm rings with (`ScaledSound`) through System Sound Services, which plays
-  at the Ringer & Alerts volume just as AlarmKit and notifications do. So a level
-  sounds the same while you set it as when it rings, and 100% is the loudest your
-  ringer volume plays. Previews never touch media volume. A system sound can
-  neither change volume nor be stopped part-way, so a preview is a chain of 0.3 s
-  chunks, each rendered from where the tone has got to at the level the slider
-  wants by then; the next starts just before the current one ends and both have
-  faded edges, so they cross-fade into one unbroken tone. Nothing is ever cut
-  off, so switching tone, changing level or stopping never leaves sounds playing
-  over each other. The Silent switch mutes alert sounds, previews included —
-  chosen over a media-volume stand-in, which could not match the real ring. A
-  muted chunk ends the instant it starts; `AlarmPlayer.previewMuted` picks that
-  up and the slider screens show a line saying Silent is on, cleared by an
-  inaudible probe of digital silence once the switch is off again.
+- **Hearing a level** — there is no live preview, because no app can play a
+  sound the way the Lock Screen alarm will: at the Ringer & Alerts volume,
+  through Silent, with Attention Aware applied. Media playback follows the
+  media volume; System Sound Services follow the ringer but are muted by Silent
+  and cannot change volume or stop part-way. Every stand-in was heard to differ
+  from the real ring. So the app rings the real alarm instead: **Test real
+  alarm** (`AlarmStore.testRing` → `AlarmScheduling.scheduleTest`) schedules a
+  one-off AlarmKit alarm — or, on iOS 16–25 / without permission, a notification
+  marked `test` that plays with its sound even in the foreground — 5 s ahead,
+  with the tone and level on screen, saving nothing. Same route, same file, same
+  volume: what you hear is what wakes you. The slider itself is silent; the
+  captions say 100% is the Ringer & Alerts volume and where to raise it.
 - **An alarm ringing in the app** — it has to loop, fade in and ring through Silent,
   which a system sound cannot, so it plays under `AVAudioSession(.playback)`.
   `SystemVolume` remembers the phone's media volume, sets it to the alarm's level,
