@@ -125,8 +125,17 @@ final class AlarmOptionsUITests: XCTestCase {
 
         testRing.tap()
 
+        // Under UI test the app never asks for notification (or Alarms) permission,
+        // so the test cannot ring — and must say so rather than count down to
+        // silence. Where permission exists, the ring is on its way and can be
+        // cancelled. The permission check answers within moments; wait for it.
+        if beginning(with: "Nothing can ring yet").waitForExistence(timeout: 2) {
+            XCTAssertTrue(testRing.exists, "Blocked: the offer stays")
+            XCTAssertFalse(app.buttons["Cancel test"].exists, "No countdown to a ring that cannot come")
+            return
+        }
         let cancel = app.buttons["Cancel test"]
-        XCTAssertTrue(cancel.waitForExistence(timeout: 3), "While the ring is on its way it can be cancelled")
+        XCTAssertTrue(cancel.exists, "While the ring is on its way it can be cancelled")
         XCTAssertTrue(beginning(with: "Rings in").exists, "…and a countdown says when")
         cancel.tap()
         XCTAssertTrue(testRing.waitForExistence(timeout: 3), "Cancelled: back to the offer")
