@@ -1,5 +1,5 @@
 <!doctype html>
-<html>
+<html lang="th">
 <head>
   <meta charset="utf-8">
   <script src="./support.js"></script>
@@ -7,11 +7,11 @@
 <body>
 <x-dc>
 <helmet>
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,600;12..96,700&family=Instrument+Sans:wght@400;500;600;700&display=swap">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,600;12..96,700&family=Instrument+Sans:wght@400;500;600;700&family=Noto+Sans+Thai:wght@400;500;600;700&display=swap">
   <style>
-    body { margin: 0; font-family: 'Instrument Sans', system-ui, -apple-system, sans-serif; -webkit-font-smoothing: antialiased; }
+    body { margin: 0; font-family: 'Instrument Sans', 'Noto Sans Thai', system-ui, -apple-system, sans-serif; -webkit-font-smoothing: antialiased; }
     a { color: #B0710A; } a:hover { color: #8A5708; }
-    .num { font-family: 'Bricolage Grotesque', 'Helvetica Neue', sans-serif; font-variant-numeric: tabular-nums; }
+    .num { font-family: 'Bricolage Grotesque', 'Noto Sans Thai', 'Helvetica Neue', sans-serif; font-variant-numeric: tabular-nums; }
   </style>
 </helmet>
 
@@ -20,33 +20,33 @@
   <div style="height: 56px; flex-shrink: 0;"></div>
 
   <div style="padding: 0 20px 16px 20px; flex-shrink: 0;">
-    <div class="num" style="font-size: 30px; font-weight: 600; letter-spacing: -0.025em; line-height: 1.15;">Settings</div>
+    <div class="num" style="font-size: 30px; font-weight: 600; letter-spacing: -0.025em; line-height: 1.15;">การตั้งค่า</div>
   </div>
 
-  <div style="padding: 0 20px 10px 20px; font-size: 10px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #938A7E; flex-shrink: 0;">Clock</div>
+  <div style="padding: 0 20px 10px 20px; font-size: 10px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #938A7E; flex-shrink: 0;">นาฬิกา</div>
 
   <div style="margin: 0 20px; background: #FFFFFF; border: 1px solid #E8E1D6; border-radius: 20px; padding: 14px 16px; display: flex; flex-direction: column; gap: 10px; flex-shrink: 0;">
-    <span style="font-size: 15px; color: #4A443C;">Time format</span>
+    <span style="font-size: 15px; color: #4A443C;">รูปแบบเวลา</span>
     <div style="background: #F1EAE0; border-radius: 14px; padding: 4px; display: flex; gap: 4px;">
       <div style="flex-grow: 1; height: 36px; border-radius: 11px; display: flex; align-items: center; justify-content: center;">
-        <span style="font-size: 13px; font-weight: 500; color: #7D746A;">24-hour</span>
+        <span style="font-size: 13px; font-weight: 500; color: #7D746A;">24 ชั่วโมง</span>
       </div>
       <div style="flex-grow: 1; height: 36px; border-radius: 11px; display: flex; align-items: center; justify-content: center;">
-        <span style="font-size: 13px; font-weight: 500; color: #7D746A;">AM / PM</span>
+        <span style="font-size: 13px; font-weight: 500; color: #7D746A;">12 ชั่วโมง</span>
       </div>
       <div style="flex-grow: 1; height: 36px; border-radius: 11px; background: #FFFFFF; display: flex; align-items: center; justify-content: center;">
-        <span style="font-size: 13px; font-weight: 600;">Match device</span>
+        <span style="font-size: 13px; font-weight: 600;">ตามเครื่อง</span>
       </div>
     </div>
   </div>
 
-  <div style="padding: 18px 20px 10px 20px; font-size: 10px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #938A7E; flex-shrink: 0;">When an alarm rings</div>
+  <div style="padding: 18px 20px 10px 20px; font-size: 10px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #938A7E; flex-shrink: 0;">เมื่อนาฬิกาปลุกดัง</div>
 
   <div style="margin: 0 20px; background: #FFFFFF; border: 1px solid #E8E1D6; border-radius: 20px; display: flex; flex-direction: column; flex-shrink: 0;">
     <div style="display: flex; align-items: center; gap: 12px; min-height: 62px; padding: 10px 16px; box-sizing: border-box; border-bottom: 1px solid #F0EAE0;">
       <div style="flex-grow: 1; display: flex; flex-direction: column; gap: 2px;">
-        <span style="font-size: 15px; color: #4A443C;">Show on Lock Screen</span>
-        <span style="font-size: 12px; color: #7D746A;">Off, the alarm only takes over inside the app</span>
+        <span style="font-size: 15px; color: #4A443C;">แสดงบนหน้าจอล็อก</span>
+        <span style="font-size: 12px; color: #7D746A;">หากปิด การปลุกจะแสดงเฉพาะในแอป</span>
       </div>
       <div style="width: 51px; height: 31px; border-radius: 16px; background: #E8940F; display: flex; align-items: center; justify-content: flex-end; padding: 2px; box-sizing: border-box; flex-shrink: 0;">
         <span style="width: 27px; height: 27px; border-radius: 50%; background: #FFFFFF;"></span>
@@ -54,36 +54,36 @@
     </div>
     <div style="display: flex; align-items: center; gap: 12px; min-height: 62px; padding: 10px 16px; box-sizing: border-box;">
       <div style="flex-grow: 1; display: flex; flex-direction: column; gap: 2px;">
-        <span style="font-size: 15px; color: #4A443C;">Alarms permission</span>
-        <span style="font-size: 12px; color: #7D746A;">What lets an alarm ring through Silent</span>
+        <span style="font-size: 15px; color: #4A443C;">สิทธิ์นาฬิกาปลุก</span>
+        <span style="font-size: 12px; color: #7D746A;">สิ่งที่ทำให้นาฬิกาปลุกดังผ่านโหมดเงียบ</span>
       </div>
-      <span style="font-size: 15px; font-weight: 600; color: #B0710A;">Allowed</span>
+      <span style="font-size: 15px; font-weight: 600; color: #B0710A;">อนุญาตแล้ว</span>
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#A39A8E" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"></path></svg>
     </div>
   </div>
 
-  <div style="padding: 18px 20px 10px 20px; font-size: 10px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #938A7E; flex-shrink: 0;">Appearance</div>
+  <div style="padding: 18px 20px 10px 20px; font-size: 10px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #938A7E; flex-shrink: 0;">ลักษณะที่ปรากฏ</div>
 
   <div style="margin: 0 20px; background: #F1EAE0; border: 1px solid #E8E1D6; border-radius: 20px; padding: 6px; display: flex; gap: 6px; flex-shrink: 0;">
     <div style="flex-grow: 1; height: 40px; border-radius: 14px; display: flex; align-items: center; justify-content: center;">
-      <span style="font-size: 14px; font-weight: 500; color: #7D746A;">Dark</span>
+      <span style="font-size: 14px; font-weight: 500; color: #7D746A;">มืด</span>
     </div>
     <div style="flex-grow: 1; height: 40px; border-radius: 14px; display: flex; align-items: center; justify-content: center;">
-      <span style="font-size: 14px; font-weight: 500; color: #7D746A;">Light</span>
+      <span style="font-size: 14px; font-weight: 500; color: #7D746A;">สว่าง</span>
     </div>
     <div style="flex-grow: 1; height: 40px; border-radius: 14px; background: #FFFFFF; display: flex; align-items: center; justify-content: center;">
-      <span style="font-size: 14px; font-weight: 600;">Auto</span>
+      <span style="font-size: 14px; font-weight: 600;">อัตโนมัติ</span>
     </div>
   </div>
 
-  <div style="padding: 18px 20px 10px 20px; font-size: 10px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #938A7E; flex-shrink: 0;">Language</div>
+  <div style="padding: 18px 20px 10px 20px; font-size: 10px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #938A7E; flex-shrink: 0;">ภาษา</div>
 
   <div style="margin: 0 20px; background: #F1EAE0; border: 1px solid #E8E1D6; border-radius: 20px; padding: 6px; display: flex; gap: 6px; flex-shrink: 0;">
-    <div style="flex-grow: 1; height: 40px; border-radius: 14px; background: #FFFFFF; display: flex; align-items: center; justify-content: center;">
-      <span style="font-size: 14px; font-weight: 600;">English</span>
-    </div>
     <div style="flex-grow: 1; height: 40px; border-radius: 14px; display: flex; align-items: center; justify-content: center;">
-      <span style="font-size: 14px; font-weight: 500; color: #7D746A;">ไทย</span>
+      <span style="font-size: 14px; font-weight: 500; color: #7D746A;">English</span>
+    </div>
+    <div style="flex-grow: 1; height: 40px; border-radius: 14px; background: #FFFFFF; display: flex; align-items: center; justify-content: center;">
+      <span style="font-size: 14px; font-weight: 600;">ไทย</span>
     </div>
   </div>
 
@@ -92,15 +92,15 @@
   <div style="flex-shrink: 0; display: flex; align-items: flex-start; justify-content: space-around; padding: 11px 24px 0 24px; border-top: 1px solid #E8E1D6; background: #FFFFFF; height: 80px; box-sizing: border-box;">
     <div style="display: flex; flex-direction: column; align-items: center; gap: 5px; width: 64px; padding-top: 3px;">
       <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#938A7E" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="13.5" r="7.5"></circle><path d="M12 10v3.5l2.3 1.5"></path><path d="M4.6 4.8L7.2 2.6M19.4 4.8L16.8 2.6"></path></svg>
-      <span style="font-size: 10px; font-weight: 600; color: #938A7E;">Alarms</span>
+      <span style="font-size: 10px; font-weight: 600; color: #938A7E;">นาฬิกาปลุก</span>
     </div>
     <div style="display: flex; flex-direction: column; align-items: center; gap: 5px; width: 64px; padding-top: 3px;">
       <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#938A7E" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10v4M8 7v10M12 4.5v15M16 8v8M20 11v2"></path></svg>
-      <span style="font-size: 10px; font-weight: 600; color: #938A7E;">Sounds</span>
+      <span style="font-size: 10px; font-weight: 600; color: #938A7E;">เสียง</span>
     </div>
     <div style="display: flex; flex-direction: column; align-items: center; gap: 5px; width: 64px; padding-top: 3px;">
       <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#B0710A" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3.2"></circle><path d="M12 3.2v2.2M12 18.6v2.2M20.8 12h-2.2M5.4 12H3.2M18.2 5.8l-1.6 1.6M7.4 16.6l-1.6 1.6M18.2 18.2l-1.6-1.6M7.4 7.4L5.8 5.8"></path></svg>
-      <span style="font-size: 10px; font-weight: 600; color: #B0710A;">Settings</span>
+      <span style="font-size: 10px; font-weight: 600; color: #B0710A;">การตั้งค่า</span>
     </div>
   </div>
 

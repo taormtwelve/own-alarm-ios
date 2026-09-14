@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,600;12..96,700&family=Instrument+Sans:wght@400;500;600;700&family=Noto+Sans+Thai:wght@400;500;600;700&display=swap">
+  <style>
+    body { margin: 0; font-family: 'Instrument Sans', 'Noto Sans Thai', system-ui, -apple-system, sans-serif; -webkit-font-smoothing: antialiased; }
+    a { color: #FFB03A; } a:hover { color: #FFC670; }
+    .num { font-family: 'Bricolage Grotesque', 'Noto Sans Thai', 'Helvetica Neue', sans-serif; font-variant-numeric: tabular-nums; }
+  </style>
+</helmet>
+
+<div style="width: 390px; height: 844px; background: #12100E; color: #F7F3EE; display: flex; flex-direction: column; overflow: hidden;">
+
+  <div style="height: 56px; flex-shrink: 0;"></div>
+
+  <div style="display: flex; align-items: center; justify-content: space-between; padding: 0 20px 16px 20px; flex-shrink: 0;">
+    <div style="display: flex; flex-direction: column; gap: 2px;">
+      <div class="num" style="font-size: 30px; font-weight: 600; letter-spacing: -0.025em; line-height: 1.15;">เสียง</div>
+      <div style="font-size: 13px; color: #9A928A;">ฟังเสียงของจริงก่อนไว้ใจให้ปลุกคุณ</div>
+    </div>
+  </div>
+
+  <div style="margin: 0 20px 16px 20px; padding: 16px; background: #1C1917; border: 1px solid #3A2C18; border-radius: 20px; display: flex; flex-direction: column; gap: 12px; flex-shrink: 0;">
+    <div style="display: flex; flex-direction: column; gap: 3px;">
+      <span style="font-size: 10px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #C79A55;">ลองฟังของจริง</span>
+      <span style="font-size: 12px; color: #8A8279;">แตะเสียงด้านล่างเพื่อฟัง &middot; ตั้งระดับแล้วจะดังเป็นการปลุกจริงในอีก 5 วินาที 100% คือระดับเสียงเรียกเข้าและการแจ้งเตือนของคุณ &mdash; เพิ่มได้ที่ การตั้งค่า &rsaquo; เสียงและการสั่น หากต้องการให้ดังขึ้น</span>
+    </div>
+    <div style="display: flex; align-items: center; height: 26px;">
+      <div style="width: 133px; height: 7px; border-radius: 4px; background: #FFB03A; flex-shrink: 0;"></div>
+      <div style="width: 26px; height: 26px; border-radius: 50%; background: #FFFFFF; margin: 0 -8px; flex-shrink: 0; box-shadow: 0 2px 10px rgba(0,0,0,0.45);"></div>
+      <div style="flex-grow: 1; height: 7px; border-radius: 4px; background: #332D28;"></div>
+    </div>
+    <div style="display: flex; align-items: center; justify-content: space-between; margin-top: -4px;">
+      <span style="font-size: 12px; color: #8A8279;">ระดับทดสอบ</span>
+      <span class="num" style="font-size: 12px; font-weight: 600; color: #FFB03A;">50%</span>
+    </div>
+    <div style="height: 52px; border-radius: 18px; background: #FFB03A; display: flex; align-items: center; justify-content: center; gap: 10px;">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#12100E" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 16v-5a6 6 0 0112 0v5l1.5 2h-15z"></path><path d="M10 20a2 2 0 004 0"></path></svg>
+      <span style="font-size: 15px; font-weight: 700; color: #12100E;">ทดสอบปลุกจริงที่ 50%</span>
+    </div>
+  </div>
+
+  <div style="padding: 0 20px 8px 20px; font-size: 10px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #6E665F; flex-shrink: 0;">เสียงทั้งหมด</div>
+
+  <div style="flex-grow: 1; display: flex; flex-direction: column; gap: 8px; padding: 0 20px; overflow: hidden;">
+
+    <div style="display: flex; align-items: center; gap: 13px; padding: 0 14px; height: 66px; background: #1C1917; border: 1px solid #2A2724; border-radius: 18px; flex-shrink: 0;">
+      <div style="width: 40px; height: 40px; border-radius: 13px; background: #2A2724; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#C9C0B7" stroke-width="2.2" stroke-linecap="round"><path d="M4 10v4M8 7v10M12 4v16M16 7v10M20 10v4"></path></svg>
+      </div>
+      <div style="flex-grow: 1; display: flex; flex-direction: column; gap: 3px;">
+        <span style="font-size: 15px; font-weight: 600;">ไซเรน</span>
+        <span style="font-size: 12px; color: #8A8279;">แหลม &middot; ใช้กับนาฬิกาปลุก 1 รายการ</span>
+      </div>
+      <div style="display: flex; align-items: flex-end; gap: 3px; height: 16px;">
+        <span style="width: 4px; height: 8px; border-radius: 2px; background: #FFB03A;"></span>
+        <span style="width: 4px; height: 12px; border-radius: 2px; background: #FFB03A;"></span>
+        <span style="width: 4px; height: 16px; border-radius: 2px; background: #FFB03A;"></span>
+      </div>
+    </div>
+
+    <div style="display: flex; align-items: center; gap: 13px; padding: 0 14px; height: 66px; background: #1C1917; border: 1px solid #2A2724; border-radius: 18px; flex-shrink: 0;">
+      <div style="width: 40px; height: 40px; border-radius: 13px; background: #2A2724; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#C9C0B7" stroke-width="2.2" stroke-linecap="round"><path d="M4 10v4M8 7v10M12 4v16M16 7v10M20 10v4"></path></svg>
+      </div>
+      <div style="flex-grow: 1; display: flex; flex-direction: column; gap: 3px;">
+        <span style="font-size: 15px; font-weight: 600;">มาริมบา</span>
+        <span style="font-size: 12px; color: #8A8279;">นุ่ม &middot; ใช้กับนาฬิกาปลุก 1 รายการ</span>
+      </div>
+      <div style="display: flex; align-items: flex-end; gap: 3px; height: 16px;">
+        <span style="width: 4px; height: 8px; border-radius: 2px; background: #FFB03A;"></span>
+        <span style="width: 4px; height: 12px; border-radius: 2px; background: #FFB03A;"></span>
+        <span style="width: 4px; height: 16px; border-radius: 2px; background: #332D28;"></span>
+      </div>
+    </div>
+
+    <div style="display: flex; align-items: center; gap: 13px; padding: 0 14px; height: 66px; background: #1C1917; border: 1px solid #2A2724; border-radius: 18px; flex-shrink: 0;">
+      <div style="width: 40px; height: 40px; border-radius: 13px; background: #2A2724; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#C9C0B7" stroke-width="2.2" stroke-linecap="round"><path d="M4 10v4M8 7v10M12 4v16M16 7v10M20 10v4"></path></svg>
+      </div>
+      <div style="flex-grow: 1; display: flex; flex-direction: column; gap: 3px;">
+        <span style="font-size: 15px; font-weight: 600;">ระฆังเบา</span>
+        <span style="font-size: 12px; color: #8A8279;">จางยาว &middot; ใช้กับนาฬิกาปลุก 1 รายการ</span>
+      </div>
+      <div style="display: flex; align-items: flex-end; gap: 3px; height: 16px;">
+        <span style="width: 4px; height: 8px; border-radius: 2px; background: #FFB03A;"></span>
+        <span style="width: 4px; height: 12px; border-radius: 2px; background: #332D28;"></span>
+        <span style="width: 4px; height: 16px; border-radius: 2px; background: #332D28;"></span>
+      </div>
+    </div>
+
+    <div style="display: flex; align-items: center; gap: 13px; padding: 0 14px; height: 66px; background: #1C1917; border: 1px solid #2A2724; border-radius: 18px; flex-shrink: 0;">
+      <div style="width: 40px; height: 40px; border-radius: 13px; background: #2A2724; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#C9C0B7" stroke-width="2.2" stroke-linecap="round"><path d="M4 10v4M8 7v10M12 4v16M16 7v10M20 10v4"></path></svg>
+      </div>
+      <div style="flex-grow: 1; display: flex; flex-direction: column; gap: 3px;">
+        <span style="font-size: 15px; font-weight: 600;">กระซิบ</span>
+        <span style="font-size: 12px; color: #8A8279;">แผ่วเบา &middot; ใช้กับนาฬิกาปลุก 1 รายการ</span>
+      </div>
+      <div style="display: flex; align-items: flex-end; gap: 3px; height: 16px;">
+        <span style="width: 4px; height: 8px; border-radius: 2px; background: #FFB03A;"></span>
+        <span style="width: 4px; height: 12px; border-radius: 2px; background: #332D28;"></span>
+        <span style="width: 4px; height: 16px; border-radius: 2px; background: #332D28;"></span>
+      </div>
+    </div>
+
+
+    <div style="display: flex; align-items: center; gap: 13px; padding: 0 14px; height: 64px; background: #12100E; border: 1px dashed #3A3530; border-radius: 18px; flex-shrink: 0;">
+      <div style="width: 40px; height: 40px; border-radius: 13px; background: #1C1917; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#C9C0B7" stroke-width="2" stroke-linecap="round"><path d="M12 5.5v13M5.5 12h13"></path></svg>
+      </div>
+      <div style="flex-grow: 1; display: flex; flex-direction: column; gap: 2px;">
+        <span style="font-size: 15px; font-weight: 600; color: #C9C0B7;">เพิ่มเพลงหรือเสียงบันทึก</span>
+        <span style="font-size: 12px; color: #8A8279;">จากเพลงหรือไฟล์</span>
+      </div>
+    </div>
+
+  </div>
+
+  <div style="flex-shrink: 0; display: flex; align-items: flex-start; justify-content: space-around; padding: 11px 24px 0 24px; border-top: 1px solid #221F1D; background: #171513; height: 80px; box-sizing: border-box; margin-top: 12px;">
+    <div style="display: flex; flex-direction: column; align-items: center; gap: 5px; width: 64px; padding-top: 3px;">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#6E665F" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="13.5" r="7.5"></circle><path d="M12 10v3.5l2.3 1.5"></path><path d="M4.6 4.8L7.2 2.6M19.4 4.8L16.8 2.6"></path></svg>
+      <span style="font-size: 10px; font-weight: 600; color: #6E665F;">นาฬิกาปลุก</span>
+    </div>
+    <div style="display: flex; flex-direction: column; align-items: center; gap: 5px; width: 64px; padding-top: 3px;">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#FFB03A" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10v4M8 7v10M12 4.5v15M16 8v8M20 11v2"></path></svg>
+      <span style="font-size: 10px; font-weight: 600; color: #FFB03A;">เสียง</span>
+    </div>
+    <div style="display: flex; flex-direction: column; align-items: center; gap: 5px; width: 64px; padding-top: 3px;">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#6E665F" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3.2"></circle><path d="M12 3.2v2.2M12 18.6v2.2M20.8 12h-2.2M5.4 12H3.2M18.2 5.8l-1.6 1.6M7.4 16.6l-1.6 1.6M18.2 18.2l-1.6-1.6M7.4 7.4L5.8 5.8"></path></svg>
+      <span style="font-size: 10px; font-weight: 600; color: #6E665F;">การตั้งค่า</span>
+    </div>
+  </div>
+
+</div>
+</x-dc>
+</body>
+</html>

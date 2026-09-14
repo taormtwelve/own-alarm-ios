@@ -111,6 +111,118 @@
       "w": 390,
       "h": 844,
       "title": "Settings tab — dark"
+    },
+    {
+      "file": "MainThLight.dc.html",
+      "x": 0,
+      "y": 2440,
+      "w": 390,
+      "h": 844,
+      "title": "Alarms — Thai"
+    },
+    {
+      "file": "EditAlarmThLight.dc.html",
+      "x": 490,
+      "y": 2440,
+      "w": 390,
+      "h": 1040,
+      "title": "Edit alarm — Thai"
+    },
+    {
+      "file": "SoundSheetThLight.dc.html",
+      "x": 980,
+      "y": 2440,
+      "w": 390,
+      "h": 844,
+      "title": "Sound & loudness — Thai"
+    },
+    {
+      "file": "RingingThLight.dc.html",
+      "x": 1470,
+      "y": 2440,
+      "w": 390,
+      "h": 844,
+      "title": "Ringing — in app — Thai"
+    },
+    {
+      "file": "LockScreenThLight.dc.html",
+      "x": 1960,
+      "y": 2440,
+      "w": 390,
+      "h": 844,
+      "title": "Snoozed — Lock Screen — Thai"
+    },
+    {
+      "file": "SoundsThLight.dc.html",
+      "x": 2450,
+      "y": 2440,
+      "w": 390,
+      "h": 844,
+      "title": "Sounds tab — Thai"
+    },
+    {
+      "file": "SettingsThLight.dc.html",
+      "x": 2940,
+      "y": 2440,
+      "w": 390,
+      "h": 844,
+      "title": "Settings tab — Thai"
+    },
+    {
+      "file": "MainTh.dc.html",
+      "x": 0,
+      "y": 3660,
+      "w": 390,
+      "h": 844,
+      "title": "Alarms — Thai — dark"
+    },
+    {
+      "file": "EditAlarmTh.dc.html",
+      "x": 490,
+      "y": 3660,
+      "w": 390,
+      "h": 1040,
+      "title": "Edit alarm — Thai — dark"
+    },
+    {
+      "file": "SoundSheetTh.dc.html",
+      "x": 980,
+      "y": 3660,
+      "w": 390,
+      "h": 844,
+      "title": "Sound & loudness — Thai — dark"
+    },
+    {
+      "file": "RingingTh.dc.html",
+      "x": 1470,
+      "y": 3660,
+      "w": 390,
+      "h": 844,
+      "title": "Ringing — in app — Thai — dark"
+    },
+    {
+      "file": "LockScreenTh.dc.html",
+      "x": 1960,
+      "y": 3660,
+      "w": 390,
+      "h": 844,
+      "title": "Snoozed — Lock Screen — Thai — dark"
+    },
+    {
+      "file": "SoundsTh.dc.html",
+      "x": 2450,
+      "y": 3660,
+      "w": 390,
+      "h": 844,
+      "title": "Sounds tab — Thai — dark"
+    },
+    {
+      "file": "SettingsTh.dc.html",
+      "x": 2940,
+      "y": 3660,
+      "w": 390,
+      "h": 844,
+      "title": "Settings tab — Thai — dark"
     }
   ],
   "annotations": [
@@ -154,7 +266,7 @@
       "x": 2450,
       "y": -220,
       "w": 880,
-      "text": "Sounds and Settings.\nSounds plays a tone as media when you tap it, and rings the real alarm 5 s later at the chosen tone and level — the only honest audition. Settings holds the clock, what happens when an alarm rings, and the theme. New-alarm defaults are learned from saved alarms rather than set here."
+      "text": "Sounds and Settings.\nSounds plays a tone as media when you tap it, and rings the real alarm 5 s later at the chosen tone and level — the only honest audition. Settings holds the clock, what happens when an alarm rings, the theme, and the language — English or ไทย, each named in itself. New-alarm defaults are learned from saved alarms rather than set here."
     },
     {
       "id": "row-light",
@@ -169,6 +281,20 @@
       "y": 1520,
       "w": 360,
       "text": "Dark\nWhen the phone is in dark mode. Same layout; either theme can be pinned in Settings › Appearance."
+    },
+    {
+      "id": "row-thai",
+      "x": -440,
+      "y": 2740,
+      "w": 360,
+      "text": "Thai\nThe same screens with the app in ไทย. First launch picks Thai when the phone is set to Thai, and English for any other language; Settings › Language switches at once. Labels, days, tone names, notifications and the Lock Screen countdown all read Thai; task names are the user's own."
+    },
+    {
+      "id": "row-thai-dark",
+      "x": -440,
+      "y": 3960,
+      "w": 360,
+      "text": "Thai, dark\nThe same, in dark mode."
     }
   ],
   "launch": {
