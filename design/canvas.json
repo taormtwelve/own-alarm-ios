@@ -1,20 +1,117 @@
 {
   "artboards": [
-    { "file": "MainLight.dc.html", "x": 0, "y": 0, "w": 390, "h": 844, "title": "Alarms" },
-    { "file": "EditAlarmLight.dc.html", "x": 490, "y": 0, "w": 390, "h": 1090, "title": "Edit alarm" },
-    { "file": "SoundSheetLight.dc.html", "x": 980, "y": 0, "w": 390, "h": 844, "title": "Sound & loudness" },
-    { "file": "RingingLight.dc.html", "x": 1470, "y": 0, "w": 390, "h": 844, "title": "Ringing — in app" },
-    { "file": "LockScreenLight.dc.html", "x": 1960, "y": 0, "w": 390, "h": 844, "title": "Snoozed — Lock Screen" },
-    { "file": "SoundsLight.dc.html", "x": 2450, "y": 0, "w": 390, "h": 844, "title": "Sounds tab" },
-    { "file": "SettingsLight.dc.html", "x": 2940, "y": 0, "w": 390, "h": 844, "title": "Settings tab" },
-
-    { "file": "Main.dc.html", "x": 0, "y": 1220, "w": 390, "h": 844, "title": "Alarms — dark" },
-    { "file": "EditAlarm.dc.html", "x": 490, "y": 1220, "w": 390, "h": 1090, "title": "Edit alarm — dark" },
-    { "file": "SoundSheet.dc.html", "x": 980, "y": 1220, "w": 390, "h": 844, "title": "Sound & loudness — dark" },
-    { "file": "Ringing.dc.html", "x": 1470, "y": 1220, "w": 390, "h": 844, "title": "Ringing — in app — dark" },
-    { "file": "LockScreen.dc.html", "x": 1960, "y": 1220, "w": 390, "h": 844, "title": "Snoozed — Lock Screen — dark" },
-    { "file": "Sounds.dc.html", "x": 2450, "y": 1220, "w": 390, "h": 844, "title": "Sounds tab — dark" },
-    { "file": "Settings.dc.html", "x": 2940, "y": 1220, "w": 390, "h": 844, "title": "Settings tab — dark" }
+    {
+      "file": "MainLight.dc.html",
+      "x": 0,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "title": "Alarms"
+    },
+    {
+      "file": "EditAlarmLight.dc.html",
+      "x": 490,
+      "y": 0,
+      "w": 390,
+      "h": 980,
+      "title": "Edit alarm"
+    },
+    {
+      "file": "SoundSheetLight.dc.html",
+      "x": 980,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "title": "Sound & loudness"
+    },
+    {
+      "file": "RingingLight.dc.html",
+      "x": 1470,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "title": "Ringing — in app"
+    },
+    {
+      "file": "LockScreenLight.dc.html",
+      "x": 1960,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "title": "Snoozed — Lock Screen"
+    },
+    {
+      "file": "SoundsLight.dc.html",
+      "x": 2450,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "title": "Sounds tab"
+    },
+    {
+      "file": "SettingsLight.dc.html",
+      "x": 2940,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "title": "Settings tab"
+    },
+    {
+      "file": "Main.dc.html",
+      "x": 0,
+      "y": 1220,
+      "w": 390,
+      "h": 844,
+      "title": "Alarms — dark"
+    },
+    {
+      "file": "EditAlarm.dc.html",
+      "x": 490,
+      "y": 1220,
+      "w": 390,
+      "h": 980,
+      "title": "Edit alarm — dark"
+    },
+    {
+      "file": "SoundSheet.dc.html",
+      "x": 980,
+      "y": 1220,
+      "w": 390,
+      "h": 844,
+      "title": "Sound & loudness — dark"
+    },
+    {
+      "file": "Ringing.dc.html",
+      "x": 1470,
+      "y": 1220,
+      "w": 390,
+      "h": 844,
+      "title": "Ringing — in app — dark"
+    },
+    {
+      "file": "LockScreen.dc.html",
+      "x": 1960,
+      "y": 1220,
+      "w": 390,
+      "h": 844,
+      "title": "Snoozed — Lock Screen — dark"
+    },
+    {
+      "file": "Sounds.dc.html",
+      "x": 2450,
+      "y": 1220,
+      "w": 390,
+      "h": 844,
+      "title": "Sounds tab — dark"
+    },
+    {
+      "file": "Settings.dc.html",
+      "x": 2940,
+      "y": 1220,
+      "w": 390,
+      "h": 844,
+      "title": "Settings tab — dark"
+    }
   ],
   "annotations": [
     {
@@ -29,14 +126,14 @@
       "x": 490,
       "y": -220,
       "w": 390,
-      "text": "Editing an alarm.\nOn iOS 26 the system runs snoozes and replays the same sound, so Louder after each snooze carries no \"+10%\" caption there (this artboard). New alarms open on the current time, carrying the volume, sound, snooze, fade-in and vibration of the last alarm saved. Saving switches an alarm on. Fade-in starts off; switched on, it ramps over 10 s. Vibrate buzzes while the alarm rings in the app; on the Lock Screen, iOS's Haptics setting decides. The slider is silent; Test real alarm rings the real alarm 5 s later with what is on screen, and while it is on its way the button reads Cancel test with a countdown (not drawn here). The caption says 100% is the Ringer & Alerts volume and where to raise it. The editor scrolls — this artboard is taller to show all of it."
+      "text": "Editing an alarm.\nNew alarms open on the current time, carrying the volume, sound and snooze of the last alarm saved. Saving switches an alarm on. The slider is silent; Test real alarm rings the real alarm 5 s later with what is on screen, and while it is on its way the button reads Cancel test with a countdown (not drawn here). The caption says 100% is the Ringer & Alerts volume and where to raise it. With AlarmKit allowed (iOS 26) every alarm rings through Silent, so the Override Silent switch is not shown."
     },
     {
       "id": "sheet-note",
       "x": 980,
       "y": -220,
       "w": 390,
-      "text": "Picking a sound.\nThe fade-in curve appears only when fade-in is on. Tapping a tone selects it; the button rings the real alarm 5 s later with that tone at the alarm's level. iOS does not share its own tone library with apps, so the choices are the bundled tones and your own audio from Music or Files. iOS caps alarm sounds at 30 s: a longer song rings from its start and stops at 29 s — the import says so at once, and the tone's row keeps saying it."
+      "text": "Picking a sound.\nTapping a tone picks it and plays a short preview as media, at the phone's media volume, just to recognise it; the button rings the real alarm 5 s later with that tone at the alarm's level. iOS does not share its own tone library with apps, so the choices are the bundled tones and your own audio from Music or Files. iOS caps alarm sounds at 30 s: a longer song rings from its start and stops at 29 s — the import says so at once, and the tone's row keeps saying it."
     },
     {
       "id": "ringing-note",
@@ -57,7 +154,7 @@
       "x": 2450,
       "y": -220,
       "w": 880,
-      "text": "Sounds and Settings.\nSounds picks a tone and a level and rings the real alarm 5 s later, exactly as it will ring — the only honest audition. Settings holds the clock, what happens when an alarm rings, and the theme. New-alarm defaults are learned from saved alarms rather than set here, and on iOS 26 every alarm rings through Silent, so the Override Silent switch is gone."
+      "text": "Sounds and Settings.\nSounds plays a tone as media when you tap it, and rings the real alarm 5 s later at the chosen tone and level — the only honest audition. Settings holds the clock, what happens when an alarm rings, and the theme. New-alarm defaults are learned from saved alarms rather than set here."
     },
     {
       "id": "row-light",
@@ -74,5 +171,7 @@
       "text": "Dark\nWhen the phone is in dark mode. Same layout; either theme can be pinned in Settings › Appearance."
     }
   ],
-  "launch": { "view": "canvas" }
+  "launch": {
+    "view": "canvas"
+  }
 }
