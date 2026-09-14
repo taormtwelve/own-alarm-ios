@@ -33,60 +33,79 @@ final class ScaledSoundTests: XCTestCase {
         XCTAssertEqual(scaled, ScaledSound.ceiling, accuracy: 0.02)
     }
 
-    func testAPreviewIsTheRealAlarmsOwnSound() throws {
-        let name = try XCTUnwrap(ScaledSound.fileName(for: siren, volume: 0.42))
-        let real = try peak(of: ScaledSound.directory.appendingPathComponent(name))
-        let preview = try XCTUnwrap(ScaledSound.previewFile(for: siren, volume: 0.42))
-        defer { try? FileManager.default.removeItem(at: preview) }
-
-        XCTAssertEqual(try peak(of: preview), real, accuracy: 0.0005,
-                       "What you hear while choosing a level is what rings")
+    /// The real alarm's full copy at a level, sample by sample.
+    private func realCopy(volume: Double) throws -> [Float] {
+        let name = try XCTUnwrap(ScaledSound.fileName(for: siren, volume: volume))
+        return try samples(of: ScaledSound.directory.appendingPathComponent(name))
     }
 
-    func testAContinuedPreviewPicksUpWhereTheToneWas() throws {
-        // A slider moving to a new level renders the new copy from where the old
-        // one had got to: its first sample is the straight copy's sample at that time.
-        let straight = try XCTUnwrap(ScaledSound.previewFile(for: siren, volume: 0.5))
-        let continued = try XCTUnwrap(ScaledSound.previewFile(for: siren, volume: 0.5, startingAt: 1.0))
-        defer { for url in [straight, continued] { try? FileManager.default.removeItem(at: url) } }
+    private var rate: Double {
+        (try? AVAudioFile(forReading: XCTUnwrap(siren.fileURL)).processingFormat.sampleRate) ?? 44_100
+    }
 
-        let whole = try samples(of: straight)
-        let resumed = try samples(of: continued)
-        let rate = try AVAudioFile(forReading: straight).processingFormat.sampleRate
-        let at = Int(rate * 1.0)
+    /// Samples inside a chunk, clear of the faded edges.
+    private var midChunk: Range<Int> {
+        let ramp = Int(ScaledSound.previewCrossfade * rate) + 10
+        return ramp..<(ramp + 200)
+    }
 
-        XCTAssertEqual(resumed.count, whole.count, "Same length: it still loops on the same period")
-        for i in 0..<200 {
-            XCTAssertEqual(resumed[i], whole[at + i], accuracy: 0.0002, "sample \(i)")
+    func testAPreviewChunkIsTheRealAlarmsOwnSound() throws {
+        let real = try realCopy(volume: 0.42)
+        let chunk = try XCTUnwrap(ScaledSound.previewFile(for: siren, volume: 0.42))
+        defer { try? FileManager.default.removeItem(at: chunk) }
+        let preview = try samples(of: chunk)
+
+        for i in midChunk {
+            XCTAssertEqual(preview[i], real[i], accuracy: 0.0002,
+                           "sample \(i): what you hear while choosing a level is what rings")
         }
     }
 
-    func testAContinuedPreviewWrapsRoundTheTone() throws {
+    func testAChunkPicksUpWhereTheToneWas() throws {
+        // Each chunk is rendered from where the tone has got to, so the chain plays
+        // the tone through rather than its first fraction of a second over and over.
+        let real = try realCopy(volume: 0.5)
+        let chunk = try XCTUnwrap(ScaledSound.previewFile(for: siren, volume: 0.5, startingAt: 1.0))
+        defer { try? FileManager.default.removeItem(at: chunk) }
+        let resumed = try samples(of: chunk)
+        let at = Int((rate * 1.0).rounded())
+
+        for i in midChunk {
+            XCTAssertEqual(resumed[i], real[at + i], accuracy: 0.0002, "sample \(i)")
+        }
+    }
+
+    func testAChunkWrapsRoundTheTone() throws {
         let duration = try XCTUnwrap(ScaledSound.duration(of: siren))
-        let straight = try XCTUnwrap(ScaledSound.previewFile(for: siren, volume: 0.5))
-        // Half a second short of the end: the copy has to wrap back to the start.
-        let continued = try XCTUnwrap(ScaledSound.previewFile(for: siren, volume: 0.5, startingAt: duration - 0.5))
-        defer { for url in [straight, continued] { try? FileManager.default.removeItem(at: url) } }
-
-        let whole = try samples(of: straight)
-        let resumed = try samples(of: continued)
-        let rate = try AVAudioFile(forReading: straight).processingFormat.sampleRate
-        let beforeWrap = Int((rate * 0.5).rounded())
+        let real = try realCopy(volume: 0.5)
+        // Starting half a chunk before the end: the second half is the tone's start.
+        let half = ScaledSound.previewChunkSeconds / 2
+        let chunk = try XCTUnwrap(ScaledSound.previewFile(for: siren, volume: 0.5, startingAt: duration - half))
+        defer { try? FileManager.default.removeItem(at: chunk) }
+        let resumed = try samples(of: chunk)
+        let beforeWrap = Int((rate * half).rounded())
 
         for i in 0..<200 {
-            XCTAssertEqual(resumed[beforeWrap + i], whole[i], accuracy: 0.0002, "sample \(i) after the wrap")
+            XCTAssertEqual(resumed[beforeWrap + i], real[i], accuracy: 0.0002, "sample \(i) after the wrap")
         }
     }
 
-    func testAPreviewOfALongToneRendersOnlyItsStart() throws {
-        let bell = AlarmTone.tone(id: "soft-bell", in: AlarmTone.bundled)   // 8 seconds
-        let preview = try XCTUnwrap(ScaledSound.previewFile(for: bell, volume: 0.5))
-        defer { try? FileManager.default.removeItem(at: preview) }
+    func testAChunkFadesAtBothEdges() throws {
+        let chunk = try XCTUnwrap(ScaledSound.previewFile(for: siren, volume: 1.0))
+        defer { try? FileManager.default.removeItem(at: chunk) }
+        let preview = try samples(of: chunk)
 
-        let file = try AVAudioFile(forReading: preview)
-        XCTAssertLessThanOrEqual(Double(file.length) / file.fileFormat.sampleRate,
-                                 ScaledSound.previewSeconds + 0.05,
-                                 "A short render keeps dragging responsive")
+        XCTAssertEqual(preview.first ?? 1, 0, accuracy: 0.0002, "Starts from silence")
+        XCTAssertEqual(abs(preview.last ?? 1), 0, accuracy: 0.001, "Ends in silence, so chunks cross-fade without a click")
+        XCTAssertEqual(Double(preview.count) / rate, ScaledSound.previewChunkSeconds, accuracy: 0.01)
+    }
+
+    func testTheSilentProbeIsAChunkOfSilence() throws {
+        let probe = try XCTUnwrap(ScaledSound.silentProbeFile())
+        let file = try AVAudioFile(forReading: probe)
+
+        XCTAssertEqual(Double(file.length) / file.fileFormat.sampleRate, ScaledSound.previewChunkSeconds, accuracy: 0.01)
+        XCTAssertEqual(try peak(of: probe), 0, "Digital silence: inaudible whether or not Silent is on")
     }
 
     func testEachLevelGetsItsOwnFile() throws {

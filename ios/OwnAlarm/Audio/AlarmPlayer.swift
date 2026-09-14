@@ -10,13 +10,20 @@ import Combine
 /// alert sounds. It plays at the Ringer & Alerts volume, as AlarmKit and alarm
 /// notifications do, so a level sounds the same while you choose it as when the
 /// alarm goes off, and 100% is the loudest your ringer volume plays. Media volume is
-/// never touched for a preview. The Silent switch mutes alert sounds, previews
-/// included: the user chose that over a media-volume stand-in, which could not match
-/// the real ring.
+/// never touched for a preview.
 ///
-/// A system sound's volume is fixed, so a slider moving to a new level plays a new
-/// copy — rendered from the point the old one had reached, so the tone carries on
-/// at the new level instead of starting over.
+/// A system sound can neither change volume nor be stopped part-way, so a preview is
+/// a chain of short chunks (`ScaledSound.previewChunkSeconds`), each rendered from
+/// where the tone has got to, at whatever level the slider wants by then. The next
+/// chunk starts a little before the current one ends and both carry a short fade at
+/// their edges, so they cross-fade: no gap, no click, and a level change eases in.
+/// Nothing is ever cut off — a chunk is simply not followed — so stopping, switching
+/// tone or changing level can never leave two sounds playing over each other.
+///
+/// The Silent switch mutes alert sounds, previews included: a muted chunk ends the
+/// instant it starts, which sets `previewMuted` and the screens say so. While that
+/// is set, a chunk of digital silence — inaudible either way — is played every
+/// `silentProbeInterval`, so the flag clears as soon as the switch is turned off.
 ///
 /// An alarm ringing inside the app has to loop until stopped, fade in and ring
 /// through Silent, which a system sound cannot. It plays under
@@ -29,12 +36,15 @@ import Combine
 final class AlarmPlayer: ObservableObject {
     @Published private(set) var playingToneID: String?
 
-    /// The level, in percent, of the preview playing now.
+    /// The level, in percent, of the chunk playing now.
     private(set) var previewPercent: Int?
 
+    /// The level the slider wants; the next chunk picks it up.
+    private(set) var previewTargetPercent: Int?
+
     /// True after a preview ended the instant it started — the Silent switch is on
-    /// (or there is no audio output), so alert sounds are muted. Cleared the moment a
-    /// preview is heard again. Screens with a slider tell the user.
+    /// (or there is no audio output), so alert sounds are muted. Cleared the moment
+    /// a preview, or the silent probe, is heard through.
     @Published private(set) var previewMuted = false
 
     /// How long a slider can sit untouched before its sound stops by itself. iOS can
@@ -42,30 +52,41 @@ final class AlarmPlayer: ObservableObject {
     /// reporting that it was let go, and the tone must not loop forever after that.
     static let scrubIdleTimeout: TimeInterval = 2
 
-    /// How often slider feedback moves to a new level. Each move swaps in a copy at
-    /// the new level, continuing from where the tone was; this keeps a fast drag from
-    /// swapping every frame.
-    static let scrubStepInterval: TimeInterval = 0.2
-
     /// How often the phone buzzes while a vibrating alarm rings.
     static let vibrationInterval: TimeInterval = 1.6
 
+    /// How often the Silent switch is probed while previews are muted.
+    static let silentProbeInterval: TimeInterval = 2
+
+    /// A chunk that ended sooner than this never played: alert sounds are muted.
+    private static let mutedThreshold: TimeInterval = 0.1
+
+    /// One rendered piece of a preview, ready to play.
+    private struct Chunk {
+        let id: SystemSoundID
+        let file: URL
+        let toneID: String
+        let percent: Int
+        let offset: TimeInterval
+    }
+
     private var player: AVAudioPlayer?
-    /// The system sound playing a preview, and the throwaway copy it plays.
-    private var previewSound: SystemSoundID?
-    private var previewFile: URL?
+    private var current: Chunk?
+    private var next: Chunk?
     private var previewTone: AlarmTone?
-    private var previewActive: Bool { previewSound != nil }
-    private var lastPreviewStart = Date.distantPast
-    /// Where in the tone the current copy began, and how long the copy runs before
-    /// it loops — together they say where the tone is now.
-    private var previewOffset: TimeInterval = 0
-    private var previewPeriod: TimeInterval = 0
-    private var pendingStep: DispatchWorkItem?
+    /// Where in the tone the chunk after `current` begins.
+    private var nextOffset: TimeInterval = 0
+    private var nextStart: DispatchWorkItem?
+    private var renderWork: DispatchWorkItem?
+    /// Sounds disposed of while still playing; their completions are not news.
+    private var disposed: Set<SystemSoundID> = []
+    private var previewActive: Bool { current != nil }
+    private var lastMutedAttempt = Date.distantPast
+    private var probeTimer: Timer?
+    private var probeSound: SystemSoundID?
     private var stopWork: DispatchWorkItem?
     private var isScrubbing = false
     private var scrubTone: AlarmTone?
-    private var scrubLevel: Double = 0
     /// True while an alarm — not a preview — is sounding.
     private var isRinging = false
     private var vibrationTimer: Timer?
@@ -96,59 +117,27 @@ final class AlarmPlayer: ObservableObject {
 
     // MARK: Live slider feedback
 
-    /// A finger lands on a volume slider: the tone starts looping at its level.
+    /// A finger lands on a volume slider: the tone plays at its level — carrying on
+    /// if it is already playing.
     func beginScrub(_ tone: AlarmTone, at volume: Double) {
         isScrubbing = true
         scrubTone = tone
-        scrubLevel = volume
-        let alreadyPlaying = previewActive && playingToneID == tone.id
-            && previewPercent == ScaledSound.percent(volume)
-        if !alreadyPlaying { playPreview(tone, at: volume) }
+        playPreview(tone, at: volume)
         scheduleIdleSilence()
     }
 
-    /// Follows the slider, a step at a time.
+    /// Follows the slider: the next chunk plays at the new level.
     func scrub(to volume: Double) {
         guard isScrubbing, let tone = scrubTone else { return }
-        scrubLevel = volume
-        if !previewActive {
-            // Went quiet after sitting still; the finger is moving again.
-            playPreview(tone, at: volume)
-        } else {
-            step()
-        }
+        playPreview(tone, at: volume)
         scheduleIdleSilence()
     }
 
     /// The finger lifted: the level it let go at rings for a moment, then stops.
     func endScrub() {
-        if isScrubbing { step(now: true) }
         isScrubbing = false
         scrubTone = nil
-        scheduleStop(after: 0.8)
-    }
-
-    /// Moves the preview to the slider's level without starting the tone over: a copy
-    /// at the new level takes over from where the tone is — now, or once the last
-    /// swap is `scrubStepInterval` old, so a fast drag does not swap every frame.
-    private func step(now: Bool = false) {
-        pendingStep?.cancel()
-        pendingStep = nil
-        guard let tone = scrubTone, previewActive,
-              ScaledSound.percent(scrubLevel) != previewPercent else { return }
-        let wait = Self.scrubStepInterval - Date().timeIntervalSince(lastPreviewStart)
-        if now || wait <= 0 {
-            playPreview(tone, at: scrubLevel, from: previewPosition)
-        } else {
-            pendingStep = after(wait) { [weak self] in self?.step(now: true) }
-        }
-    }
-
-    /// How far into the tone the preview is right now.
-    private var previewPosition: TimeInterval {
-        guard previewPeriod > 0 else { return 0 }
-        return (previewOffset + Date().timeIntervalSince(lastPreviewStart))
-            .truncatingRemainder(dividingBy: previewPeriod)
+        scheduleStop(after: ScaledSound.previewChunkSeconds + 1)
     }
 
     // MARK: Ringing
@@ -193,73 +182,205 @@ final class AlarmPlayer: ObservableObject {
 
     // MARK: Previews
 
-    /// Starts the tone at `volume` — from its beginning, or from `offset` when a copy
-    /// at a new level is taking over from the one playing.
-    private func playPreview(_ tone: AlarmTone, at volume: Double, from offset: TimeInterval = 0) {
-        guard let file = ScaledSound.previewFile(for: tone, volume: volume, startingAt: offset) else {
+    /// Starts previewing `tone` at `volume`, or moves a running preview to them: a
+    /// new level takes effect at the next chunk, a new tone starts from its
+    /// beginning at the next chunk.
+    private func playPreview(_ tone: AlarmTone, at volume: Double) {
+        let percent = ScaledSound.percent(volume)
+        previewTargetPercent = percent
+        if current != nil {
+            if previewTone?.id != tone.id {
+                previewTone = tone
+                nextOffset = 0
+                renderNext()
+            } else {
+                renderNextSoon()
+            }
+            return
+        }
+        // Muted: trying again every frame of a drag would only churn.
+        if previewMuted, Date().timeIntervalSince(lastMutedAttempt) < 0.5 { return }
+        previewTone = tone
+        releaseAudioSession()
+        guard let chunk = render(tone, percent: percent, offset: 0) else {
             print("AlarmPlayer could not render a preview of \(tone.id)")
+            playingToneID = nil
+            return
+        }
+        play(chunk)
+    }
+
+    /// Plays a chunk now, renders the one after it, and books that one to start
+    /// just before this one ends.
+    private func play(_ chunk: Chunk) {
+        current = chunk
+        previewPercent = chunk.percent
+        if playingToneID != chunk.toneID { playingToneID = chunk.toneID }
+        let lead = ScaledSound.previewChunkSeconds - ScaledSound.previewCrossfade
+        nextOffset = chunk.offset + lead
+        let started = Date()
+        AudioServicesPlaySystemSoundWithCompletion(chunk.id) { [weak self] in
+            Task { @MainActor in self?.chunkEnded(chunk, after: Date().timeIntervalSince(started)) }
+        }
+        renderNext()
+        nextStart?.cancel()
+        let work = DispatchWorkItem { [weak self] in self?.startNext() }
+        nextStart = work
+        DispatchQueue.main.asyncAfter(deadline: .now() + lead, execute: work)
+    }
+
+    /// The chunk after the current one, rendered ahead of time with the level and
+    /// tone wanted now. Rendered again if they change before it starts.
+    private func renderNext() {
+        renderWork?.cancel()
+        renderWork = nil
+        guard let tone = previewTone, current != nil else { return }
+        let percent = previewTargetPercent ?? previewPercent ?? 0
+        if let ready = next, ready.toneID == tone.id, ready.percent == percent, ready.offset == nextOffset { return }
+        if let ready = next { dispose(ready) }
+        next = render(tone, percent: percent, offset: nextOffset)
+    }
+
+    /// A drag reports every frame; one render shortly covers all of them.
+    private func renderNextSoon() {
+        guard renderWork == nil else { return }
+        let work = DispatchWorkItem { [weak self] in
+            self?.renderWork = nil
+            self?.renderNext()
+        }
+        renderWork = work
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.05, execute: work)
+    }
+
+    /// Time for the next chunk: the current one is in its final fade.
+    private func startNext() {
+        nextStart?.cancel()
+        nextStart = nil
+        guard let tone = previewTone, current != nil else { return }
+        renderWork?.cancel()
+        renderWork = nil
+        let upcoming = next ?? render(tone, percent: previewTargetPercent ?? previewPercent ?? 0, offset: nextOffset)
+        next = nil
+        guard let upcoming else {
             endPreview()
             playingToneID = nil
             return
+        }
+        play(upcoming)
+    }
+
+    /// A chunk finished playing. Normally the next one has long taken over; if not,
+    /// this one either never played (muted) or the chain is late, and carries on.
+    private func chunkEnded(_ chunk: Chunk, after seconds: TimeInterval) {
+        if disposed.remove(chunk.id) != nil {
+            try? FileManager.default.removeItem(at: chunk.file)
+            return
+        }
+        dispose(chunk)
+        let heard = seconds > Self.mutedThreshold
+        if previewMuted == heard { previewMuted = !heard }
+        guard current?.id == chunk.id else { return }
+        if heard {
+            startNext()
+        } else {
+            // Alert sounds are muted: stop chaining, and watch for the switch.
+            nextStart?.cancel()
+            nextStart = nil
+            if let ready = next { dispose(ready) }
+            next = nil
+            current = nil
+            playingToneID = nil
+            lastMutedAttempt = Date()
+            startProbing()
+        }
+    }
+
+    private func render(_ tone: AlarmTone, percent: Int, offset: TimeInterval) -> Chunk? {
+        guard let file = ScaledSound.previewFile(for: tone, volume: Double(percent) / 100, startingAt: offset) else {
+            return nil
         }
         var id: SystemSoundID = 0
         guard AudioServicesCreateSystemSoundID(file as CFURL, &id) == kAudioServicesNoError else {
             try? FileManager.default.removeItem(at: file)
-            endPreview()
-            playingToneID = nil
-            return
+            return nil
         }
-        // The old copy stops only now the new one is ready, so the gap is as short
-        // as it can be.
-        endPreview()
-        // Alert sounds follow the Ringer & Alerts volume only while the app has no
-        // active audio session; one left active — by the in-app alarm, or a Silent
-        // mode preview — would pull them onto media volume and make a preview
-        // louder than the real ring. Release it before every preview.
+        return Chunk(id: id, file: file, toneID: tone.id, percent: percent, offset: offset)
+    }
+
+    private func dispose(_ chunk: Chunk) {
+        AudioServicesDisposeSystemSoundID(chunk.id)
+        try? FileManager.default.removeItem(at: chunk.file)
+    }
+
+    /// Ends the preview: nothing follows the chunk playing now, which is also
+    /// disposed of — iOS may stop it on the spot, or let it run its last fraction of
+    /// a second out.
+    private func endPreview() {
+        nextStart?.cancel()
+        nextStart = nil
+        renderWork?.cancel()
+        renderWork = nil
+        if let playing = current {
+            disposed.insert(playing.id)
+            AudioServicesDisposeSystemSoundID(playing.id)
+        }
+        if let ready = next { dispose(ready) }
+        current = nil
+        next = nil
+        previewTone = nil
+        previewPercent = nil
+        previewTargetPercent = nil
+        nextOffset = 0
+    }
+
+    /// Alert sounds follow the Ringer & Alerts volume only while the app has no
+    /// active audio session; one left active by the in-app alarm would pull them
+    /// onto media volume and make a preview louder than the real ring.
+    private func releaseAudioSession() {
         let session = AVAudioSession.sharedInstance()
         try? session.setCategory(.ambient)
         try? session.setActive(false, options: .notifyOthersOnDeactivation)
-        previewSound = id
-        previewFile = file
-        previewTone = tone
-        previewPercent = ScaledSound.percent(volume)
-        previewOffset = offset
-        previewPeriod = min(ScaledSound.duration(of: tone) ?? ScaledSound.previewSeconds,
-                            ScaledSound.previewSeconds)
-        lastPreviewStart = Date()
-        playingToneID = tone.id
-        loop(id)
     }
 
-    /// A system sound plays once. While its preview is still the current one — an
-    /// audition's few seconds, a drag in progress — it goes round again. One that
-    /// ended the instant it started is muted (the Silent switch, or no output): it is
-    /// left alone, since looping it would only spin, and `previewMuted` says so.
-    private func loop(_ id: SystemSoundID) {
-        let started = Date()
-        AudioServicesPlaySystemSoundWithCompletion(id) { [weak self] in
-            Task { @MainActor in
-                guard let self, self.previewSound == id else { return }
-                let heard = Date().timeIntervalSince(started) > 0.2
-                if self.previewMuted == heard { self.previewMuted = !heard }
-                if heard { self.loop(id) }
-            }
+    // MARK: Silent switch
+
+    private func startProbing() {
+        guard probeTimer == nil else { return }
+        probeTimer = Timer.scheduledTimer(withTimeInterval: Self.silentProbeInterval, repeats: true) { [weak self] _ in
+            Task { @MainActor in self?.probeSilentSwitch() }
         }
     }
 
-    /// Stops the preview and deletes its copy. Disposing of a system sound is how
-    /// one is stopped part-way.
-    private func endPreview() {
-        pendingStep?.cancel()
-        pendingStep = nil
-        if let id = previewSound { AudioServicesDisposeSystemSoundID(id) }
-        if let file = previewFile { try? FileManager.default.removeItem(at: file) }
-        previewSound = nil
-        previewFile = nil
-        previewTone = nil
-        previewPercent = nil
-        previewOffset = 0
-        previewPeriod = 0
+    private func stopProbing() {
+        probeTimer?.invalidate()
+        probeTimer = nil
+    }
+
+    /// Plays a chunk of digital silence. Muted, it ends at once; heard through, it
+    /// takes its full length — which is how the switch is known to be off again.
+    private func probeSilentSwitch() {
+        guard previewMuted else {
+            stopProbing()
+            return
+        }
+        guard !previewActive, probeSound == nil,
+              let file = ScaledSound.silentProbeFile() else { return }
+        var id: SystemSoundID = 0
+        guard AudioServicesCreateSystemSoundID(file as CFURL, &id) == kAudioServicesNoError else { return }
+        probeSound = id
+        releaseAudioSession()
+        let started = Date()
+        AudioServicesPlaySystemSoundWithCompletion(id) { [weak self] in
+            Task { @MainActor in
+                AudioServicesDisposeSystemSoundID(id)
+                guard let self else { return }
+                self.probeSound = nil
+                if Date().timeIntervalSince(started) > Self.mutedThreshold {
+                    self.previewMuted = false
+                    self.stopProbing()
+                }
+            }
+        }
     }
 
     // MARK: Ringing engine
@@ -337,13 +458,9 @@ final class AlarmPlayer: ObservableObject {
 
     private func schedule(after seconds: TimeInterval, _ body: @escaping () -> Void) {
         stopWork?.cancel()
-        stopWork = after(seconds, body)
-    }
-
-    private func after(_ seconds: TimeInterval, _ body: @escaping () -> Void) -> DispatchWorkItem {
         let work = DispatchWorkItem(block: body)
+        stopWork = work
         DispatchQueue.main.asyncAfter(deadline: .now() + seconds, execute: work)
-        return work
     }
 
     private func url(for tone: AlarmTone) -> URL? {

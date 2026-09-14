@@ -38,9 +38,13 @@ enum ScaledSound {
     /// System alert sounds are capped at 30 seconds.
     static let maxSeconds: Double = 29
 
-    /// How much of the tone a preview renders. It loops, so a few seconds is enough,
-    /// and a short render keeps a drag responsive.
-    static let previewSeconds: Double = 6
+    /// A preview is a chain of chunks this long, each rendered from where the tone has
+    /// got to; short, so a new level is heard within a fraction of a second.
+    static let previewChunkSeconds: Double = 0.3
+
+    /// Chunks overlap by this much, fading out and in, so the chain plays as one
+    /// unbroken tone.
+    static let previewCrossfade: Double = 0.03
 
     /// The loudest a sample may be at 100% — just under full scale.
     static let ceiling: Float = 0.98
@@ -95,16 +99,31 @@ enum ScaledSound {
         return render(tone, percent: level, seconds: maxSeconds, to: destination) ? name : nil
     }
 
-    /// A throwaway copy for a preview, rendered as the real alarm's is, in the
-    /// temporary folder. The caller deletes it when done.
-    ///
-    /// `offset` is where in the tone the copy begins, wrapping round at the end: a
-    /// slider moving to a new level renders the new copy from where the old one had
-    /// got to, so the tone carries on rather than starting again.
+    /// One chunk of a preview — `previewChunkSeconds` of the tone from `offset`
+    /// (wrapping round at the end), scaled as the real alarm's copy is, with
+    /// `previewCrossfade` faded at each edge. A throwaway file in the temporary
+    /// folder; the caller deletes it when done.
     static func previewFile(for tone: AlarmTone, volume: Double, startingAt offset: TimeInterval = 0) -> URL? {
         let url = FileManager.default.temporaryDirectory
             .appendingPathComponent("ownalarm-preview-\(UUID().uuidString).caf")
-        return render(tone, percent: percent(volume), seconds: previewSeconds, from: offset, to: url) ? url : nil
+        return render(tone, percent: percent(volume), seconds: previewChunkSeconds, from: offset,
+                      fadeEdges: previewCrossfade, to: url) ? url : nil
+    }
+
+    /// `previewChunkSeconds` of digital silence, for probing the Silent switch:
+    /// muted it ends at once, heard through it takes its full length. Kept in the
+    /// temporary folder and rendered again if the system has cleared it.
+    static func silentProbeFile() -> URL? {
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent("ownalarm-silence.caf")
+        if FileManager.default.fileExists(atPath: url.path) { return url }
+        guard let format = AVAudioFormat(standardFormatWithSampleRate: 44_100, channels: 1),
+              let buffer = AVAudioPCMBuffer(pcmFormat: format,
+                                            frameCapacity: AVAudioFrameCount(44_100 * previewChunkSeconds)) else { return nil }
+        buffer.frameLength = buffer.frameCapacity
+        if let samples = buffer.floatChannelData?[0] {
+            for i in 0..<Int(buffer.frameLength) { samples[i] = 0 }
+        }
+        return write(buffer, to: url) ? url : nil
     }
 
     /// How much of the tone the system can play, in seconds.
@@ -114,7 +133,8 @@ enum ScaledSound {
     }
 
     private static func render(_ tone: AlarmTone, percent: Int, seconds: Double,
-                               from offset: TimeInterval = 0, to destination: URL) -> Bool {
+                               from offset: TimeInterval = 0, fadeEdges: Double = 0,
+                               to destination: URL) -> Bool {
         guard let source = tone.fileURL,
               let loudest = peak(of: tone),
               let whole = read(source, seconds: maxSeconds) else { return false }
@@ -128,14 +148,31 @@ enum ScaledSound {
 
         let start = Int((max(0, offset) * format.sampleRate).rounded()) % total
         let gain = copyGain(for: Double(percent) / 100, peak: loudest)
+        // A short linear ramp at each end, so chunks can cross-fade without a click.
+        let ramp = min(Int(fadeEdges * format.sampleRate), count / 2)
         if let from = whole.floatChannelData, let to = buffer.floatChannelData {
             for channel in 0..<Int(format.channelCount) {
-                for i in 0..<count { to[channel][i] = from[channel][(start + i) % total] * gain }
+                for i in 0..<count {
+                    var edge: Float = 1
+                    if ramp > 0 {
+                        if i < ramp { edge = Float(i) / Float(ramp) }
+                        else if i >= count - ramp { edge = Float(count - i) / Float(ramp) }
+                    }
+                    to[channel][i] = from[channel][(start + i) % total] * gain * edge
+                }
             }
         }
 
+        guard write(buffer, to: destination) else {
+            print("ScaledSound could not render \(tone.id) at \(percent)%")
+            return false
+        }
+        return true
+    }
+
+    /// 16-bit linear PCM in CAF: a format every system sound path accepts.
+    private static func write(_ buffer: AVAudioPCMBuffer, to destination: URL) -> Bool {
         do {
-            // 16-bit linear PCM in CAF: a format every system sound path accepts.
             let settings: [String: Any] = [
                 AVFormatIDKey: kAudioFormatLinearPCM,
                 AVSampleRateKey: buffer.format.sampleRate,
@@ -151,7 +188,7 @@ enum ScaledSound {
             return true
         } catch {
             try? FileManager.default.removeItem(at: destination)
-            print("ScaledSound could not render \(tone.id) at \(percent)%: \(error)")
+            print("ScaledSound could not write \(destination.lastPathComponent): \(error)")
             return false
         }
     }

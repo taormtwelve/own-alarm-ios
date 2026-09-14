@@ -22,9 +22,15 @@ final class AlarmPlayerTests: XCTestCase {
     }
 
     /// CI machines can lack an audio device; then nothing can be proved about
-    /// playback, and the test says so rather than failing.
+    /// playback, and the test says so rather than failing. A preview shows it by
+    /// its first chunk ending the instant it starts, so give that a moment.
     private func requirePlayback() throws {
         try XCTSkipIf(player.playingToneID == nil, "No audio output available on this machine")
+        let moment = expectation(description: "first chunk under way")
+        moment.isInverted = true
+        wait(for: [moment], timeout: 0.25)
+        try XCTSkipIf(player.previewMuted || player.playingToneID == nil,
+                      "No audio output available on this machine")
     }
 
     func testPreviewReportsWhatIsPlayingAndStopClearsIt() throws {
@@ -90,21 +96,37 @@ final class AlarmPlayerTests: XCTestCase {
         try requirePlayback()
         XCTAssertEqual(player.previewPercent, 80)
 
-        player.scrub(to: 0.5)   // straight after: waits for the next step
+        player.scrub(to: 0.5)   // the next chunk picks it up
+        XCTAssertEqual(player.previewTargetPercent, 50)
 
         let moved = NSPredicate { _, _ in self.player.previewPercent == 50 }
         expectation(for: moved, evaluatedWith: nil)
-        waitForExpectations(timeout: AlarmPlayer.scrubStepInterval + 1)
+        waitForExpectations(timeout: ScaledSound.previewChunkSeconds * 3 + 1)
     }
 
     func testLettingGoPlaysTheLevelItLetGoAt() throws {
         player.beginScrub(siren, at: 0.8)
         try requirePlayback()
-        player.scrub(to: 0.4)   // too soon for a step of its own
+        player.scrub(to: 0.4)
 
         player.endScrub()
 
-        XCTAssertEqual(player.previewPercent, 40, "The last level heard is the one chosen")
+        XCTAssertEqual(player.previewTargetPercent, 40, "The last level is the one chosen")
+        XCTAssertEqual(player.playingToneID, "siren", "It rings on for a moment rather than being cut off")
+        let heard = NSPredicate { _, _ in self.player.previewPercent == 40 }
+        expectation(for: heard, evaluatedWith: nil)
+        waitForExpectations(timeout: ScaledSound.previewChunkSeconds + 0.9)
+    }
+
+    func testSwitchingToneMidDragPlaysTheNewToneFromItsStart() throws {
+        let bell = AlarmTone.tone(id: "soft-bell", in: AlarmTone.bundled)
+        player.beginScrub(siren, at: 0.5)
+        try requirePlayback()
+
+        player.stopPreviews()
+        player.beginScrub(bell, at: 0.5)
+
+        XCTAssertEqual(player.playingToneID, "soft-bell", "The tone last chosen is the one previewed")
     }
 
     // MARK: The phone's volume
