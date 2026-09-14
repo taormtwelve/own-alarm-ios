@@ -1,7 +1,8 @@
 import XCTest
 
 /// The per-alarm options and the behaviour added after the first release: the snooze
-/// switch, sound choice, remembered volume, the test ring, and the Silent override.
+/// and vibrate switches, sound choice, remembered volume, the test ring, and the
+/// Silent override.
 final class AlarmOptionsUITests: XCTestCase {
 
     private var app: XCUIApplication!
@@ -171,6 +172,21 @@ final class AlarmOptionsUITests: XCTestCase {
         let name = onIOS26 ? "Alarms permission" : "Critical Alerts permission"
         XCTAssertTrue(beginning(with: name).waitForExistence(timeout: 10))
         XCTAssertFalse(beginning(with: "Louder after each snooze").exists, "Removed on every iOS")
+    }
+
+    // MARK: Vibration
+
+    func testVibrateIsOnForANewAlarmAndCanBeSwitchedOff() {
+        app.buttons["New alarm"].tap()
+        app.swipeUp()
+
+        let vibrate = app.switches.matching(NSPredicate(format: "label BEGINSWITH 'Vibrate'")).firstMatch
+        XCTAssertTrue(vibrate.waitForExistence(timeout: 5), "The editor should offer Vibrate")
+        XCTAssertEqual(vibrate.value as? String, "1", "New alarms vibrate unless told otherwise")
+
+        vibrate.tap()
+
+        XCTAssertEqual(vibrate.value as? String, "0")
     }
 
     // MARK: Theme

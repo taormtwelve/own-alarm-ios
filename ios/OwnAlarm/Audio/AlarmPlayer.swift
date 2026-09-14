@@ -1,3 +1,4 @@
+import AudioToolbox
 import AVFoundation
 import Combine
 
@@ -13,6 +14,8 @@ import Combine
 /// An alarm ringing inside the app has to loop until stopped and ring through
 /// Silent. It plays under `AVAudioSession(.playback)`, with `SystemVolume` setting the
 /// phone's volume to the alarm's level and putting the user's own back when it stops.
+/// One set to vibrate also buzzes, every `vibrationInterval`, until it is stopped;
+/// previews never vibrate.
 @MainActor
 final class AlarmPlayer: ObservableObject {
     @Published private(set) var playingToneID: String?
@@ -23,14 +26,27 @@ final class AlarmPlayer: ObservableObject {
     /// How long a preview plays before it stops by itself.
     static let previewSeconds: TimeInterval = 6
 
+    /// How often the phone buzzes while a vibrating alarm rings.
+    static let vibrationInterval: TimeInterval = 1.6
+
     private var player: AVAudioPlayer?
     private var previewPlayer: AVAudioPlayer?
     private var previewStop: DispatchWorkItem?
+    private var vibrationTimer: Timer?
     private let system: SystemVolume
+    private let vibrate: () -> Void
 
-    /// Tests pass a pretend phone volume; the app uses the real one.
-    init(system: SystemVolume = .shared) {
+    /// Tests pass a pretend phone volume and their own `vibrate` to count buzzes; the
+    /// app uses the real ones.
+    init(system: SystemVolume = .shared,
+         vibrate: @escaping () -> Void = { AudioServicesPlaySystemSound(kSystemSoundID_Vibrate) }) {
         self.system = system
+        self.vibrate = vibrate
+    }
+
+    /// One buzz — what switching Vibrate on in the editor feels like.
+    func buzzOnce() {
+        vibrate()
     }
 
     // MARK: Preview
@@ -79,6 +95,8 @@ final class AlarmPlayer: ObservableObject {
         stopPreview()
         player?.stop()
         player = nil
+        // Independent of the sound: an alarm that cannot play still buzzes.
+        if alarm.vibrates { startVibrating() }
 
         guard let url = tone.fileURL else {
             assertionFailure("Missing audio file for tone \(tone.id)")
@@ -107,13 +125,24 @@ final class AlarmPlayer: ObservableObject {
         }
     }
 
-    /// Stops the alarm and any preview, and hands the phone's volume back.
+    /// Stops the alarm, its buzzing and any preview, and hands the phone's volume back.
     func stop() {
+        vibrationTimer?.invalidate()
+        vibrationTimer = nil
         stopPreview()
         player?.stop()
         player = nil
         playingToneID = nil
         system.restore()
         try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
+    }
+
+    /// Buzzes now, then every `vibrationInterval` until `stop()`.
+    private func startVibrating() {
+        vibrationTimer?.invalidate()
+        let buzz = vibrate
+        buzz()
+        vibrationTimer = Timer.scheduledTimer(withTimeInterval: Self.vibrationInterval,
+                                              repeats: true) { _ in buzz() }
     }
 }

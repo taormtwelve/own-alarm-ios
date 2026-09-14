@@ -2,6 +2,7 @@ import SwiftUI
 
 struct EditAlarmView: View {
     @EnvironmentObject private var store: AlarmStore
+    @EnvironmentObject private var player: AlarmPlayer
     @Environment(\.dismiss) private var dismiss
 
     @State private var alarm: Alarm
@@ -150,6 +151,25 @@ struct EditAlarmView: View {
             // The level is heard the only way it can be heard truly: by ringing the
             // real alarm a few seconds from now, with what is on screen.
             TestRingButton(alarm: alarm)
+
+            Toggle(isOn: $alarm.vibrates) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Vibrate")
+                        .font(Typo.body(14, relativeTo: .subheadline, weight: .semibold))
+                        .foregroundStyle(Tokens.textPrimary)
+                    // Said up front, so a Lock Screen buzz with this off does not
+                    // look like a bug: iOS gives apps no vibration control there.
+                    Text("Buzzes while it rings · on the Lock Screen, iOS's Haptics setting decides")
+                        .font(Typo.caption)
+                        .foregroundStyle(Tokens.textMuted)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            }
+            .toggleStyle(.alarm)
+            // Switching it on buzzes once, so the choice can be felt.
+            .onChange(of: alarm.vibrates) { on in
+                if on { player.buzzOnce() }
+            }
 
             // With AlarmKit (iOS 26+, Alarms allowed) every alarm rings through
             // Silent, so there is nothing to choose.

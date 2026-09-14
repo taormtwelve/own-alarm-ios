@@ -146,11 +146,14 @@ The mockups were fixed 390×844 frames. None of that survived into the code:
   how loud 100% is depends on the ringer volume, which apps cannot set. On iOS 16–25 the
   app falls back to notifications, which play once (30 s at most) and stay silent
   in Silent mode without the Critical Alerts entitlement.
-- **No fade-in, vibration or louder snooze.** All three were removed: iOS plays
-  Lock Screen alarm sounds at one fixed level, decides vibration from its own
-  Sounds & Haptics settings, and replays the same sound on an AlarmKit snooze, so
-  none could be promised where it matters. Old saves still load; the fields are
-  ignored.
+- **Vibration is the app's to set only while it rings in the app.** There the
+  per-alarm Vibrate switch buzzes every 1.6 s until Stop. On the Lock Screen iOS
+  gives apps no vibration control, so its Sounds & Haptics settings decide — the
+  switch's caption says so.
+- **No fade-in or louder snooze.** Both were removed: iOS plays Lock Screen alarm
+  sounds at one fixed level and replays the same sound on an AlarmKit snooze, so
+  neither could be promised where it matters. Old saves still load; the fields
+  are ignored.
 - **Saved data must outlive updates.** Alarms and settings are decoded leniently
   (`Alarm.init(from:)`, `AlarmDefaults.init(from:)`): a field added in a later
   version falls back to the old behaviour instead of making the whole save

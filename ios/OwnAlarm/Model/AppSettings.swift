@@ -61,9 +61,9 @@ enum ThemePreference: String, Codable, CaseIterable, Identifiable {
     #endif
 }
 
-/// What a freshly created alarm starts from: half volume and a 9-minute snooze at
-/// first — then whatever the user last saved. `AlarmStore.save` copies each saved
-/// alarm's volume, sound and snooze back into these.
+/// What a freshly created alarm starts from: half volume, a 9-minute snooze and
+/// vibration on at first — then whatever the user last saved. `AlarmStore.save`
+/// copies each saved alarm's volume, sound, snooze and vibration back into these.
 struct AlarmDefaults: Codable, Equatable {
     /// Snooze length when snooze is switched on and none has been remembered.
     static let standardSnoozeMinutes = 9
@@ -72,6 +72,7 @@ struct AlarmDefaults: Codable, Equatable {
     var overridesSilent: Bool = true
     var toneID: String = "marimba"
     var snoozeMinutes: Int = AlarmDefaults.standardSnoozeMinutes
+    var vibrates: Bool = true
 
     /// Snooze length when the user switches snooze on. The remembered value is 0
     /// whenever their last alarm had no snooze, which would leave the switch stuck off.
@@ -82,13 +83,12 @@ struct AlarmDefaults: Codable, Equatable {
 
 extension AlarmDefaults {
     enum CodingKeys: String, CodingKey {
-        case volume, overridesSilent, toneID, snoozeMinutes
+        case volume, overridesSilent, toneID, snoozeMinutes, vibrates
     }
 
     /// Every field falls back to its factory value when missing, so settings saved
     /// by an older version — before a field existed — still load instead of being
-    /// thrown away. Fields since removed (fade-in, louder after snooze, vibrate) are
-    /// ignored.
+    /// thrown away. Fields since removed (fade-in, louder after snooze) are ignored.
     init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
         let factory = AlarmDefaults()
@@ -96,6 +96,7 @@ extension AlarmDefaults {
         overridesSilent = try c.decodeIfPresent(Bool.self, forKey: .overridesSilent) ?? factory.overridesSilent
         toneID = try c.decodeIfPresent(String.self, forKey: .toneID) ?? factory.toneID
         snoozeMinutes = try c.decodeIfPresent(Int.self, forKey: .snoozeMinutes) ?? factory.snoozeMinutes
+        vibrates = try c.decodeIfPresent(Bool.self, forKey: .vibrates) ?? factory.vibrates
     }
 }
 

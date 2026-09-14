@@ -83,6 +83,9 @@ struct Alarm: Identifiable, Codable, Equatable {
 
     var toneID: String
     var snoozeMinutes: Int = 9
+    /// Buzz while the alarm rings in the app. On the Lock Screen iOS decides, from its
+    /// own Sounds & Haptics settings — no API lets an app choose there.
+    var vibrates: Bool = true
 
     var volumePercent: Int { Int((volume * 100).rounded()) }
 
@@ -132,7 +135,8 @@ struct Alarm: Identifiable, Codable, Equatable {
             volume: defaults.volume,
             overridesSilent: defaults.overridesSilent,
             toneID: defaults.toneID,
-            snoozeMinutes: defaults.snoozeMinutes
+            snoozeMinutes: defaults.snoozeMinutes,
+            vibrates: defaults.vibrates
         )
     }
 }
@@ -142,14 +146,14 @@ struct Alarm: Identifiable, Codable, Equatable {
 extension Alarm {
     enum CodingKeys: String, CodingKey {
         case id, task, hour, minute, repeatDays, isEnabled, volume
-        case overridesSilent, toneID, snoozeMinutes
+        case overridesSilent, toneID, snoozeMinutes, vibrates
     }
 
     /// Alarms are saved to disk, and a field added in a later version is missing from
     /// every alarm saved before it. Swift's generated decoding would then reject the
     /// whole file — and the app would start with no alarms. Fields added after the
     /// first release are therefore read leniently. Fields since removed — fade-in,
-    /// louder after snooze, vibrate — are simply ignored in older saves.
+    /// louder after snooze — are simply ignored in older saves.
     init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
         id = try c.decode(UUID.self, forKey: .id)
@@ -162,6 +166,8 @@ extension Alarm {
         overridesSilent = try c.decode(Bool.self, forKey: .overridesSilent)
         toneID = try c.decode(String.self, forKey: .toneID)
         snoozeMinutes = try c.decode(Int.self, forKey: .snoozeMinutes)
+        // Added later: older alarms vibrate, as they always did.
+        vibrates = try c.decodeIfPresent(Bool.self, forKey: .vibrates) ?? true
     }
 }
 

@@ -262,9 +262,9 @@ final class AlarmTests: XCTestCase {
 
     // MARK: Saves from older versions
 
-    /// Exactly what an older build wrote to disk — with fade-in, louder-after-snooze
-    /// and vibrate, all since removed. If this stops loading, an update wipes every
-    /// alarm the user has.
+    /// Exactly what an older build wrote to disk — with fade-in and louder-after-snooze,
+    /// both since removed. If this stops loading, an update wipes every alarm the user
+    /// has.
     func testAnAlarmSavedByAnOlderBuildStillLoads() throws {
         let json = """
         {"id":"8B1F0B8E-6F1A-4C44-9F3B-3E1B7C1D2A10","task":"Old","hour":6,"minute":30,\
@@ -278,6 +278,34 @@ final class AlarmTests: XCTestCase {
         XCTAssertEqual(alarm.repeatDays, [.monday, .tuesday])
         XCTAssertEqual(alarm.volume, 0.5, accuracy: 0.0001)
         XCTAssertEqual(alarm.snoozeMinutes, 9)
+        XCTAssertFalse(alarm.vibrates, "A saved choice to not vibrate is kept")
+    }
+
+    /// Exactly what a build without `vibrates` wrote to disk.
+    func testAnAlarmSavedBeforeVibrationExistedVibrates() throws {
+        let json = """
+        {"id":"8B1F0B8E-6F1A-4C44-9F3B-3E1B7C1D2A10","task":"Old","hour":6,"minute":30,\
+        "repeatDays":[2,3],"isEnabled":true,"volume":0.5,\
+        "overridesSilent":true,"toneID":"siren","snoozeMinutes":9}
+        """
+        let alarm = try JSONDecoder().decode(Alarm.self, from: Data(json.utf8))
+
+        XCTAssertTrue(alarm.vibrates, "Older alarms vibrate, as they always did")
+    }
+
+    func testSwitchingVibrationOffSurvivesSaving() throws {
+        var alarm = makeAlarm()
+        alarm.vibrates = false
+        let decoded = try JSONDecoder().decode(Alarm.self, from: JSONEncoder().encode(alarm))
+        XCTAssertFalse(decoded.vibrates)
+    }
+
+    func testANewAlarmCarriesTheRememberedVibration() {
+        var defaults = AlarmDefaults()
+        XCTAssertTrue(Alarm.newAlarm(from: defaults).vibrates, "Vibrates unless told otherwise")
+
+        defaults.vibrates = false
+        XCTAssertFalse(Alarm.newAlarm(from: defaults).vibrates)
     }
 
     func testSettingsSavedByAnOlderBuildStillLoad() throws {
@@ -291,6 +319,7 @@ final class AlarmTests: XCTestCase {
         XCTAssertEqual(settings.timeFormat, .twelveHour, "The rest of the settings survive")
         XCTAssertEqual(settings.defaults.toneID, "whisper")
         XCTAssertEqual(settings.defaults.snoozeMinutes, 5)
+        XCTAssertTrue(settings.defaults.vibrates, "Missing in the save: vibration on, as before")
     }
 
     // MARK: Weekdays
