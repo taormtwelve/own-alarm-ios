@@ -322,6 +322,10 @@ enum RingPermission {
         return false
     }
 
+    /// True where the system runs the snooze itself (AlarmKit, iOS 26+) and replays
+    /// the same sound, so "louder after each snooze" cannot be promised there.
+    static var systemRunsSnooze: Bool { alwaysRingsThroughSilent }
+
     static var name: String {
         #if canImport(AlarmKit)
         if #available(iOS 26.0, *) { return "Alarms permission" }

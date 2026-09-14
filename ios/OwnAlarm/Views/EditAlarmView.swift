@@ -272,7 +272,9 @@ struct EditAlarmView: View {
                 }
                 SettingsRow(
                     title: "Louder after each snooze",
-                    subtitle: "Adds 10% every time you put it off",
+                    // On iOS 26 the system runs the snooze and replays the same
+                    // sound, so the "+10%" promise is not one the app can keep there.
+                    subtitle: RingPermission.systemRunsSnooze ? nil : "Adds 10% every time you put it off",
                     showsDivider: false
                 ) {
                     Toggle("Louder after each snooze", isOn: $alarm.louderAfterSnooze)

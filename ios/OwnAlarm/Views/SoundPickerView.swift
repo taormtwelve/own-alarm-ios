@@ -1,3 +1,4 @@
+import AVFoundation
 import SwiftUI
 import UIKit
 
@@ -212,18 +213,32 @@ struct ToneRow: View {
 /// Adds the reader's own audio from Music or Files.
 struct SourceChoices: View {
     @State private var showingImporter = false
+    /// A song just imported that is longer than an alarm sound may be.
+    @State private var trimmedName: String?
     @EnvironmentObject private var store: AlarmStore
 
+    private static let limit = Int(ScaledSound.maxSeconds)
+
     var body: some View {
-        importTile.fileImporter(
-            isPresented: $showingImporter,
-            allowedContentTypes: [.audio],
-            allowsMultipleSelection: false
-        ) { result in
-            if case let .success(urls) = result, let url = urls.first {
-                importTone(from: url)
+        importTile
+            .fileImporter(
+                isPresented: $showingImporter,
+                allowedContentTypes: [.audio],
+                allowsMultipleSelection: false
+            ) { result in
+                if case let .success(urls) = result, let url = urls.first {
+                    importTone(from: url)
+                }
             }
-        }
+            // iOS caps alarm sounds at 30 s; a longer song rings from its start and
+            // stops there, which is better said now than discovered at 6 a.m.
+            .alert("Only the first \(Self.limit) seconds will ring",
+                   isPresented: Binding(get: { trimmedName != nil },
+                                        set: { if !$0 { trimmedName = nil } })) {
+                Button("OK") {}
+            } message: {
+                Text("\(trimmedName ?? "This song") is longer than iOS allows for an alarm sound. It plays from the start and stops at \(Self.limit) seconds.")
+            }
     }
 
     private var importTile: some View {
@@ -245,16 +260,22 @@ struct SourceChoices: View {
         try? FileManager.default.removeItem(at: destination)
         guard (try? FileManager.default.copyItem(at: url, to: destination)) != nil else { return }
 
+        let seconds = (try? AVAudioFile(forReading: destination))
+            .map { Double($0.length) / $0.processingFormat.sampleRate } ?? 0
+        let tooLong = seconds > ScaledSound.maxSeconds
+        let name = url.deletingPathExtension().lastPathComponent
         store.addImportedTone(
             AlarmTone(
                 id: url.lastPathComponent,
-                name: url.deletingPathExtension().lastPathComponent,
-                character: "Yours",
+                name: name,
+                // Said on the row too, so the cut is never a surprise later.
+                character: tooLong ? "Yours · first \(Self.limit) s rings" : "Yours",
                 peak: 2,
                 fileName: url.lastPathComponent,
                 source: .imported
             )
         )
+        if tooLong { trimmedName = name }
     }
 }
 
