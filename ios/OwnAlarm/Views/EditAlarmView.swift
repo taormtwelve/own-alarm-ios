@@ -136,7 +136,7 @@ struct EditAlarmView: View {
                         .font(Typo.sectionLabel)
                         .tracking(1.1)
                         .foregroundStyle(Tokens.accentLabel)
-                    Text(t("Only this alarm rings at this level — every other alarm keeps its own. 100% is your Ringer & Alerts volume — raise it in Settings › Sounds & Haptics if you want louder."))
+                    Text(t("The maximum volume depends on your Ringer & Alerts volume — adjust it in Settings › Sounds & Haptics."))
                         .font(Typo.caption)
                         .foregroundStyle(Tokens.textMuted)
                         .fixedSize(horizontal: false, vertical: true)

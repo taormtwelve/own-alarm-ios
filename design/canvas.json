@@ -238,7 +238,7 @@
       "x": 490,
       "y": -220,
       "w": 390,
-      "text": "Editing an alarm.\nNew alarms open on the current time, carrying the volume, sound, snooze and vibration of the last alarm saved. Saving switches an alarm on. The slider is silent; Test real alarm rings the real alarm 5 s later with what is on screen, and while it is on its way the button reads Cancel test with a countdown (not drawn here). The caption says 100% is the Ringer & Alerts volume and where to raise it. Vibrate buzzes while the alarm rings in the app; on the Lock Screen, iOS's Haptics setting decides. With AlarmKit allowed (iOS 26) every alarm rings through Silent, so the Override Silent switch is not shown."
+      "text": "Editing an alarm.\nNew alarms open on the current time, carrying the volume, sound, snooze and vibration of the last alarm saved. Saving switches an alarm on. The slider is silent; Test real alarm rings the real alarm 5 s later with what is on screen, and while it is on its way the button reads Cancel test with a countdown (not drawn here). The caption says the Ringer & Alerts volume sets the maximum, and where to change it. Vibrate buzzes while the alarm rings in the app; on the Lock Screen, iOS's Haptics setting decides. With AlarmKit allowed (iOS 26) every alarm rings through Silent, so the Override Silent switch is not shown."
     },
     {
       "id": "sheet-note",

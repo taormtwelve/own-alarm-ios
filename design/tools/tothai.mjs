@@ -62,8 +62,8 @@ const THAI = {
   'Repeat': 'ทำซ้ำ',
   'Sound': 'เสียง',
   'Volume for this task': 'ระดับเสียงของงานนี้',
-  'Only this alarm rings at this level &mdash; every other alarm keeps its own. 100% is your Ringer &amp; Alerts volume &mdash; raise it in Settings &rsaquo; Sounds &amp; Haptics if you want louder.':
-    'เฉพาะนาฬิกาปลุกนี้ที่ดังระดับนี้ &mdash; นาฬิกาปลุกอื่นมีระดับของตัวเอง 100% คือระดับเสียงเรียกเข้าและการแจ้งเตือนของคุณ &mdash; เพิ่มได้ที่ การตั้งค่า &rsaquo; เสียงและการสั่น หากต้องการให้ดังขึ้น',
+  'The maximum volume depends on your Ringer &amp; Alerts volume &mdash; adjust it in Settings &rsaquo; Sounds &amp; Haptics.':
+    'ระดับเสียงสูงสุดขึ้นอยู่กับระดับเสียงเรียกเข้าและการแจ้งเตือนของคุณ &mdash; สามารถปรับได้ที่ การตั้งค่า &rsaquo; เสียงและการสั่น',
   'Test real alarm at 85%': 'ทดสอบปลุกจริงที่ 85%',
   'Test real alarm at 50%': 'ทดสอบปลุกจริงที่ 50%',
   'Vibrate': 'สั่น',
