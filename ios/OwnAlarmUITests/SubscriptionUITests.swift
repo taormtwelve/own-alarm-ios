@@ -91,7 +91,7 @@ final class SubscriptionUITests: XCTestCase {
 
         let subscribe = app.buttons["subscribe"]
         XCTAssertTrue(subscribe.exists, "Free users are offered membership")
-        XCTAssertTrue(subscribe.label.contains("$1.99 a month"), "With its price: \(subscribe.label)")
+        XCTAssertTrue(subscribe.label.contains("$6.00 a year"), "With its price: \(subscribe.label)")
         subscribe.tap()
 
         expectation(for: NSPredicate(format: "label == 'Member'"), evaluatedWith: plan)

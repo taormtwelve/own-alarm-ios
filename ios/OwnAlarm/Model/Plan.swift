@@ -1,6 +1,6 @@
 import Foundation
 
-/// The two plans: free, which keeps up to three alarms, and membership — a monthly
+/// The two plans: free, which keeps up to three alarms, and membership — a yearly
 /// subscription through the App Store — with no limit.
 enum Plan: String, Codable, Equatable, Sendable {
     case free, member

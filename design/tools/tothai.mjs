@@ -120,7 +120,7 @@ const THAI = {
   'Free': 'ฟรี',
   'Become a member': 'สมัครสมาชิก',
   'Unlimited alarms': 'ตั้งนาฬิกาปลุกได้ไม่จำกัด',
-  '$1.99 a month': 'เดือนละ $1.99',
+  '$6.00 a year': 'ปีละ $6.00',
   'Restore purchases': 'กู้คืนการซื้อ',
 };
 

@@ -198,9 +198,9 @@ struct SettingsView: View {
             : t("Without it, alarms follow your ringer volume and Silent mode")
     }
 
-    /// The price line, "$1.99 a month", once the App Store has given it.
+    /// The price line, "$6.00 a year", once the App Store has given it.
     private var price: String? {
-        if case .available(let price) = membership.offer { return t("{0} a month", price) }
+        if case .available(let price) = membership.offer { return t("{0} a year", price) }
         return nil
     }
 

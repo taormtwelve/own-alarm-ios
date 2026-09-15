@@ -99,8 +99,8 @@ Apple grants it for genuine cases (medical, safety, alarms); expect to explain w
 
 The membership works the same way. A sideloaded build shows the free plan (three
 alarms), says the App Store version is needed to subscribe, and keeps every alarm
-working. To sell it, create the auto-renewing subscription
-`com.ownalarm.app.member.monthly` in App Store Connect.
+working. To sell it, create the auto-renewing yearly subscription
+`com.ownalarm.app.member.yearly`, at $6 a year, in App Store Connect.
 
 ---
 

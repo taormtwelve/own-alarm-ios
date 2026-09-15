@@ -482,7 +482,7 @@ final class AlarmTests: XCTestCase {
     func testMembershipCopyReadsInThai() {
         let thai = AppLanguage.thai
         XCTAssertEqual(thai("Up to {0} alarms", Plan.freeAlarmLimit), "ตั้งได้สูงสุด 3 รายการ")
-        XCTAssertEqual(thai("{0} a month", "฿39.00"), "เดือนละ ฿39.00")
+        XCTAssertEqual(thai("{0} a year", "฿199.00"), "ปีละ ฿199.00")
         XCTAssertEqual(thai("Free plan: up to {0} alarms", 3), "แพ็กเกจฟรีตั้งได้สูงสุด 3 รายการ")
     }
 

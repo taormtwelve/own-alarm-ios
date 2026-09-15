@@ -242,7 +242,7 @@ enum AppLanguage: String, Codable, CaseIterable, Identifiable, Sendable {
         ("Up to {0} alarms", "ตั้งได้สูงสุด {0} รายการ"),
         ("Unlimited alarms", "ตั้งนาฬิกาปลุกได้ไม่จำกัด"),
         ("Become a member", "สมัครสมาชิก"),
-        ("{0} a month", "เดือนละ {0}"),
+        ("{0} a year", "ปีละ {0}"),
         ("Loading…", "กำลังโหลด…"),
         ("Needs OwnAlarm from the App Store", "ใช้ได้กับ OwnAlarm จาก App Store เท่านั้น"),
         ("Restore purchases", "กู้คืนการซื้อ"),

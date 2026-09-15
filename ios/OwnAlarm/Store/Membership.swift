@@ -10,8 +10,8 @@ import StoreKit
 /// at once.
 @MainActor
 final class Membership: ObservableObject {
-    /// The auto-renewing monthly subscription, as set up in App Store Connect.
-    static let productID = "com.ownalarm.app.member.monthly"
+    /// The auto-renewing yearly subscription, $6 a year, as set up in App Store Connect.
+    static let productID = "com.ownalarm.app.member.yearly"
 
     /// What the App Store offers: loading, the price, or nothing (no App Store here).
     enum Offer: Equatable {
@@ -63,7 +63,7 @@ final class Membership: ObservableObject {
     /// a price, and subscribing succeeds at once.
     init(stub plan: Plan) {
         self.plan = plan
-        offer = .available(price: "$1.99")
+        offer = .available(price: "$6.00")
         usesAppStore = false
     }
 

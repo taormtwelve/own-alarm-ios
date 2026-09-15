@@ -30,11 +30,11 @@ final class MembershipTests: XCTestCase {
     }
 
     func testTheStandInOffersAPriceSoTheButtonCanBeTried() {
-        XCTAssertEqual(Membership(stub: .free).offer, .available(price: "$1.99"))
+        XCTAssertEqual(Membership(stub: .free).offer, .available(price: "$6.00"))
     }
 
-    func testTheSubscriptionIsTheMonthlyMemberProduct() {
-        XCTAssertEqual(Membership.productID, "com.ownalarm.app.member.monthly",
+    func testTheSubscriptionIsTheYearlyMemberProduct() {
+        XCTAssertEqual(Membership.productID, "com.ownalarm.app.member.yearly",
                        "Must match the product set up in App Store Connect")
     }
 }
