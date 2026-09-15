@@ -44,12 +44,17 @@ struct SoundsView: View {
         }
     }
 
+    private var testAlarm: Alarm {
+        Self.testAlarm(tone: AlarmTone.tone(id: testToneID, in: store.tones), level: testLevel, language: t)
+    }
+
     /// A stand-in alarm carrying the tone and level chosen here — all a test ring
     /// needs; it is never saved. Named after its tone, so it rings as "Test · Siren".
-    private var testAlarm: Alarm {
-        Alarm(task: AlarmTone.tone(id: testToneID, in: store.tones).name(in: t),
-              hour: 0, minute: 0, repeatDays: [],
-              volume: testLevel, overridesSilent: true, toneID: testToneID)
+    /// This tab tries a sound and nothing else, so its test ring never vibrates; the
+    /// editor's vibrates only when that alarm's Vibrate switch is on.
+    static func testAlarm(tone: AlarmTone, level: Double, language: AppLanguage) -> Alarm {
+        Alarm(task: tone.name(in: language), hour: 0, minute: 0, repeatDays: [],
+              volume: level, overridesSilent: true, toneID: tone.id, vibrates: false)
     }
 
     private var testCard: some View {

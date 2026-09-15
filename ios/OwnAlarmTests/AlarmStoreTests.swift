@@ -273,6 +273,31 @@ final class AlarmStoreTests: XCTestCase {
         XCTAssertEqual(AlarmStore.testCopy(of: makeAlarm(task: ""), language: .thai).task, "ทดลอง · นาฬิกาปลุก")
     }
 
+    /// The editor tests what is on screen, Vibrate switch included.
+    func testTheEditorsTestRingVibratesOnlyWhenItsSwitchIsOn() throws {
+        let store = makeStore()
+        var alarm = makeAlarm()
+
+        alarm.vibrates = false
+        store.testRing(alarm)
+        XCTAssertEqual(try XCTUnwrap(spy.tests.last).alarm.vibrates, false, "Switch off: no buzz")
+
+        alarm.vibrates = true
+        store.testRing(alarm)
+        XCTAssertEqual(try XCTUnwrap(spy.tests.last).alarm.vibrates, true, "Switch on: it buzzes")
+    }
+
+    func testTheSoundsTabsTestRingNeverVibrates() {
+        let marimba = AlarmTone.tone(id: "marimba", in: AlarmTone.bundled)
+        let alarm = SoundsView.testAlarm(tone: marimba, level: 0.4, language: .english)
+
+        XCTAssertFalse(alarm.vibrates)
+        XCTAssertFalse(AlarmStore.testCopy(of: alarm, language: .english).vibrates, "The test copy keeps it so")
+        XCTAssertEqual(alarm.task, "Marimba")
+        XCTAssertEqual(alarm.toneID, "marimba")
+        XCTAssertEqual(alarm.volume, 0.4, accuracy: 0.0001)
+    }
+
     // MARK: Language
 
     func testTheSchedulerWritesInTheAppsLanguage() {
