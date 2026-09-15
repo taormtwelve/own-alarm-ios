@@ -25,8 +25,7 @@ final class SubscriptionUITests: XCTestCase {
     private func openSettings() {
         app.tabBars.buttons["Settings"].tap()
         XCTAssertTrue(app.staticTexts["Time format"].waitForExistence(timeout: 10))
-        // Membership is the last section; on a short phone it sits below the fold.
-        app.swipeUp()
+        // Membership is the first section, in view as Settings opens.
     }
 
     // MARK: The limit
