@@ -407,6 +407,13 @@ final class AlarmTests: XCTestCase {
         XCTAssertEqual(AppLanguage.preferred(from: []), .english)
     }
 
+    func testThaiIsOfferedOnlyOnAPhoneThatListsIt() {
+        XCTAssertEqual(AppLanguage.available(in: ["en-US", "th-TH"]), [.english, .thai], "Thai anywhere in the list")
+        XCTAssertEqual(AppLanguage.available(in: ["th"]), [.english, .thai])
+        XCTAssertEqual(AppLanguage.available(in: ["en-GB", "ja-JP"]), [.english])
+        XCTAssertEqual(AppLanguage.available(in: []), [.english])
+    }
+
     func testEveryThaiLineIsThaiAndKeepsItsPlaceholders() {
         let keys = AppLanguage.thaiLines.map { $0.0 }
         XCTAssertEqual(Set(keys).count, keys.count, "A line entered twice")

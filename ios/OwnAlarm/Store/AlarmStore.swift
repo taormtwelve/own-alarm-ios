@@ -50,17 +50,25 @@ final class AlarmStore: ObservableObject {
     private let settingsKey = AppSettings.storageKey
     private let tonesKey = "ownalarm.importedTones"
 
+    /// The languages Settings offers: Thai only on a phone that lists it among its
+    /// languages. Fixed for the run — iOS restarts apps when that list changes.
+    let languages: [AppLanguage]
+
     /// `fileURL` and `defaults` are injectable so tests — and UI-test launches —
     /// get their own storage instead of trampling the real app's data.
     /// `seed` fills an empty store on first launch; the real app passes nothing,
     /// so a new user starts with no alarms they did not set themselves.
+    /// `phoneLanguages` is the phone's language list, which decides whether Thai is
+    /// offered.
     init(scheduler: AlarmScheduling = AlarmScheduler.makeDefault(),
          fileURL: URL? = nil,
          defaults: UserDefaults = .standard,
-         seed: [Alarm] = []) {
+         seed: [Alarm] = [],
+         phoneLanguages: [String] = Locale.preferredLanguages) {
         self.scheduler = scheduler
         self.defaults = defaults
         self.seed = seed
+        self.languages = AppLanguage.available(in: phoneLanguages)
         self.fileURL = fileURL ?? FileManager.default
             .urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
             .appendingPathComponent("alarms.json")
@@ -315,6 +323,12 @@ final class AlarmStore: ObservableObject {
             // First launch: the language just taken from the phone stays the app's
             // until it is changed in Settings.
             persistSettings()
+        }
+        // Thai chosen earlier, on a phone that no longer lists it: back to English,
+        // since Settings would have no way to switch.
+        if !languages.contains(settings.language) {
+            settings.language = .english
+            persistSettings()   // the Lock Screen's snooze reads the saved settings
         }
 
         if let data = defaults.data(forKey: tonesKey),

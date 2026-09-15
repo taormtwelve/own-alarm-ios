@@ -33,6 +33,12 @@ enum AppLanguage: String, Codable, CaseIterable, Identifiable, Sendable {
         return .thai
     }
 
+    /// The languages the app offers on this phone: English always, Thai only when the
+    /// phone lists Thai somewhere among its languages.
+    static func available(in languages: [String] = Locale.preferredLanguages) -> [AppLanguage] {
+        languages.contains { code(of: $0) == AppLanguage.thai.rawValue } ? [.english, .thai] : [.english]
+    }
+
     /// "th" from "th-TH", "th_TH" or "th_TH@calendar=buddhist".
     static func code(of identifier: String) -> String {
         String(identifier.prefix { $0 != "-" && $0 != "_" && $0 != "@" }).lowercased()

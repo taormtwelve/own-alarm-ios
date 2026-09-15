@@ -75,16 +75,20 @@ struct SettingsView: View {
                         }
                     }
 
-                    // Each language is named in itself, so it can be found by someone
-                    // who reads only that one.
-                    section(t("Language")) {
-                        CardGroup {
-                            SegmentedChoice(
-                                options: AppLanguage.allCases,
-                                label: \.label,
-                                selection: $store.settings.language
-                            )
-                            .padding(8)
+                    // Only on a phone that lists Thai among its languages; anywhere else
+                    // the app speaks English and there is nothing to choose. Each
+                    // language is named in itself, so someone who reads only that one
+                    // can find it.
+                    if store.languages.count > 1 {
+                        section(t("Language")) {
+                            CardGroup {
+                                SegmentedChoice(
+                                    options: store.languages,
+                                    label: \.label,
+                                    selection: $store.settings.language
+                                )
+                                .padding(8)
+                            }
                         }
                     }
                 }
