@@ -49,7 +49,7 @@ const THAI = {
   'Harsh &middot; peaks fast &middot; 3s loop': 'แหลม &middot; ดังขึ้นเร็ว &middot; วน 3 วินาที',
   'Warm &middot; even &middot; 6s loop': 'นุ่ม &middot; สม่ำเสมอ &middot; วน 6 วินาที',
   'Quiet &middot; long decay &middot; 8s loop': 'เบา &middot; ค่อยๆ จางยาว &middot; วน 8 วินาที',
-  'Barely there &middot; for night tasks': 'แผ่วเบา &middot; สำหรับงานกลางคืน',
+  'Barely there &middot; for night tasks': 'แผ่วเบา &middot; สำหรับการปลุกกลางคืน',
   'Harsh &middot; used by 1 alarm': 'แหลม &middot; ใช้กับนาฬิกาปลุก 1 รายการ',
   'Warm &middot; used by 1 alarm': 'นุ่ม &middot; ใช้กับนาฬิกาปลุก 1 รายการ',
   'Long decay &middot; used by 1 alarm': 'จางยาว &middot; ใช้กับนาฬิกาปลุก 1 รายการ',
@@ -58,10 +58,10 @@ const THAI = {
   // Editing an alarm
   'Cancel': 'ยกเลิก',
   'Save': 'บันทึก',
-  'Task': 'งาน',
+  'Task': 'การปลุก',
   'Repeat': 'ทำซ้ำ',
   'Sound': 'เสียง',
-  'Volume for this task': 'ระดับเสียงของงานนี้',
+  'Volume for this task': 'ระดับเสียงของการปลุกนี้',
   'The maximum volume depends on your Ringer &amp; Alerts volume &mdash; adjust it in Settings &rsaquo; Sounds &amp; Haptics.':
     'ระดับเสียงสูงสุดขึ้นอยู่กับระดับเสียงเรียกเข้าและการแจ้งเตือนของคุณ &mdash; สามารถปรับได้ที่ การตั้งค่า &rsaquo; เสียงและการสั่น',
   'Test real alarm at 85%': 'ทดสอบปลุกจริงที่ 85%',
@@ -88,7 +88,7 @@ const THAI = {
 
   // Ringing and snoozed
   'Alarm ringing': 'นาฬิกากำลังปลุก',
-  'Siren, at full task volume': 'ไซเรน ที่ระดับเสียงเต็มของงาน',
+  'Siren, at full task volume': 'ไซเรน ที่ระดับเสียงเต็มของการปลุก',
   'Snooze 9 min': 'เลื่อนปลุก 9 นาที',
   'Slide to stop': 'เลื่อนเพื่อหยุด',
   'Monday 14 September': 'วันจันทร์ที่ 14 กันยายน',

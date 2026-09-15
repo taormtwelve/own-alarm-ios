@@ -136,11 +136,11 @@ enum AppLanguage: String, Codable, CaseIterable, Identifiable, Sendable {
         ("Cancel", "ยกเลิก"),
         ("Save", "บันทึก"),
         ("Alarm time", "เวลาปลุก"),
-        ("Task", "งาน"),
+        ("Task", "การปลุก"),
         ("What is this alarm for?", "ปลุกเพื่ออะไร"),
         ("Repeat", "ทำซ้ำ"),
         ("Sound", "เสียง"),
-        ("Volume for this task", "ระดับเสียงของงานนี้"),
+        ("Volume for this task", "ระดับเสียงของการปลุกนี้"),
         ("The maximum volume depends on your Ringer & Alerts volume — adjust it in Settings › Sounds & Haptics.",
          "ระดับเสียงสูงสุดขึ้นอยู่กับระดับเสียงเรียกเข้าและการแจ้งเตือนของคุณ — สามารถปรับได้ที่ การตั้งค่า › เสียงและการสั่น"),
         ("Vibrate", "สั่น"),
@@ -161,7 +161,7 @@ enum AppLanguage: String, Codable, CaseIterable, Identifiable, Sendable {
 
         // Ringing
         ("Alarm ringing", "นาฬิกากำลังปลุก"),
-        ("{0}, at full task volume", "{0} ที่ระดับเสียงเต็มของงาน"),
+        ("{0}, at full task volume", "{0} ที่ระดับเสียงเต็มของการปลุก"),
         ("Snooze {0} min", "เลื่อนปลุก {0} นาที"),
         ("Slide to stop", "เลื่อนเพื่อหยุด"),
         ("Stop alarm", "หยุดปลุก"),
@@ -237,6 +237,6 @@ enum AppLanguage: String, Codable, CaseIterable, Identifiable, Sendable {
         ("Soft bell", "ระฆังเบา"),
         ("Quiet · long decay", "เบา · ค่อยๆ จางยาว"),
         ("Whisper", "กระซิบ"),
-        ("Barely there · for night tasks", "แผ่วเบา · สำหรับงานกลางคืน"),
+        ("Barely there · for night tasks", "แผ่วเบา · สำหรับการปลุกกลางคืน"),
     ]
 }

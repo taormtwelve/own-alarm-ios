@@ -1,3 +1,3 @@
 /* The permission prompts iOS shows on first launch, in the phone's language. */
-"NSUserNotificationsUsageDescription" = "OwnAlarm ใช้การแจ้งเตือนเพื่อปลุกตามระดับเสียงที่คุณตั้งให้แต่ละงาน แม้ขณะปิดแอปอยู่";
-"NSAlarmKitUsageDescription" = "OwnAlarm ปลุกบนหน้าจอล็อกและดังผ่านโหมดเงียบ นาฬิกาปลุกแต่ละรายการดังตามระดับเสียงที่คุณตั้งให้งานนั้น";
+"NSUserNotificationsUsageDescription" = "OwnAlarm ใช้การแจ้งเตือนเพื่อปลุกตามระดับเสียงที่คุณตั้งให้แต่ละการปลุก แม้ขณะปิดแอปอยู่";
+"NSAlarmKitUsageDescription" = "OwnAlarm ปลุกบนหน้าจอล็อกและดังผ่านโหมดเงียบ นาฬิกาปลุกแต่ละรายการดังตามระดับเสียงที่คุณตั้งให้การปลุกนั้น";
