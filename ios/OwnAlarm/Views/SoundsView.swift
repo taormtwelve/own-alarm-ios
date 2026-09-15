@@ -58,7 +58,7 @@ struct SoundsView: View {
                     .font(Typo.sectionLabel)
                     .tracking(1.1)
                     .foregroundStyle(Tokens.accentLabel)
-                Text(t("Tap a tone below to hear it · set a level and it rings in {0} s as a real alarm. 100% is your Ringer & Alerts volume — raise it in Settings › Sounds & Haptics if you want louder.",
+                Text(t("Tap a tone below to hear it · set a level and it rings in {0} s as a real alarm. The maximum volume depends on your Ringer & Alerts volume — adjust it in Settings › Sounds & Haptics.",
                        Int(AlarmStore.testLead)))
                     .font(Typo.caption)
                     .foregroundStyle(Tokens.textMuted)
