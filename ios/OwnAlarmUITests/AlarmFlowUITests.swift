@@ -190,12 +190,12 @@ final class AlarmFlowUITests: XCTestCase {
         XCTAssertTrue(app.switches["Show on Lock Screen"].exists)
         XCTAssertTrue(app.buttons["Dark"].exists)
         XCTAssertTrue(app.buttons["Light"].exists)
-        XCTAssertTrue(app.buttons["English"].exists, "The language choice")
         // New-alarm defaults are learned from saved alarms, not set here.
         XCTAssertFalse(app.staticTexts["NEW ALARM DEFAULTS"].exists)
     }
 
     func testChoosingThaiTranslatesTheAppAndEnglishBringsItBack() {
+        relaunch(languages: "(en, th)")   // a phone that lists Thai, English first
         app.tabBars.buttons["Settings"].tap()
         // The Language section is last; on a short phone it sits below the fold.
         app.swipeUp()
@@ -216,6 +216,23 @@ final class AlarmFlowUITests: XCTestCase {
         XCTAssertTrue(english.waitForExistence(timeout: 5))
         english.tap()
         XCTAssertTrue(app.tabBars.buttons["Settings"].waitForExistence(timeout: 5), "Back in English")
+    }
+
+    func testWithoutThaiOnThePhoneThereIsNoLanguageChoice() {
+        relaunch(languages: "(en)")
+        app.tabBars.buttons["Settings"].tap()
+        XCTAssertTrue(app.staticTexts["Time format"].waitForExistence(timeout: 10))
+        app.swipeUp()
+
+        XCTAssertFalse(app.buttons["ไทย"].exists, "No Thai on the phone: nothing to choose")
+        XCTAssertFalse(app.buttons["English"].exists)
+    }
+
+    /// Restarts the app as if the phone's language list were `languages`, e.g. "(en, th)".
+    private func relaunch(languages: String) {
+        app.terminate()
+        app.launchArguments = ["-uitesting", "-AppleLanguages", languages]
+        app.launch()
     }
 
     func testTurningOffLockScreenAlertsSticksAcrossTabs() {

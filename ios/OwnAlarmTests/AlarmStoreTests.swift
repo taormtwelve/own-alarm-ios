@@ -289,14 +289,36 @@ final class AlarmStoreTests: XCTestCase {
         let suite = try XCTUnwrap(UserDefaults(suiteName: UUID().uuidString))
         let file = folder.appendingPathComponent("language.json")
 
-        let first = AlarmStore(scheduler: spy, fileURL: file, defaults: suite)
+        let first = AlarmStore(scheduler: spy, fileURL: file, defaults: suite, phoneLanguages: ["en-US", "th-TH"])
         XCTAssertNotNil(suite.data(forKey: AppSettings.storageKey), "First launch keeps the language it found")
         first.settings.language = .thai
 
         let later = SpyScheduler()
-        let second = AlarmStore(scheduler: later, fileURL: file, defaults: suite)
+        let second = AlarmStore(scheduler: later, fileURL: file, defaults: suite, phoneLanguages: ["en-US", "th-TH"])
         XCTAssertEqual(second.settings.language, .thai)
         XCTAssertEqual(later.language, .thai, "Handed over before anything is armed")
+    }
+
+    func testAPhoneThatListsThaiIsOfferedIt() {
+        let store = AlarmStore(scheduler: spy, fileURL: folder.appendingPathComponent("offered.json"),
+                               defaults: UserDefaults(suiteName: UUID().uuidString)!,
+                               phoneLanguages: ["en-US", "th-TH"])
+        XCTAssertEqual(store.languages, [.english, .thai])
+    }
+
+    func testWithoutThaiOnThePhoneTheAppSpeaksEnglishAndOffersNoChoice() throws {
+        let suite = try XCTUnwrap(UserDefaults(suiteName: UUID().uuidString))
+        var saved = AppSettings()
+        saved.language = .thai
+        suite.set(try JSONEncoder().encode(saved), forKey: AppSettings.storageKey)
+
+        let store = AlarmStore(scheduler: spy, fileURL: folder.appendingPathComponent("english.json"),
+                               defaults: suite, phoneLanguages: ["en-US", "ja-JP"])
+
+        XCTAssertEqual(store.languages, [.english], "No Thai on the phone: nothing to choose")
+        XCTAssertEqual(store.settings.language, .english, "Thai chosen earlier gives way")
+        XCTAssertEqual(spy.language, .english)
+        XCTAssertEqual(AppSettings.stored(in: suite).language, .english, "Saved, so the Lock Screen agrees")
     }
 
     func testWithoutPermissionATestRingSaysSoInsteadOfCountingDown() {
