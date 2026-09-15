@@ -6,6 +6,7 @@ import UserNotifications
 struct OwnAlarmApp: App {
     @StateObject private var store = OwnAlarmApp.makeStore()
     @StateObject private var player = AlarmPlayer()
+    @StateObject private var membership = OwnAlarmApp.makeMembership()
     private let notifications = NotificationRouter()
 
     @Environment(\.scenePhase) private var scenePhase
@@ -25,11 +26,25 @@ struct OwnAlarmApp: App {
     private static func makeStore() -> AlarmStore {
         let args = ProcessInfo.processInfo.arguments
         guard args.contains("-uitesting") else { return AlarmStore() }
-        let store = AlarmStore.ephemeral(seed: args.contains("-emptyStore") ? [] : Alarm.starter)
+        // No real notifications or AlarmKit alarms under UI test, so nothing can go
+        // off mid-suite; whether a test ring may sound is set by -ringAllowed, not by
+        // whatever the simulator happens to allow.
+        let scheduler = UITestScheduler(allowsRinging: args.contains("-ringAllowed"))
+        let store = AlarmStore.ephemeral(scheduler: scheduler,
+                                         seed: args.contains("-emptyStore") ? [] : Alarm.starter)
         // The suite reads English whatever the simulator's language; the language
         // test switches to Thai in Settings.
         store.settings.language = .english
         return store
+    }
+
+    /// The App Store decides membership. UI tests use a stand-in: a member, so every
+    /// flow can add alarms, or the free plan with `-free`.
+    @MainActor
+    private static func makeMembership() -> Membership {
+        let args = ProcessInfo.processInfo.arguments
+        guard args.contains("-uitesting") else { return Membership() }
+        return Membership(stub: args.contains("-free") ? .free : .member)
     }
 
     var body: some Scene {
@@ -37,6 +52,7 @@ struct OwnAlarmApp: App {
             RootView()
                 .environmentObject(store)
                 .environmentObject(player)
+                .environmentObject(membership)
                 .task {
                     // Closed last time while it had the phone's volume? Put it back.
                     SystemVolume.shared.recoverIfNeeded()

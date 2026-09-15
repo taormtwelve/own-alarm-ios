@@ -5,6 +5,8 @@ struct AlarmListView: View {
     @Environment(\.appLanguage) private var t
     @State private var editing: Alarm?
     @State private var isCreating = false
+    @State private var showingLimit = false
+    @EnvironmentObject private var membership: Membership
 
     var body: some View {
         NavigationStack {
@@ -33,7 +35,7 @@ struct AlarmListView: View {
                 }
 
                 if store.alarms.isEmpty {
-                    EmptyAlarms { isCreating = true }
+                    EmptyAlarms { newAlarm() }
                         .listCardRow()
                 }
             }
@@ -46,7 +48,7 @@ struct AlarmListView: View {
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button {
-                        isCreating = true
+                        newAlarm()
                     } label: {
                         Image(systemName: "plus")
                             .font(.system(size: 17, weight: .bold))
@@ -61,7 +63,45 @@ struct AlarmListView: View {
             .sheet(isPresented: $isCreating) {
                 EditAlarmView(alarm: Alarm.newAlarm(from: store.settings.defaults), isNew: true)
             }
+            // The free plan keeps three alarms. At the limit, + explains and offers
+            // membership; the alarms already set keep ringing either way.
+            .alert(t("Free plan: up to {0} alarms", Plan.freeAlarmLimit), isPresented: $showingLimit) {
+                if canSubscribe {
+                    Button(t("Become a member")) {
+                        Task { await becomeMember() }
+                    }
+                    Button(t("Not now"), role: .cancel) {}
+                } else {
+                    Button(t("OK"), role: .cancel) {}
+                }
+            } message: {
+                Text(canSubscribe
+                     ? t("Become a member for unlimited alarms. Every alarm you have keeps ringing.")
+                     : t("Membership needs OwnAlarm from the App Store. Every alarm you have keeps ringing."))
+            }
         }
+    }
+
+    /// Opens a new alarm, or, on the free plan at its limit, the offer to become a member.
+    private func newAlarm() {
+        if membership.canAddAlarm(having: store.alarms.count) {
+            isCreating = true
+        } else {
+            showingLimit = true
+        }
+    }
+
+    private var canSubscribe: Bool {
+        if case .available = membership.offer { return true }
+        return false
+    }
+
+    /// Subscribes, then opens the alarm that was asked for.
+    private func becomeMember() async {
+        guard await membership.purchase() == .purchased else { return }
+        // Let the alert finish closing before the editor slides up.
+        try? await Task.sleep(nanoseconds: 400_000_000)
+        isCreating = true
     }
 }
 

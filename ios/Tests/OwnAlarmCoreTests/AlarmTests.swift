@@ -467,6 +467,25 @@ final class AlarmTests: XCTestCase {
         XCTAssertEqual(tone.character(in: .thai), "ของคุณ")
     }
 
+    // MARK: Plans
+
+    func testTheFreePlanKeepsThreeAlarmsAndMembershipAnyNumber() {
+        XCTAssertEqual(Plan.freeAlarmLimit, 3)
+        XCTAssertTrue(Plan.free.canAddAlarm(having: 0))
+        XCTAssertTrue(Plan.free.canAddAlarm(having: 2))
+        XCTAssertFalse(Plan.free.canAddAlarm(having: 3), "A fourth alarm needs membership")
+        XCTAssertFalse(Plan.free.canAddAlarm(having: 5), "Over the limit, after a membership lapsed")
+        XCTAssertTrue(Plan.member.canAddAlarm(having: 3))
+        XCTAssertTrue(Plan.member.canAddAlarm(having: 100))
+    }
+
+    func testMembershipCopyReadsInThai() {
+        let thai = AppLanguage.thai
+        XCTAssertEqual(thai("Up to {0} alarms", Plan.freeAlarmLimit), "ตั้งได้สูงสุด 3 รายการ")
+        XCTAssertEqual(thai("{0} a year", "฿199.00"), "ปีละ ฿199.00")
+        XCTAssertEqual(thai("Free plan: up to {0} alarms", 3), "แพ็กเกจฟรีตั้งได้สูงสุด 3 รายการ")
+    }
+
     // MARK: Helpers
 
     /// "{0}", "{1}"… in a line, sorted, so two languages can be compared.

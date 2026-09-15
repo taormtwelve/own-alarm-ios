@@ -45,7 +45,8 @@ there is no `.xcodeproj` in the repo and why you never needed a Mac to create on
 When it finishes, download **OwnAlarm-unsigned-ipa** from the run's Artifacts
 section. Unzip it; inside is `OwnAlarm-unsigned.ipa`.
 
-**Branches:** work lands on `dev`, which does not build. Every push to `uat` builds
+**Branches:** work lands on `dev`, which does not build. A `feature/…` branch builds
+and runs every test on each push, so its result is waiting even with the computer off. Every push to `uat` builds
 the `.ipa` and runs all the tests — the `.ipa` is under that run's Artifacts — so
 merging `dev` into `uat` is how a test build is made. Merging into `prod` is the
 deploy: the same pipeline and then, only if every test passes, a **GitHub Release**
@@ -80,6 +81,7 @@ automatically, which saves you the weekly reinstall below. More setup, less chor
 | App expires after | **7 days** — reinstall weekly | 1 year |
 | Apps sideloaded at once | 3 | unlimited |
 | TestFlight | no | yes |
+| **Selling the membership** (in-app subscription) | **no** | set it up in App Store Connect; try it in TestFlight |
 | **Critical Alerts entitlement** | **no** | request from Apple |
 
 That last row matters here. Without Critical Alerts an alarm's sound **obeys the
@@ -94,6 +96,11 @@ You will *not* get the headline behaviour — 85% ringing through a silenced pho
 That needs the paid account plus Apple approving the entitlement request at
 <https://developer.apple.com/contact/request/notifications-critical-alerts-entitlement/>.
 Apple grants it for genuine cases (medical, safety, alarms); expect to explain why.
+
+The membership works the same way. A sideloaded build shows the free plan (three
+alarms), says the App Store version is needed to subscribe, and keeps every alarm
+working. To sell it, create the auto-renewing yearly subscription
+`com.ownalarm.app.member.yearly`, at $6 a year, in App Store Connect.
 
 ---
 

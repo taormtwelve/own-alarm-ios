@@ -114,6 +114,14 @@ const THAI = {
   'Light': 'สว่าง',
   'Auto': 'อัตโนมัติ',
   'Language': 'ภาษา',
+  'Membership': 'การเป็นสมาชิก',
+  'Plan': 'แพ็กเกจ',
+  'Up to 3 alarms': 'ตั้งได้สูงสุด 3 รายการ',
+  'Free': 'ฟรี',
+  'Become a member': 'สมัครสมาชิก',
+  'Unlimited alarms': 'ตั้งนาฬิกาปลุกได้ไม่จำกัด',
+  '$6.00 a year': 'ปีละ $6.00',
+  'Restore purchases': 'กู้คืนการซื้อ',
 };
 
 // A Thai font beside each face, for the glyphs the Latin faces lack.
