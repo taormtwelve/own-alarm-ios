@@ -53,7 +53,7 @@
       "x": 2940,
       "y": 0,
       "w": 390,
-      "h": 844,
+      "h": 960,
       "title": "Settings tab"
     },
     {
@@ -109,7 +109,7 @@
       "x": 2940,
       "y": 1220,
       "w": 390,
-      "h": 844,
+      "h": 960,
       "title": "Settings tab — dark"
     },
     {
@@ -165,7 +165,7 @@
       "x": 2940,
       "y": 2440,
       "w": 390,
-      "h": 844,
+      "h": 960,
       "title": "Settings tab — Thai"
     },
     {
@@ -221,7 +221,7 @@
       "x": 2940,
       "y": 3660,
       "w": 390,
-      "h": 844,
+      "h": 960,
       "title": "Settings tab — Thai — dark"
     }
   ],
@@ -266,7 +266,7 @@
       "x": 2450,
       "y": -220,
       "w": 880,
-      "text": "Sounds and Settings.\nSounds plays a tone as media when you tap it, and rings the real alarm 5 s later at the chosen tone and level — the only honest audition. Settings holds the clock, what happens when an alarm rings, the theme, and the language — English or ไทย, each named in itself. The language choice only appears on a phone that lists Thai among its languages; anywhere else the app is English. New-alarm defaults are learned from saved alarms rather than set here."
+      "text": "Sounds and Settings.\nSounds plays a tone as media when you tap it, and rings the real alarm 5 s later at the chosen tone and level — the only honest audition. Settings holds the clock, what happens when an alarm rings, the theme, and the language — English or ไทย, each named in itself. The language choice only appears on a phone that lists Thai among its languages; anywhere else the app is English. Membership, at the bottom: the free plan keeps up to 3 alarms and members have no limit; at the limit the + button explains and offers membership, and every alarm already set keeps ringing. The price comes from the App Store; a sideloaded build can show the plan but not sell it. New-alarm defaults are learned from saved alarms rather than set here."
     },
     {
       "id": "row-light",
