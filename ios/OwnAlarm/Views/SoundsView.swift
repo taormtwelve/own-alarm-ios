@@ -45,9 +45,10 @@ struct SoundsView: View {
     }
 
     /// A stand-in alarm carrying the tone and level chosen here — all a test ring
-    /// needs; it is never saved.
+    /// needs; it is never saved. Named after its tone, so it rings as "Test · Siren".
     private var testAlarm: Alarm {
-        Alarm(task: t("Sound test"), hour: 0, minute: 0, repeatDays: [],
+        Alarm(task: AlarmTone.tone(id: testToneID, in: store.tones).name(in: t),
+              hour: 0, minute: 0, repeatDays: [],
               volume: testLevel, overridesSilent: true, toneID: testToneID)
     }
 

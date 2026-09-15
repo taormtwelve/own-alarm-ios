@@ -57,7 +57,7 @@ final class AlarmTests: XCTestCase {
             makeAlarm(days: [.monday, .tuesday, .wednesday, .thursday, .friday]).repeatSummary(in: .thai),
             "จันทร์ – ศุกร์"
         )
-        XCTAssertEqual(makeAlarm(days: [.saturday, .sunday]).repeatSummary(in: .thai), "สุดสัปดาห์")
+        XCTAssertEqual(makeAlarm(days: [.saturday, .sunday]).repeatSummary(in: .thai), "เสาร์ – อาทิตย์")
 
         let tuesday = Weekday.tuesday.shortSymbol(in: .thai)
         let thursday = Weekday.thursday.shortSymbol(in: .thai)
@@ -430,8 +430,8 @@ final class AlarmTests: XCTestCase {
     }
 
     func testALineAroundALiveCountdownSplitsAtItsPlaceholder() {
-        let line = AppLanguage.thai.around("Rings in {0} · lock the phone to hear it as the Lock Screen alarm")
-        XCTAssertEqual(line.before, "ดังในอีก ")
+        let line = AppLanguage.thai.around("Rings in {0} · lock your phone to hear it just as it will ring")
+        XCTAssertEqual(line.before, "จะดังในอีก ")
         XCTAssertTrue(line.after.hasPrefix(" · "), "got \(line.after)")
     }
 

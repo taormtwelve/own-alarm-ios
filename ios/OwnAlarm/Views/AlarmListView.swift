@@ -159,7 +159,7 @@ private struct EmptyAlarms: View {
             Text(t("No alarms yet"))
                 .font(Typo.body(17, relativeTo: .headline, weight: .semibold))
                 .foregroundStyle(Tokens.textPrimary)
-            Text(t("Every alarm you add keeps its own volume, so a medication reminder can stay quiet while a wake-up is loud."))
+            Text(t("Every alarm you add keeps its own volume, so a medication reminder can stay quiet while your wake-up alarm is loud."))
                 .font(Typo.caption)
                 .foregroundStyle(Tokens.textMuted)
                 .multilineTextAlignment(.center)

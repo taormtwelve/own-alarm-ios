@@ -269,8 +269,8 @@ final class AlarmStoreTests: XCTestCase {
         XCTAssertEqual(test.volume, alarm.volume)
         XCTAssertEqual(test.toneID, alarm.toneID)
         XCTAssertEqual(AlarmStore.testCopy(of: makeAlarm(task: ""), language: .english).task, "Test · Alarm")
-        XCTAssertEqual(AlarmStore.testCopy(of: alarm, language: .thai).task, "ทดสอบ · Morning run")
-        XCTAssertEqual(AlarmStore.testCopy(of: makeAlarm(task: ""), language: .thai).task, "ทดสอบ · นาฬิกาปลุก")
+        XCTAssertEqual(AlarmStore.testCopy(of: alarm, language: .thai).task, "ทดลอง · Morning run")
+        XCTAssertEqual(AlarmStore.testCopy(of: makeAlarm(task: ""), language: .thai).task, "ทดลอง · นาฬิกาปลุก")
     }
 
     // MARK: Language

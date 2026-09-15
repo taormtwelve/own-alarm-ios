@@ -162,7 +162,7 @@ struct EditAlarmView: View {
                         .foregroundStyle(Tokens.textPrimary)
                     // Said up front, so a Lock Screen buzz with this off does not
                     // look like a bug: iOS gives apps no vibration control there.
-                    Text(t("Buzzes while it rings · on the Lock Screen, iOS's Haptics setting decides"))
+                    Text(t("Vibrates while it rings · on the Lock Screen, your Haptics setting decides"))
                         .font(Typo.caption)
                         .foregroundStyle(Tokens.textMuted)
                         .fixedSize(horizontal: false, vertical: true)

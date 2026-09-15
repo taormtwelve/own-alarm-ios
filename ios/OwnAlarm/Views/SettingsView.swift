@@ -30,7 +30,7 @@ struct SettingsView: View {
                         CardGroup {
                             SettingsRow(
                                 title: t("Show on Lock Screen"),
-                                subtitle: t("Off, the alarm only takes over inside the app")
+                                subtitle: t("When off, alarms only show inside the app")
                             ) {
                                 Toggle(t("Show on Lock Screen"), isOn: $store.settings.showOnLockScreen)
                                     .toggleStyle(.alarm)
@@ -126,8 +126,8 @@ struct SettingsView: View {
 
     private var permissionExplanation: String {
         criticalAlertsGranted == true
-            ? t("What lets an alarm ring at its own volume through Silent")
-            : t("Without it, alarms follow the ringer and the mute switch")
+            ? t("Lets alarms ring at their own volume, even in Silent mode")
+            : t("Without it, alarms follow your ringer volume and Silent mode")
     }
 
     private func openSettings() {

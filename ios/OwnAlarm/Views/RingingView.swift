@@ -120,7 +120,7 @@ struct RingingView: View {
                 .monospacedDigit()
                 .foregroundStyle(Tokens.accentText)
             Circle().fill(Tokens.textFaint.opacity(0.6)).frame(width: 3, height: 3)
-            Text(t("{0}, at full task volume", tone.name(in: t)))
+            Text(t("{0} · at this alarm's volume", tone.name(in: t)))
                 .font(Typo.caption)
                 .foregroundStyle(Tokens.textSecondary)
         }

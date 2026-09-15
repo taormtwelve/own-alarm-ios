@@ -241,7 +241,7 @@ struct TestRingButton: View {
                 PrimaryButton(title: t("Cancel test"), systemImage: "xmark") {
                     store.cancelTestRing()
                 }
-                let line = t.around("Rings in {0} · lock the phone to hear it as the Lock Screen alarm")
+                let line = t.around("Rings in {0} · lock your phone to hear it just as it will ring")
                 caption(Text(line.before) + Text(due, style: .timer) + Text(line.after))
             } else {
                 PrimaryButton(title: t("Test real alarm at {0}%", alarm.volumePercent), systemImage: "bell.fill") {
