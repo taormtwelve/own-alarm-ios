@@ -56,6 +56,19 @@ struct AlarmTone: Identifiable, Codable, Equatable, Hashable {
               fileName: "soft-bell.wav", source: .bundled),
         .init(id: "whisper", name: "Whisper", character: "Barely there · for night tasks", peak: 1,
               fileName: "whisper.wav", source: .bundled),
+        // Made by ios/tools/tones.mjs, quietest first.
+        .init(id: "sunrise", name: "Sunrise", character: "Gentle · swells slowly", peak: 1,
+              fileName: "sunrise.wav", source: .bundled),
+        .init(id: "music-box", name: "Music box", character: "Soft · a little tune", peak: 1,
+              fileName: "music-box.wav", source: .bundled),
+        .init(id: "birdsong", name: "Birdsong", character: "Light · chirping", peak: 2,
+              fileName: "birdsong.wav", source: .bundled),
+        .init(id: "chimes", name: "Chimes", character: "Bright · ringing", peak: 2,
+              fileName: "chimes.wav", source: .bundled),
+        .init(id: "sonar", name: "Sonar", character: "Clear · steady pings", peak: 2,
+              fileName: "sonar.wav", source: .bundled),
+        .init(id: "beeps", name: "Beeps", character: "Classic · hard to sleep through", peak: 3,
+              fileName: "beeps.wav", source: .bundled),
     ]
 
     static var fallback: AlarmTone { bundled[1] }

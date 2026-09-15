@@ -266,5 +266,17 @@ enum AppLanguage: String, Codable, CaseIterable, Identifiable, Sendable {
         ("Quiet · long decay", "เบา · ค่อยๆ จางหาย"),
         ("Whisper", "กระซิบ"),
         ("Barely there · for night tasks", "แผ่วเบา · สำหรับการปลุกกลางคืน"),
+        ("Sunrise", "แสงเช้า"),
+        ("Gentle · swells slowly", "นุ่มนวล · ค่อยๆ ดังขึ้น"),
+        ("Music box", "กล่องดนตรี"),
+        ("Soft · a little tune", "เบา · ทำนองสั้นๆ"),
+        ("Birdsong", "เสียงนก"),
+        ("Light · chirping", "สดใส · นกร้องจิ๊บๆ"),
+        ("Chimes", "กระดิ่งลม"),
+        ("Bright · ringing", "ใส · กังวาน"),
+        ("Sonar", "โซนาร์"),
+        ("Clear · steady pings", "ชัด · ดังเป็นจังหวะ"),
+        ("Beeps", "เสียงบี๊บ"),
+        ("Classic · hard to sleep through", "คลาสสิก · ปลุกยังไงก็ตื่น"),
     ]
 }

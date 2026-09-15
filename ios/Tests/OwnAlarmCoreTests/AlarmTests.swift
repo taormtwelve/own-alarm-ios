@@ -164,6 +164,14 @@ final class AlarmTests: XCTestCase {
         XCTAssertEqual(ids.count, Set(ids).count)
     }
 
+    func testTenTonesShipFromQuietToLoud() {
+        XCTAssertEqual(AlarmTone.bundled.count, 10)
+        XCTAssertEqual(AlarmTone.bundled.prefix(4).map(\.id), ["siren", "marimba", "soft-bell", "whisper"],
+                       "The first four keep their places; Marimba stays the fallback")
+        XCTAssertEqual(Set(AlarmTone.bundled.map(\.peak)), [1, 2, 3], "Quiet, medium and loud all on offer")
+        XCTAssertTrue(AlarmTone.bundled.allSatisfy { $0.fileName == "\($0.id).wav" }, "One file per tone, named by its id")
+    }
+
     // MARK: Clock
 
     func testTwentyFourHourFormatDropsTheMeridiem() {
