@@ -388,6 +388,22 @@ final class AlarmStoreTests: XCTestCase {
         waitForExpectations(timeout: AlarmStore.testLead + 2)
     }
 
+    // MARK: Plans
+
+    /// The free plan only stops new alarms. Alarms over the limit — from before an
+    /// update, or a membership that lapsed — are armed like any other.
+    func testAlarmsOverTheFreeLimitAllKeepRinging() {
+        let store = AlarmStore(scheduler: spy, fileURL: folder.appendingPathComponent("over.json"),
+                               defaults: UserDefaults(suiteName: UUID().uuidString)!,
+                               seed: Alarm.starter)
+        XCTAssertFalse(Plan.free.canAddAlarm(having: store.alarms.count), "The four samples are over the limit")
+
+        store.rescheduleAll()
+
+        XCTAssertEqual(spy.scheduled.count, Alarm.starter.filter { $0.isEnabled }.count,
+                       "Every enabled alarm is armed, whatever the plan")
+    }
+
     // MARK: Stop
 
     func testStoppingAOneShotAlarmDisablesIt() throws {

@@ -6,6 +6,7 @@ import UserNotifications
 struct OwnAlarmApp: App {
     @StateObject private var store = OwnAlarmApp.makeStore()
     @StateObject private var player = AlarmPlayer()
+    @StateObject private var membership = OwnAlarmApp.makeMembership()
     private let notifications = NotificationRouter()
 
     @Environment(\.scenePhase) private var scenePhase
@@ -32,11 +33,21 @@ struct OwnAlarmApp: App {
         return store
     }
 
+    /// The App Store decides membership. UI tests use a stand-in: a member, so every
+    /// flow can add alarms, or the free plan with `-free`.
+    @MainActor
+    private static func makeMembership() -> Membership {
+        let args = ProcessInfo.processInfo.arguments
+        guard args.contains("-uitesting") else { return Membership() }
+        return Membership(stub: args.contains("-free") ? .free : .member)
+    }
+
     var body: some Scene {
         WindowGroup {
             RootView()
                 .environmentObject(store)
                 .environmentObject(player)
+                .environmentObject(membership)
                 .task {
                     // Closed last time while it had the phone's volume? Put it back.
                     SystemVolume.shared.recoverIfNeeded()

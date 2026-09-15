@@ -1,3 +1,4 @@
+import StoreKit
 import SwiftUI
 import UIKit
 
@@ -5,6 +6,8 @@ struct SettingsView: View {
     @EnvironmentObject private var store: AlarmStore
     @Environment(\.appLanguage) private var t
     @State private var criticalAlertsGranted: Bool?
+    @EnvironmentObject private var membership: Membership
+    @State private var managingSubscription = false
 
     var body: some View {
         NavigationStack {
@@ -91,6 +94,65 @@ struct SettingsView: View {
                             }
                         }
                     }
+
+                    // Free keeps up to three alarms; members have no limit. The price
+                    // comes from the App Store.
+                    section(t("Membership")) {
+                        CardGroup {
+                            SettingsRow(
+                                title: t("Plan"),
+                                subtitle: membership.plan == .member
+                                    ? t("Unlimited alarms")
+                                    : t("Up to {0} alarms", Plan.freeAlarmLimit)
+                            ) {
+                                RowValue(value: membership.plan == .member ? t("Member") : t("Free"),
+                                         showsChevron: false)
+                                    .accessibilityIdentifier("plan")
+                            }
+
+                            if membership.plan == .member {
+                                Button {
+                                    managingSubscription = true
+                                } label: {
+                                    SettingsRow(title: t("Manage subscription"), showsDivider: false) {
+                                        RowValue(value: "")
+                                    }
+                                }
+                                .buttonStyle(.plain)
+                            } else {
+                                Button {
+                                    Task { await membership.purchase() }
+                                } label: {
+                                    SettingsRow(title: t("Become a member"), subtitle: offerLine) {
+                                        if let price {
+                                            RowValue(value: price)
+                                        }
+                                    }
+                                }
+                                .buttonStyle(.plain)
+                                .disabled(!canSubscribe)
+                                .opacity(canSubscribe ? 1 : 0.55)
+                                .accessibilityIdentifier("subscribe")
+
+                                Button {
+                                    Task { await membership.restore() }
+                                } label: {
+                                    SettingsRow(title: t("Restore purchases"), showsDivider: false) {
+                                        EmptyView()
+                                    }
+                                }
+                                .buttonStyle(.plain)
+                                .disabled(membership.isBusy)
+                            }
+                        }
+
+                        if let note = membership.note {
+                            Text(noteText(note))
+                                .font(Typo.caption)
+                                .foregroundStyle(Tokens.textMuted)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+                    }
                 }
                 .padding(.horizontal, Metrics.gutter)
                 .padding(.vertical, 12)
@@ -98,8 +160,10 @@ struct SettingsView: View {
             }
             .background(Tokens.background)
             .navigationTitle(t("Settings"))
+            .manageSubscriptionsSheet(isPresented: $managingSubscription)
             .task {
                 criticalAlertsGranted = await RingPermission.isGranted()
+                await membership.update()
             }
             .onChange(of: store.settings.showOnLockScreen) { _ in
                 store.rescheduleAll()
@@ -132,6 +196,33 @@ struct SettingsView: View {
         criticalAlertsGranted == true
             ? t("Lets alarms ring at their own volume, even in Silent mode")
             : t("Without it, alarms follow your ringer volume and Silent mode")
+    }
+
+    /// The price line, "$1.99 a month", once the App Store has given it.
+    private var price: String? {
+        if case .available(let price) = membership.offer { return t("{0} a month", price) }
+        return nil
+    }
+
+    private var canSubscribe: Bool {
+        if case .available = membership.offer { return !membership.isBusy }
+        return false
+    }
+
+    private var offerLine: String {
+        switch membership.offer {
+        case .loading: return t("Loading…")
+        case .available: return t("Unlimited alarms")
+        case .unavailable: return t("Needs OwnAlarm from the App Store")
+        }
+    }
+
+    private func noteText(_ note: Membership.Note) -> String {
+        switch note {
+        case .pending: return t("Waiting for approval")
+        case .failed: return t("The purchase didn't go through.")
+        case .nothingToRestore: return t("Nothing to restore")
+        }
     }
 
     private func openSettings() {
