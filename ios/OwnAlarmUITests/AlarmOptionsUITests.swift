@@ -125,16 +125,33 @@ final class AlarmOptionsUITests: XCTestCase {
 
         testRing.tap()
 
-        // UI tests never ask for notification or Alarms permission, so nothing can
-        // ring — and the screen must say so rather than count down to silence.
-        // The permission answer can take seconds on a busy simulator, so it is
-        // waited for, and nothing is tapped meanwhile: when it arrives, Cancel test
-        // turns back into the offer at the same spot, and a tap landing just then
-        // starts a new test. Cancelling is covered by the store's unit tests.
-        XCTAssertTrue(beginning(with: "Nothing can ring yet").waitForExistence(timeout: 15),
+        // Launched without -ringAllowed, the app's stand-in scheduler says nothing may
+        // ring, whatever the simulator allows: the screen must say so rather than
+        // count down to silence.
+        XCTAssertTrue(beginning(with: "Nothing can ring yet").waitForExistence(timeout: 10),
                       "Without permission the screen says nothing can ring")
         XCTAssertTrue(testRing.exists, "Blocked: the offer stays")
         XCTAssertFalse(app.buttons["Cancel test"].exists, "No countdown to a ring that cannot come")
+    }
+
+    func testWithPermissionTheTestRingCountsDownAndCanBeCalledOff() {
+        app.terminate()
+        app.launchArguments = ["-uitesting", "-ringAllowed"]
+        app.launch()
+        openMorningRun()
+        XCTAssertTrue(testRing.waitForExistence(timeout: 5))
+
+        testRing.tap()
+
+        let cancel = app.buttons["Cancel test"]
+        XCTAssertTrue(cancel.waitForExistence(timeout: 5), "The ring is on its way and can be called off")
+        XCTAssertTrue(beginning(with: "Rings in").exists, "…with a countdown to when it rings")
+        cancel.tap()
+
+        // Back to the offer: at once when cancelled, or when a countdown ends if the
+        // tap came late and started another. Either way nothing is left counting down.
+        XCTAssertTrue(testRing.waitForExistence(timeout: 10), "Called off: back to the offer")
+        XCTAssertFalse(beginning(with: "Nothing can ring yet").exists, "Allowed, so never blocked")
     }
 
     func testTheSoundsTabOffersToRingTheChosenToneForReal() {
