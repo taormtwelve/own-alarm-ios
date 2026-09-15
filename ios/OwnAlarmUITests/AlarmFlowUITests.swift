@@ -179,6 +179,9 @@ final class AlarmFlowUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["Marimba"].exists)
         XCTAssertTrue(app.staticTexts["Soft bell"].exists)
         XCTAssertTrue(app.staticTexts["Whisper"].exists)
+        for name in ["Sunrise", "Music box", "Birdsong", "Chimes", "Sonar", "Beeps"] {
+            XCTAssertTrue(app.staticTexts[name].exists, "\(name) should be listed")
+        }
     }
 
     // MARK: Settings

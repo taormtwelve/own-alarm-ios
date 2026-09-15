@@ -21,7 +21,7 @@
       "x": 980,
       "y": 0,
       "w": 390,
-      "h": 844,
+      "h": 1240,
       "title": "Sound & loudness"
     },
     {
@@ -45,7 +45,7 @@
       "x": 2450,
       "y": 0,
       "w": 390,
-      "h": 844,
+      "h": 1330,
       "title": "Sounds tab"
     },
     {
@@ -59,7 +59,7 @@
     {
       "file": "Main.dc.html",
       "x": 0,
-      "y": 1220,
+      "y": 1400,
       "w": 390,
       "h": 844,
       "title": "Alarms — dark"
@@ -67,7 +67,7 @@
     {
       "file": "EditAlarm.dc.html",
       "x": 490,
-      "y": 1220,
+      "y": 1400,
       "w": 390,
       "h": 1040,
       "title": "Edit alarm — dark"
@@ -75,15 +75,15 @@
     {
       "file": "SoundSheet.dc.html",
       "x": 980,
-      "y": 1220,
+      "y": 1400,
       "w": 390,
-      "h": 844,
+      "h": 1240,
       "title": "Sound & loudness — dark"
     },
     {
       "file": "Ringing.dc.html",
       "x": 1470,
-      "y": 1220,
+      "y": 1400,
       "w": 390,
       "h": 844,
       "title": "Ringing — in app — dark"
@@ -91,7 +91,7 @@
     {
       "file": "LockScreen.dc.html",
       "x": 1960,
-      "y": 1220,
+      "y": 1400,
       "w": 390,
       "h": 844,
       "title": "Snoozed — Lock Screen — dark"
@@ -99,15 +99,15 @@
     {
       "file": "Sounds.dc.html",
       "x": 2450,
-      "y": 1220,
+      "y": 1400,
       "w": 390,
-      "h": 844,
+      "h": 1330,
       "title": "Sounds tab — dark"
     },
     {
       "file": "Settings.dc.html",
       "x": 2940,
-      "y": 1220,
+      "y": 1400,
       "w": 390,
       "h": 960,
       "title": "Settings tab — dark"
@@ -115,7 +115,7 @@
     {
       "file": "MainThLight.dc.html",
       "x": 0,
-      "y": 2440,
+      "y": 2800,
       "w": 390,
       "h": 844,
       "title": "Alarms — Thai"
@@ -123,7 +123,7 @@
     {
       "file": "EditAlarmThLight.dc.html",
       "x": 490,
-      "y": 2440,
+      "y": 2800,
       "w": 390,
       "h": 1040,
       "title": "Edit alarm — Thai"
@@ -131,15 +131,15 @@
     {
       "file": "SoundSheetThLight.dc.html",
       "x": 980,
-      "y": 2440,
+      "y": 2800,
       "w": 390,
-      "h": 844,
+      "h": 1240,
       "title": "Sound & loudness — Thai"
     },
     {
       "file": "RingingThLight.dc.html",
       "x": 1470,
-      "y": 2440,
+      "y": 2800,
       "w": 390,
       "h": 844,
       "title": "Ringing — in app — Thai"
@@ -147,7 +147,7 @@
     {
       "file": "LockScreenThLight.dc.html",
       "x": 1960,
-      "y": 2440,
+      "y": 2800,
       "w": 390,
       "h": 844,
       "title": "Snoozed — Lock Screen — Thai"
@@ -155,15 +155,15 @@
     {
       "file": "SoundsThLight.dc.html",
       "x": 2450,
-      "y": 2440,
+      "y": 2800,
       "w": 390,
-      "h": 844,
+      "h": 1330,
       "title": "Sounds tab — Thai"
     },
     {
       "file": "SettingsThLight.dc.html",
       "x": 2940,
-      "y": 2440,
+      "y": 2800,
       "w": 390,
       "h": 960,
       "title": "Settings tab — Thai"
@@ -171,7 +171,7 @@
     {
       "file": "MainTh.dc.html",
       "x": 0,
-      "y": 3660,
+      "y": 4200,
       "w": 390,
       "h": 844,
       "title": "Alarms — Thai — dark"
@@ -179,7 +179,7 @@
     {
       "file": "EditAlarmTh.dc.html",
       "x": 490,
-      "y": 3660,
+      "y": 4200,
       "w": 390,
       "h": 1040,
       "title": "Edit alarm — Thai — dark"
@@ -187,15 +187,15 @@
     {
       "file": "SoundSheetTh.dc.html",
       "x": 980,
-      "y": 3660,
+      "y": 4200,
       "w": 390,
-      "h": 844,
+      "h": 1240,
       "title": "Sound & loudness — Thai — dark"
     },
     {
       "file": "RingingTh.dc.html",
       "x": 1470,
-      "y": 3660,
+      "y": 4200,
       "w": 390,
       "h": 844,
       "title": "Ringing — in app — Thai — dark"
@@ -203,7 +203,7 @@
     {
       "file": "LockScreenTh.dc.html",
       "x": 1960,
-      "y": 3660,
+      "y": 4200,
       "w": 390,
       "h": 844,
       "title": "Snoozed — Lock Screen — Thai — dark"
@@ -211,15 +211,15 @@
     {
       "file": "SoundsTh.dc.html",
       "x": 2450,
-      "y": 3660,
+      "y": 4200,
       "w": 390,
-      "h": 844,
+      "h": 1330,
       "title": "Sounds tab — Thai — dark"
     },
     {
       "file": "SettingsTh.dc.html",
       "x": 2940,
-      "y": 3660,
+      "y": 4200,
       "w": 390,
       "h": 960,
       "title": "Settings tab — Thai — dark"
@@ -245,7 +245,7 @@
       "x": 980,
       "y": -220,
       "w": 390,
-      "text": "Picking a sound.\nTapping a tone picks it and plays a short preview as media, at the phone's media volume, just to recognise it; the button rings the real alarm 5 s later with that tone at the alarm's level. iOS does not share its own tone library with apps, so the choices are the bundled tones and your own audio from Music or Files. iOS caps alarm sounds at 30 s: a longer song rings from its start and stops at 29 s — the import says so at once, and the tone's row keeps saying it."
+      "text": "Picking a sound.\nTen tones ship, from quiet to loud: Siren, Marimba, Soft bell and Whisper, then Sunrise, Music box, Birdsong, Chimes, Sonar and Beeps, all made by ios/tools/tones.mjs. Tapping a tone picks it and plays a short preview as media, at the phone's media volume, just to recognise it; the button rings the real alarm 5 s later with that tone at the alarm's level. iOS does not share its own tone library with apps, so the choices are the bundled tones and your own audio from Music or Files. iOS caps alarm sounds at 30 s: a longer song rings from its start and stops at 29 s — the import says so at once, and the tone's row keeps saying it."
     },
     {
       "id": "ringing-note",
@@ -278,21 +278,21 @@
     {
       "id": "row-dark",
       "x": -440,
-      "y": 1520,
+      "y": 1700,
       "w": 360,
       "text": "Dark\nWhen the phone is in dark mode. Same layout; either theme can be pinned in Settings › Appearance."
     },
     {
       "id": "row-thai",
       "x": -440,
-      "y": 2740,
+      "y": 3100,
       "w": 360,
       "text": "Thai\nThe same screens with the app in ไทย. First launch picks Thai when the phone is set to Thai, and English for any other language; Settings › Language switches at once. Labels, days, tone names, notifications and the Lock Screen countdown all read Thai; task names are the user's own."
     },
     {
       "id": "row-thai-dark",
       "x": -440,
-      "y": 3960,
+      "y": 4500,
       "w": 360,
       "text": "Thai, dark\nThe same, in dark mode."
     }
