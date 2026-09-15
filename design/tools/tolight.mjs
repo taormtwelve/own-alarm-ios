@@ -96,7 +96,9 @@ const iconPass = [
 
 // Settings shows Appearance on Auto in both themes — the first-launch default — so
 // the twins carry the same selection and need no per-theme swap.
-const files = ['Main', 'EditAlarm', 'SoundSheet', 'Ringing', 'LockScreen', 'Sounds', 'Settings'];
+// The English artboards, and the Thai ones tothai.mjs writes from them.
+const english = ['Main', 'EditAlarm', 'SoundSheet', 'Ringing', 'LockScreen', 'Sounds', 'Settings'];
+const files = [...english, ...english.map((name) => `${name}Th`)];
 
 const LIGHT = ['#FAF7F2', '#FFFFFF', '#F4EFE7', '#F1EAE0', '#F0EAE0', '#EFE9DF', '#E8E1D6', '#E7E0D5',
   '#E3DBCE', '#E0D8CB', '#D9D1C4', '#D3CABD', '#CFC6B9', '#C7BEB2', '#A39A8E', '#938A7E', '#7D746A',

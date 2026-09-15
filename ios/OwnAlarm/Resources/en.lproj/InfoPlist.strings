@@ -1,0 +1,3 @@
+/* The permission prompts iOS shows on first launch, in the phone's language. */
+"NSUserNotificationsUsageDescription" = "OwnAlarm uses notifications to ring your alarms at the volume you set for each task, even when the app is closed.";
+"NSAlarmKitUsageDescription" = "OwnAlarm rings your alarms on the Lock Screen and through Silent mode, each at the volume you set for its task.";

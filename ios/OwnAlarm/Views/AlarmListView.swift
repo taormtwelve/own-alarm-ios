@@ -2,6 +2,7 @@ import SwiftUI
 
 struct AlarmListView: View {
     @EnvironmentObject private var store: AlarmStore
+    @Environment(\.appLanguage) private var t
     @State private var editing: Alarm?
     @State private var isCreating = false
 
@@ -18,14 +19,14 @@ struct AlarmListView: View {
                             Button(role: .destructive) {
                                 store.delete(alarm)
                             } label: {
-                                Label("Delete", systemImage: "trash")
+                                Label(t("Delete"), systemImage: "trash")
                             }
                         }
                         .contextMenu {
                             Button(role: .destructive) {
                                 store.delete(alarm)
                             } label: {
-                                Label("Delete", systemImage: "trash")
+                                Label(t("Delete"), systemImage: "trash")
                             }
                         }
                         .listCardRow()
@@ -40,7 +41,7 @@ struct AlarmListView: View {
             .scrollContentBackground(.hidden)
             .readableWidth()
             .background(Tokens.background)
-            .navigationTitle("Alarms")
+            .navigationTitle(t("Alarms"))
             .navigationBarTitleDisplayMode(.large)
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
@@ -51,7 +52,7 @@ struct AlarmListView: View {
                             .font(.system(size: 17, weight: .bold))
                             .frame(width: Metrics.minTapTarget, height: Metrics.minTapTarget)
                     }
-                    .accessibilityLabel("New alarm")
+                    .accessibilityLabel(t("New alarm"))
                 }
             }
             .sheet(item: $editing) { alarm in
@@ -68,6 +69,7 @@ struct AlarmListView: View {
 
 private struct AlarmRow: View {
     @EnvironmentObject private var store: AlarmStore
+    @Environment(\.appLanguage) private var t
     let alarm: Alarm
 
     private var tone: AlarmTone { store.tone(for: alarm) }
@@ -93,7 +95,7 @@ private struct AlarmRow: View {
         VStack(alignment: .leading, spacing: 7) {
             HStack(alignment: .firstTextBaseline, spacing: 7) {
                 Text(TimeText.string(hour: alarm.hour, minute: alarm.minute,
-                                     format: store.settings.timeFormat))
+                                     format: store.settings.timeFormat, language: t))
                     .font(Typo.display(30, relativeTo: .largeTitle))
                     .monospacedDigit()
                     .foregroundStyle(alarm.isEnabled ? Tokens.textPrimary : Tokens.textMuted)
@@ -102,12 +104,12 @@ private struct AlarmRow: View {
                     .fill(Tokens.textFaint.opacity(0.5))
                     .frame(width: 3, height: 3)
 
-                Text(alarm.repeatSummary)
+                Text(alarm.repeatSummary(in: t))
                     .font(Typo.caption)
                     .foregroundStyle(Tokens.textTertiary)
             }
 
-            Text(alarm.task.isEmpty ? "Alarm" : alarm.task)
+            Text(alarm.task.isEmpty ? t("Alarm") : alarm.task)
                 .font(Typo.body(15, relativeTo: .subheadline, weight: .semibold))
                 .foregroundStyle(alarm.isEnabled ? Tokens.textPrimary : Tokens.textMuted)
                 .fixedSize(horizontal: false, vertical: true)
@@ -129,7 +131,7 @@ private struct AlarmRow: View {
     }
 
     private var summary: String {
-        tone.name
+        tone.name(in: t)
     }
 
     private var toggle: some View {
@@ -139,7 +141,7 @@ private struct AlarmRow: View {
         ))
         .toggleStyle(.alarm)
         .labelsHidden()
-        .accessibilityLabel("\(alarm.task) alarm")
+        .accessibilityLabel(t("{0} alarm", alarm.task))
     }
 }
 
@@ -147,21 +149,22 @@ private struct AlarmRow: View {
 
 private struct EmptyAlarms: View {
     let create: () -> Void
+    @Environment(\.appLanguage) private var t
 
     var body: some View {
         VStack(spacing: 14) {
             Image(systemName: "alarm")
                 .font(.system(size: 34, weight: .light))
                 .foregroundStyle(Tokens.textFaint)
-            Text("No alarms yet")
+            Text(t("No alarms yet"))
                 .font(Typo.body(17, relativeTo: .headline, weight: .semibold))
                 .foregroundStyle(Tokens.textPrimary)
-            Text("Every alarm you add keeps its own volume, so a medication reminder can stay quiet while a wake-up is loud.")
+            Text(t("Every alarm you add keeps its own volume, so a medication reminder can stay quiet while your wake-up alarm is loud."))
                 .font(Typo.caption)
                 .foregroundStyle(Tokens.textMuted)
                 .multilineTextAlignment(.center)
                 .fixedSize(horizontal: false, vertical: true)
-            PrimaryButton(title: "Add an alarm", systemImage: "plus", action: create)
+            PrimaryButton(title: t("Add an alarm"), systemImage: "plus", action: create)
                 .padding(.top, 4)
         }
         .padding(28)

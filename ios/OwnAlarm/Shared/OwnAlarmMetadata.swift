@@ -10,5 +10,8 @@ import AlarmKit
 struct OwnAlarmMetadata: AlarmMetadata {
     var task: String
     var volumePercent: Int
+    /// The app's language when the alarm was set, so the countdown reads in it.
+    /// Optional: alarms set before there was a choice carry none, and read English.
+    var language: AppLanguage?
 }
 #endif

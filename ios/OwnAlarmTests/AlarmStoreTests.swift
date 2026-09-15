@@ -15,6 +15,7 @@ final class SpyScheduler: AlarmScheduling {
     /// Whether a test ring could make a sound — the permission answer.
     var canRing = true
     var onFinished: ((UUID) -> Void)?
+    var language: AppLanguage = .english
 
     func schedule(_ alarm: Alarm, tone: AlarmTone, showOnLockScreen: Bool) {
         scheduled.append((alarm, tone, showOnLockScreen))
@@ -260,14 +261,42 @@ final class AlarmStoreTests: XCTestCase {
         var alarm = makeAlarm(task: "Morning run", volume: 0.6)
         alarm.snoozeMinutes = 9
 
-        let test = AlarmStore.testCopy(of: alarm)
+        let test = AlarmStore.testCopy(of: alarm, language: .english)
 
         XCTAssertNotEqual(test.id, alarm.id)
         XCTAssertEqual(test.task, "Test · Morning run")
         XCTAssertEqual(test.snoozeMinutes, 0)
         XCTAssertEqual(test.volume, alarm.volume)
         XCTAssertEqual(test.toneID, alarm.toneID)
-        XCTAssertEqual(AlarmStore.testCopy(of: makeAlarm(task: "")).task, "Test · Alarm")
+        XCTAssertEqual(AlarmStore.testCopy(of: makeAlarm(task: ""), language: .english).task, "Test · Alarm")
+        XCTAssertEqual(AlarmStore.testCopy(of: alarm, language: .thai).task, "ทดลอง · Morning run")
+        XCTAssertEqual(AlarmStore.testCopy(of: makeAlarm(task: ""), language: .thai).task, "ทดลอง · นาฬิกาปลุก")
+    }
+
+    // MARK: Language
+
+    func testTheSchedulerWritesInTheAppsLanguage() {
+        let store = makeStore()
+
+        store.settings.language = .thai
+        XCTAssertEqual(spy.language, .thai, "Alerts follow the setting")
+
+        store.settings.language = .english
+        XCTAssertEqual(spy.language, .english)
+    }
+
+    func testTheLanguageIsSettledOnFirstLaunchAndKeptAfter() throws {
+        let suite = try XCTUnwrap(UserDefaults(suiteName: UUID().uuidString))
+        let file = folder.appendingPathComponent("language.json")
+
+        let first = AlarmStore(scheduler: spy, fileURL: file, defaults: suite)
+        XCTAssertNotNil(suite.data(forKey: AppSettings.storageKey), "First launch keeps the language it found")
+        first.settings.language = .thai
+
+        let later = SpyScheduler()
+        let second = AlarmStore(scheduler: later, fileURL: file, defaults: suite)
+        XCTAssertEqual(second.settings.language, .thai)
+        XCTAssertEqual(later.language, .thai, "Handed over before anything is armed")
     }
 
     func testWithoutPermissionATestRingSaysSoInsteadOfCountingDown() {

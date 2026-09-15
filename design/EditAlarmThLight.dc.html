@@ -1,5 +1,5 @@
 <!doctype html>
-<html>
+<html lang="th">
 <head>
   <meta charset="utf-8">
   <script src="./support.js"></script>
@@ -7,11 +7,11 @@
 <body>
 <x-dc>
 <helmet>
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,600;12..96,700&family=Instrument+Sans:wght@400;500;600;700&display=swap">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,600;12..96,700&family=Instrument+Sans:wght@400;500;600;700&family=Noto+Sans+Thai:wght@400;500;600;700&display=swap">
   <style>
-    body { margin: 0; font-family: 'Instrument Sans', system-ui, -apple-system, sans-serif; -webkit-font-smoothing: antialiased; }
+    body { margin: 0; font-family: 'Instrument Sans', 'Noto Sans Thai', system-ui, -apple-system, sans-serif; -webkit-font-smoothing: antialiased; }
     a { color: #B0710A; } a:hover { color: #8A5708; }
-    .num { font-family: 'Bricolage Grotesque', 'Helvetica Neue', sans-serif; font-variant-numeric: tabular-nums; }
+    .num { font-family: 'Bricolage Grotesque', 'Noto Sans Thai', 'Helvetica Neue', sans-serif; font-variant-numeric: tabular-nums; }
   </style>
 </helmet>
 
@@ -20,9 +20,9 @@
   <div style="height: 56px; flex-shrink: 0;"></div>
 
   <div style="display: flex; align-items: center; justify-content: space-between; padding: 0 20px 12px 20px; flex-shrink: 0;">
-    <span style="font-size: 15px; color: #6F665C; width: 60px;">Cancel</span>
-    <span style="font-size: 16px; font-weight: 600; letter-spacing: -0.01em;">Morning run</span>
-    <span style="font-size: 15px; font-weight: 700; color: #B0710A; width: 60px; text-align: right;">Save</span>
+    <span style="font-size: 15px; color: #6F665C; width: 60px;">ยกเลิก</span>
+    <span style="font-size: 16px; font-weight: 600; letter-spacing: -0.01em;">วิ่งตอนเช้า</span>
+    <span style="font-size: 15px; font-weight: 700; color: #B0710A; width: 60px; text-align: right;">บันทึก</span>
   </div>
 
   <div style="position: relative; height: 182px; flex-shrink: 0; margin: 0 20px;">
@@ -48,25 +48,25 @@
 
   <div style="margin: 14px 20px 0 20px; background: #FFFFFF; border: 1px solid #E8E1D6; border-radius: 20px; display: flex; flex-direction: column; flex-shrink: 0;">
     <div style="display: flex; align-items: center; gap: 12px; height: 52px; padding: 0 16px; border-bottom: 1px solid #F0EAE0;">
-      <span style="font-size: 15px; color: #4A443C; flex-grow: 1;">Task</span>
-      <span style="font-size: 15px; font-weight: 600;">Morning run</span>
+      <span style="font-size: 15px; color: #4A443C; flex-grow: 1;">ชื่อการปลุก</span>
+      <span style="font-size: 15px; font-weight: 600;">วิ่งตอนเช้า</span>
     </div>
     <div style="display: flex; flex-direction: column; gap: 10px; padding: 14px 16px; border-bottom: 1px solid #F0EAE0;">
-      <span style="font-size: 15px; color: #4A443C;">Repeat</span>
+      <span style="font-size: 15px; color: #4A443C;">ทำซ้ำ</span>
       <div style="display: flex; gap: 6px;">
-        <span style="width: 38px; height: 38px; border-radius: 12px; background: #E3DBCE; color: #4A443C; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 600;">S</span>
-        <span style="width: 38px; height: 38px; border-radius: 12px; background: #E8940F; color: #23201C; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 600;">M</span>
-        <span style="width: 38px; height: 38px; border-radius: 12px; background: #E8940F; color: #23201C; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 600;">T</span>
-        <span style="width: 38px; height: 38px; border-radius: 12px; background: #E8940F; color: #23201C; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 600;">W</span>
-        <span style="width: 38px; height: 38px; border-radius: 12px; background: #E8940F; color: #23201C; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 600;">T</span>
-        <span style="width: 38px; height: 38px; border-radius: 12px; background: #E8940F; color: #23201C; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 600;">F</span>
-        <span style="width: 38px; height: 38px; border-radius: 12px; background: #E3DBCE; color: #4A443C; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 600;">S</span>
+        <span style="width: 38px; height: 38px; border-radius: 12px; background: #E3DBCE; color: #4A443C; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 600;">อา</span>
+        <span style="width: 38px; height: 38px; border-radius: 12px; background: #E8940F; color: #23201C; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 600;">จ</span>
+        <span style="width: 38px; height: 38px; border-radius: 12px; background: #E8940F; color: #23201C; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 600;">อ</span>
+        <span style="width: 38px; height: 38px; border-radius: 12px; background: #E8940F; color: #23201C; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 600;">พ</span>
+        <span style="width: 38px; height: 38px; border-radius: 12px; background: #E8940F; color: #23201C; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 600;">พฤ</span>
+        <span style="width: 38px; height: 38px; border-radius: 12px; background: #E8940F; color: #23201C; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 600;">ศ</span>
+        <span style="width: 38px; height: 38px; border-radius: 12px; background: #E3DBCE; color: #4A443C; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 600;">ส</span>
       </div>
-      <span style="font-size: 12px; color: #7D746A;">Mon &ndash; Fri</span>
+      <span style="font-size: 12px; color: #7D746A;">จันทร์ &ndash; ศุกร์</span>
     </div>
     <div style="display: flex; align-items: center; gap: 12px; height: 52px; padding: 0 16px;">
-      <span style="font-size: 15px; color: #4A443C; flex-grow: 1;">Sound</span>
-      <span style="font-size: 15px; font-weight: 600;">Siren</span>
+      <span style="font-size: 15px; color: #4A443C; flex-grow: 1;">เสียง</span>
+      <span style="font-size: 15px; font-weight: 600;">ไซเรน</span>
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#A39A8E" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"></path></svg>
     </div>
   </div>
@@ -74,8 +74,8 @@
   <div style="margin: 14px 20px 0 20px; background: #FFFFFF; border: 1px solid #F0DFC0; border-radius: 22px; padding: 18px; display: flex; flex-direction: column; gap: 12px; flex-shrink: 0;">
     <div style="display: flex; align-items: flex-end; justify-content: space-between; gap: 12px;">
       <div style="display: flex; flex-direction: column; gap: 3px;">
-        <div style="font-size: 10px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #9A6A0C;">Volume for this task</div>
-        <div style="font-size: 12px; color: #7D746A;">The maximum volume depends on your Ringer &amp; Alerts volume &mdash; adjust it in Settings &rsaquo; Sounds &amp; Haptics.</div>
+        <div style="font-size: 10px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #9A6A0C;">ระดับเสียงของการปลุกนี้</div>
+        <div style="font-size: 12px; color: #7D746A;">ระดับเสียงสูงสุดขึ้นอยู่กับระดับเสียงเรียกเข้าและการแจ้งเตือนของคุณ &mdash; สามารถปรับได้ที่ การตั้งค่า &rsaquo; เสียงและการสั่น</div>
       </div>
       <div class="num" style="font-size: 38px; font-weight: 600; color: #B0710A; letter-spacing: -0.03em; line-height: 0.95;">85%</div>
     </div>
@@ -88,13 +88,13 @@
 
     <div style="height: 52px; border-radius: 18px; background: #E8940F; display: flex; align-items: center; justify-content: center; gap: 10px;">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#23201C" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 16v-5a6 6 0 0112 0v5l1.5 2h-15z"></path><path d="M10 20a2 2 0 004 0"></path></svg>
-      <span style="font-size: 15px; font-weight: 700; color: #23201C;">Test real alarm at 85%</span>
+      <span style="font-size: 15px; font-weight: 700; color: #23201C;">ทดลองปลุกจริงที่ 85%</span>
     </div>
 
     <div style="display: flex; align-items: center; gap: 12px;">
       <div style="flex-grow: 1; display: flex; flex-direction: column; gap: 2px;">
-        <span style="font-size: 14px; font-weight: 600;">Vibrate</span>
-        <span style="font-size: 12px; color: #7D746A;">Vibrates while it rings &middot; on the Lock Screen, your Haptics setting decides</span>
+        <span style="font-size: 14px; font-weight: 600;">สั่น</span>
+        <span style="font-size: 12px; color: #7D746A;">สั่นระหว่างปลุก &middot; บนหน้าจอล็อกจะเป็นไปตามการตั้งค่าการสั่นของเครื่อง</span>
       </div>
       <div style="width: 51px; height: 31px; border-radius: 16px; background: #E8940F; display: flex; align-items: center; justify-content: flex-end; padding: 2px; box-sizing: border-box; flex-shrink: 0;">
         <span style="width: 27px; height: 27px; border-radius: 50%; background: #FFFFFF;"></span>
@@ -105,14 +105,14 @@
 
   <div style="margin: 14px 20px 0 20px; background: #FFFFFF; border: 1px solid #E8E1D6; border-radius: 20px; display: flex; flex-direction: column; flex-shrink: 0;">
     <div style="display: flex; align-items: center; gap: 12px; height: 52px; padding: 0 16px; border-bottom: 1px solid #F0EAE0;">
-      <span style="font-size: 15px; color: #4A443C; flex-grow: 1;">Snooze</span>
+      <span style="font-size: 15px; color: #4A443C; flex-grow: 1;">เลื่อนปลุก</span>
       <div style="width: 51px; height: 31px; border-radius: 16px; background: #E8940F; display: flex; align-items: center; justify-content: flex-end; padding: 2px; box-sizing: border-box; flex-shrink: 0;">
         <span style="width: 27px; height: 27px; border-radius: 50%; background: #FFFFFF;"></span>
       </div>
     </div>
     <div style="display: flex; align-items: center; gap: 12px; height: 52px; padding: 0 16px;">
-      <span style="font-size: 15px; color: #4A443C; flex-grow: 1;">Snooze length</span>
-      <span class="num" style="font-size: 15px; font-weight: 600;">9 min</span>
+      <span style="font-size: 15px; color: #4A443C; flex-grow: 1;">เลื่อนปลุกครั้งละ</span>
+      <span class="num" style="font-size: 15px; font-weight: 600;">9 นาที</span>
       <div style="display: flex; align-items: center; background: #E3DBCE; border-radius: 9px; overflow: hidden; flex-shrink: 0;">
         <span style="width: 44px; height: 32px; display: flex; align-items: center; justify-content: center; font-size: 18px; color: #4A443C;">&minus;</span>
         <span style="width: 1px; height: 18px; background: #C7BEB2;"></span>

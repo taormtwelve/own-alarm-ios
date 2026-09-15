@@ -25,7 +25,11 @@ struct OwnAlarmApp: App {
     private static func makeStore() -> AlarmStore {
         let args = ProcessInfo.processInfo.arguments
         guard args.contains("-uitesting") else { return AlarmStore() }
-        return .ephemeral(seed: args.contains("-emptyStore") ? [] : Alarm.starter)
+        let store = AlarmStore.ephemeral(seed: args.contains("-emptyStore") ? [] : Alarm.starter)
+        // The suite reads English whatever the simulator's language; the language
+        // test switches to Thai in Settings.
+        store.settings.language = .english
+        return store
     }
 
     var body: some Scene {
@@ -36,7 +40,7 @@ struct OwnAlarmApp: App {
                 .task {
                     // Closed last time while it had the phone's volume? Put it back.
                     SystemVolume.shared.recoverIfNeeded()
-                    AlarmScheduler.registerCategories()
+                    AlarmScheduler.registerCategories(language: store.settings.language)
                     notifications.store = store
                     UNUserNotificationCenter.current().delegate = notifications
 

@@ -14,11 +14,16 @@ enum SnoozeNotice {
         "\(alarmID.uuidString).snoozed"
     }
 
-    static func post(alarmID: UUID, task: String, minutes: Int, now: Date = Date()) {
+    /// `language` comes from the scheduler; the Lock Screen's Snooze, which runs
+    /// without the app's store, leaves it to the saved settings.
+    static func post(alarmID: UUID, task: String, minutes: Int,
+                     language: AppLanguage? = nil, now: Date = Date()) {
+        let settings = AppSettings.stored()
+        let language = language ?? settings.language
         let content = UNMutableNotificationContent()
-        content.title = SnoozeText.title(task: task)
+        content.title = SnoozeText.title(task: task, language: language)
         content.body = SnoozeText.body(minutes: minutes, now: now,
-                                       format: AppSettings.stored().timeFormat)
+                                       format: settings.timeFormat, language: language)
         content.threadIdentifier = "ownalarm.snoozed"
         // Informational: silent, so it never feels like the alarm ringing again.
         content.sound = nil

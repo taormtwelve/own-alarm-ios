@@ -5,6 +5,10 @@ struct RootView: View {
     @EnvironmentObject private var player: AlarmPlayer
     @State private var tab: Tab = .alarms
 
+    /// Read from the store: the environment value is set by this view, below, so it
+    /// is not visible here.
+    private var t: AppLanguage { store.settings.language }
+
     private enum Tab: Hashable {
         case alarms, sounds, settings
     }
@@ -12,15 +16,15 @@ struct RootView: View {
     var body: some View {
         TabView(selection: $tab) {
             AlarmListView()
-                .tabItem { Label("Alarms", systemImage: "alarm") }
+                .tabItem { Label(t("Alarms"), systemImage: "alarm") }
                 .tag(Tab.alarms)
 
             SoundsView()
-                .tabItem { Label("Sounds", systemImage: "waveform") }
+                .tabItem { Label(t("Sounds"), systemImage: "waveform") }
                 .tag(Tab.sounds)
 
             SettingsView()
-                .tabItem { Label("Settings", systemImage: "gearshape") }
+                .tabItem { Label(t("Settings"), systemImage: "gearshape") }
                 .tag(Tab.settings)
         }
         .tint(Tokens.accentText)
@@ -47,5 +51,7 @@ struct RootView: View {
         }
         // Lets the app set the phone's volume while an alarm rings, without the HUD.
         .hostsSystemVolume()
+        // Last, so everything above — tabs, their sheets, the ringing cover — speaks it.
+        .environment(\.appLanguage, t)
     }
 }

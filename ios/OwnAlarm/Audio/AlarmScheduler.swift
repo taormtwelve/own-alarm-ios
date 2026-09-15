@@ -20,6 +20,9 @@ protocol AlarmScheduling: AnyObject {
     /// or by a notification with sound.
     func canRingTest() async -> Bool
 
+    /// The language alerts are written in. Set by the store from Settings.
+    var language: AppLanguage { get set }
+
     /// Set by the store. Called with an alarm's id when the system reports that the
     /// alarm has rung and been stopped. Only AlarmKit can tell; other schedulers
     /// never call it.
@@ -29,6 +32,11 @@ protocol AlarmScheduling: AnyObject {
 extension AlarmScheduling {
     var onFinished: ((UUID) -> Void)? {
         get { nil }
+        set {}
+    }
+
+    var language: AppLanguage {
+        get { .english }
         set {}
     }
 }
@@ -78,20 +86,26 @@ final class AlarmScheduler: AlarmScheduling {
 
     var onFinished: ((UUID) -> Void)?
 
+    /// What notifications are written in. A change re-registers the Snooze and Stop
+    /// buttons, which iOS keeps from the last registration.
+    var language: AppLanguage = .english {
+        didSet { if language != oldValue { Self.registerCategories(language: language) } }
+    }
+
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
     }
 
     /// Registers the Stop / Snooze buttons that appear on the Lock Screen alert.
-    static func registerCategories() {
+    static func registerCategories(language: AppLanguage) {
         let snooze = UNNotificationAction(
             identifier: snoozeAction,
-            title: "Snooze",
+            title: language("Snooze"),
             options: []
         )
         let stop = UNNotificationAction(
             identifier: stopAction,
-            title: "Stop",
+            title: language("Stop"),
             options: [.destructive]
         )
         let category = UNNotificationCategory(
@@ -176,7 +190,7 @@ final class AlarmScheduler: AlarmScheduling {
         center.add(request)
         setDate(Date().addingTimeInterval(trigger.timeInterval), for: alarm.id, in: Self.snoozeKey)
         // Say so straight away, rather than leaving a silent gap until it returns.
-        SnoozeNotice.post(alarmID: alarm.id, task: alarm.task, minutes: minutes)
+        SnoozeNotice.post(alarmID: alarm.id, task: alarm.task, minutes: minutes, language: language)
     }
 
     // MARK: Test ring
@@ -217,8 +231,8 @@ final class AlarmScheduler: AlarmScheduling {
 
     func content(for alarm: Alarm, tone: AlarmTone, showOnLockScreen: Bool) -> UNMutableNotificationContent {
         let content = UNMutableNotificationContent()
-        content.title = alarm.task.isEmpty ? "Alarm" : alarm.task
-        content.body = "\(alarm.volumePercent)% · \(tone.name)"
+        content.title = alarm.task.isEmpty ? language("Alarm") : alarm.task
+        content.body = "\(alarm.volumePercent)% · \(tone.name(in: language))"
         content.categoryIdentifier = Self.categoryIdentifier
         content.userInfo = ["alarmID": alarm.id.uuidString]
         content.interruptionLevel = alarm.overridesSilent ? .critical : .timeSensitive

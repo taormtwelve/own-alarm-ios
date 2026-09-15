@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,600;12..96,700&family=Instrument+Sans:wght@400;500;600;700&family=Noto+Sans+Thai:wght@400;500;600;700&display=swap">
+  <style>
+    body { margin: 0; font-family: 'Instrument Sans', 'Noto Sans Thai', system-ui, -apple-system, sans-serif; -webkit-font-smoothing: antialiased; }
+    a { color: #B0710A; } a:hover { color: #8A5708; }
+    .num { font-family: 'Bricolage Grotesque', 'Noto Sans Thai', 'Helvetica Neue', sans-serif; font-variant-numeric: tabular-nums; }
+  </style>
+</helmet>
+
+<!-- Snoozed, on the Lock Screen. The wallpaper and clock are iOS's. The dark card is
+     the app's Live Activity: it keeps the same fixed ink and amber in both themes, so
+     its colours (#120F0D, #FFB03B) are deliberately outside the theme mapping. -->
+<div style="width: 390px; height: 844px; background: radial-gradient(120% 62% at 50% 34%, #FFEFD4 0%, #FBF5EB 58%, #F5EFE5 100%); color: #1A1714; display: flex; flex-direction: column; align-items: center; overflow: hidden;">
+
+  <div style="height: 92px; flex-shrink: 0;"></div>
+
+  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#7D746A" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0;"><rect x="4.5" y="10.5" width="15" height="10.5" rx="3"></rect><path d="M8.2 10.5V7.8a3.8 3.8 0 017.6 0v2.7"></path></svg>
+
+  <div style="height: 14px; flex-shrink: 0;"></div>
+
+  <div class="num" style="font-size: 84px; font-weight: 600; letter-spacing: -0.04em; line-height: 1; flex-shrink: 0;">06:46</div>
+
+  <div style="height: 10px; flex-shrink: 0;"></div>
+
+  <div style="font-size: 15px; font-weight: 500; color: #6F665C; flex-shrink: 0;">วันจันทร์ที่ 14 กันยายน</div>
+
+  <div style="flex-grow: 1;"></div>
+
+  <div style="width: 100%; padding: 0 12px 46px 12px; box-sizing: border-box; display: flex; flex-direction: column; gap: 10px; flex-shrink: 0;">
+
+    <div style="background: #120F0D; border-radius: 24px; padding: 16px; display: flex; align-items: center; gap: 14px;">
+      <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#FFB03B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0;"><circle cx="12" cy="13.5" r="7.5"></circle><path d="M12 10v3.5l2.3 1.5"></path><path d="M4.6 4.8L7.2 2.6M19.4 4.8L16.8 2.6"></path></svg>
+      <div style="flex-grow: 1; display: flex; flex-direction: column; gap: 2px;">
+        <span style="font-size: 16px; font-weight: 700; color: #FFFFFF;">วิ่งตอนเช้า</span>
+        <span style="font-size: 14px; color: rgba(255,255,255,0.7);">เลื่อนปลุกแล้ว</span>
+      </div>
+      <span class="num" style="font-size: 34px; font-weight: 600; color: #FFB03B; letter-spacing: -0.02em;">8:12</span>
+    </div>
+
+    <div style="background: #FFFFFF; border: 1px solid #E8E1D6; border-radius: 22px; padding: 12px 14px; display: flex; align-items: flex-start; gap: 11px;">
+      <div style="width: 34px; height: 34px; border-radius: 9px; background: #E8940F; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#23201C" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="13.5" r="7.5"></circle><path d="M12 10v3.5l2.3 1.5"></path><path d="M4.6 4.8L7.2 2.6M19.4 4.8L16.8 2.6"></path></svg>
+      </div>
+      <div style="flex-grow: 1; display: flex; flex-direction: column; gap: 2px;">
+        <div style="display: flex; align-items: baseline; gap: 8px;">
+          <span style="font-size: 14px; font-weight: 700; flex-grow: 1;">วิ่งตอนเช้า &middot; เลื่อนปลุกแล้ว</span>
+          <span style="font-size: 12px; color: #7D746A;">ตอนนี้</span>
+        </div>
+        <span style="font-size: 13px; color: #4A443C;">ปลุกอีกครั้งเวลา 06:54 &middot; อีก 9 นาที</span>
+      </div>
+    </div>
+
+  </div>
+
+</div>
+</x-dc>
+</body>
+</html>

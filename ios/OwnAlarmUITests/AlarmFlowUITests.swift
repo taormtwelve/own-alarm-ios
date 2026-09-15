@@ -190,8 +190,32 @@ final class AlarmFlowUITests: XCTestCase {
         XCTAssertTrue(app.switches["Show on Lock Screen"].exists)
         XCTAssertTrue(app.buttons["Dark"].exists)
         XCTAssertTrue(app.buttons["Light"].exists)
+        XCTAssertTrue(app.buttons["English"].exists, "The language choice")
         // New-alarm defaults are learned from saved alarms, not set here.
         XCTAssertFalse(app.staticTexts["NEW ALARM DEFAULTS"].exists)
+    }
+
+    func testChoosingThaiTranslatesTheAppAndEnglishBringsItBack() {
+        app.tabBars.buttons["Settings"].tap()
+        // The Language section is last; on a short phone it sits below the fold.
+        app.swipeUp()
+        let thai = app.buttons["ไทย"]
+        XCTAssertTrue(thai.waitForExistence(timeout: 10), "Settings offers Thai")
+        thai.tap()
+
+        XCTAssertTrue(app.tabBars.buttons["การตั้งค่า"].waitForExistence(timeout: 5), "The tabs read Thai")
+        XCTAssertTrue(app.staticTexts["รูปแบบเวลา"].exists, "So does Settings")
+
+        app.tabBars.buttons["นาฬิกาปลุก"].tap()
+        XCTAssertTrue(app.staticTexts["ทุกวัน"].waitForExistence(timeout: 5),
+                      "The every-day sample alarm's repeat line, in Thai")
+
+        app.tabBars.buttons["การตั้งค่า"].tap()
+        app.swipeUp()
+        let english = app.buttons["English"]
+        XCTAssertTrue(english.waitForExistence(timeout: 5))
+        english.tap()
+        XCTAssertTrue(app.tabBars.buttons["Settings"].waitForExistence(timeout: 5), "Back in English")
     }
 
     func testTurningOffLockScreenAlertsSticksAcrossTabs() {
