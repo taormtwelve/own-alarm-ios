@@ -100,20 +100,49 @@ extension AlarmDefaults {
     }
 }
 
+/// The two ways to use OwnAlarm. Free is capped at a handful of alarms; Premium, kept
+/// through a subscription, has no limit. `AlarmStore.canAddAlarm` is what actually
+/// enforces the cap — this only says what each tier allows.
+enum SubscriptionTier: String, Codable, CaseIterable, Identifiable, Sendable {
+    case free
+    case premium
+
+    var id: String { rawValue }
+
+    var label: String {
+        switch self {
+        case .free: return "Free"
+        case .premium: return "Premium"
+        }
+    }
+
+    /// How many alarms this tier may keep at once. `nil` means no limit.
+    var alarmLimit: Int? {
+        switch self {
+        case .free: return AppSettings.maxFreeAlarms
+        case .premium: return nil
+        }
+    }
+}
+
 /// First launch follows the phone: its region decides 24-hour or AM/PM, its light or
 /// dark mode the theme, and its language the app's — Thai, or else English. Each can
 /// be pinned in Settings.
 struct AppSettings: Codable, Equatable {
+    /// The most alarms a Free account may keep at once. Premium has no limit.
+    static let maxFreeAlarms = 3
+
     var timeFormat: TimeFormat = .automatic
     var theme: ThemePreference = .automatic
     var showOnLockScreen: Bool = true
     var defaults = AlarmDefaults()
     var language: AppLanguage = .preferred()
+    var subscriptionTier: SubscriptionTier = .free
 }
 
 extension AppSettings {
     enum CodingKeys: String, CodingKey {
-        case timeFormat, theme, showOnLockScreen, defaults, language
+        case timeFormat, theme, showOnLockScreen, defaults, language, subscriptionTier
     }
 
     /// Each field falls back to its first-launch value when missing, so settings saved
@@ -129,6 +158,11 @@ extension AppSettings {
         // A language this version does not know, saved by a newer one, falls back too
         // rather than costing every other setting.
         language = (try? c.decodeIfPresent(AppLanguage.self, forKey: .language)) ?? factory.language
+        // Likewise a tier this version does not know — and a save from before
+        // subscriptions existed, which has none at all — falls back to Free rather
+        // than granting Premium for nothing.
+        subscriptionTier = (try? c.decodeIfPresent(SubscriptionTier.self, forKey: .subscriptionTier))
+            ?? factory.subscriptionTier
     }
 }
 

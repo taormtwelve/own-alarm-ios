@@ -5,6 +5,7 @@ struct AlarmListView: View {
     @Environment(\.appLanguage) private var t
     @State private var editing: Alarm?
     @State private var isCreating = false
+    @State private var showingPaywall = false
 
     var body: some View {
         NavigationStack {
@@ -46,7 +47,11 @@ struct AlarmListView: View {
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button {
-                        isCreating = true
+                        if store.canAddAlarm {
+                            isCreating = true
+                        } else {
+                            showingPaywall = true
+                        }
                     } label: {
                         Image(systemName: "plus")
                             .font(.system(size: 17, weight: .bold))
@@ -60,6 +65,9 @@ struct AlarmListView: View {
             }
             .sheet(isPresented: $isCreating) {
                 EditAlarmView(alarm: Alarm.newAlarm(from: store.settings.defaults), isNew: true)
+            }
+            .sheet(isPresented: $showingPaywall) {
+                PaywallView()
             }
         }
     }

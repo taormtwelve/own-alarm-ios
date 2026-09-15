@@ -29,6 +29,10 @@ struct OwnAlarmApp: App {
         // The suite reads English whatever the simulator's language; the language
         // test switches to Thai in Settings.
         store.settings.language = .english
+        // The four sample alarms already exceed the Free limit, and most of the
+        // suite is not testing that limit — it runs as Premium. A dedicated launch
+        // argument switches to Free for the paywall's own tests.
+        store.settings.subscriptionTier = args.contains("-freeTier") ? .free : .premium
         return store
     }
 
@@ -54,6 +58,10 @@ struct OwnAlarmApp: App {
                             await AlarmKitScheduler.requestAuthorization()
                         }
                         #endif
+                        // Confirms the plan with the App Store before anything checks
+                        // the free limit — skipped under UI test, which fixes its own
+                        // plan above rather than asking a StoreKit with nothing to sell.
+                        await store.refreshSubscriptionStatus()
                     }
                     store.rescheduleAll()
 

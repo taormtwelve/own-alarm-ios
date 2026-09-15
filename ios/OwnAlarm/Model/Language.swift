@@ -212,6 +212,23 @@ enum AppLanguage: String, Codable, CaseIterable, Identifiable, Sendable {
         ("Auto", "อัตโนมัติ"),
         ("Language", "ภาษา"),
 
+        // Subscription
+        ("Subscription", "การสมัครสมาชิก"),
+        ("Plan", "แพ็กเกจ"),
+        ("Free", "ฟรี"),
+        ("Premium", "พรีเมียม"),
+        ("Up to {0} alarms", "ตั้งปลุกได้สูงสุด {0} รายการ"),
+        ("Unlimited alarms", "ตั้งปลุกได้ไม่จำกัด"),
+        ("Upgrade to Premium", "อัปเกรดเป็นพรีเมียม"),
+        ("Upgrade · {0}", "อัปเกรด · {0}"),
+        ("Restore purchases", "กู้คืนการซื้อ"),
+        ("Couldn't complete the purchase", "ทำรายการซื้อไม่สำเร็จ"),
+        ("Couldn't complete the purchase. Try again.", "ทำรายการซื้อไม่สำเร็จ ลองอีกครั้ง"),
+        ("You've reached the free limit", "คุณใช้ครบโควตาแบบฟรีแล้ว"),
+        ("Free accounts can keep up to {0} alarms. Upgrade to Premium for unlimited alarms.",
+         "บัญชีฟรีตั้งปลุกได้สูงสุด {0} รายการ อัปเกรดเป็นพรีเมียมเพื่อตั้งปลุกได้ไม่จำกัด"),
+        ("Maybe later", "ไว้ทีหลัง"),
+
         // Sounds
         ("Alarm tones", "เสียงปลุก"),
         ("Sound & loudness", "เสียงและความดัง"),

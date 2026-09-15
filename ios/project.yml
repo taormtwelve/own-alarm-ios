@@ -35,6 +35,10 @@ schemes:
         OwnAlarmUITests: [test]
     run:
       config: Debug
+      # Serves Premium's product locally in the Simulator, with no App Store Connect
+      # product needed — see OwnAlarm/OwnAlarm.storekit and
+      # OwnAlarm/Store/SubscriptionManaging.swift.
+      storeKitConfiguration: OwnAlarm/OwnAlarm.storekit
     test:
       config: Debug
       gatherCoverageData: true
@@ -53,6 +57,9 @@ targets:
       - path: OwnAlarm
         excludes:
           - "**/.DS_Store"
+          # Read by Xcode's scheme (see storeKitConfiguration above), not part of
+          # the shipped app.
+          - "OwnAlarm.storekit"
 
     dependencies:
       # Draws AlarmKit's snooze countdown on the Lock Screen and in the Dynamic Island.

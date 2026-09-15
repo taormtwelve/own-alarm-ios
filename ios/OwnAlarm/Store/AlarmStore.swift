@@ -15,6 +15,10 @@ final class AlarmStore: ObservableObject {
     }
     @Published private(set) var tones: [AlarmTone] = AlarmTone.bundled
 
+    /// Set when buying or restoring Premium fails, already in the app's language.
+    /// Settings and the paywall show it, then clear it once shown.
+    @Published var subscriptionError: String?
+
     /// Set when an alarm fires while the app is in the foreground, or when the user
     /// taps its notification — drives the ringing presentation.
     @Published var ringing: Alarm?
@@ -44,6 +48,7 @@ final class AlarmStore: ObservableObject {
     private var testInAppStop: DispatchWorkItem?
 
     private let scheduler: AlarmScheduling
+    private let subscriptionManager: SubscriptionManaging
     private let fileURL: URL
     private let defaults: UserDefaults
     private let seed: [Alarm]
@@ -61,11 +66,13 @@ final class AlarmStore: ObservableObject {
     /// `phoneLanguages` is the phone's language list, which decides whether Thai is
     /// offered.
     init(scheduler: AlarmScheduling = AlarmScheduler.makeDefault(),
+         subscriptionManager: SubscriptionManaging = StoreKitSubscriptionManager(),
          fileURL: URL? = nil,
          defaults: UserDefaults = .standard,
          seed: [Alarm] = [],
          phoneLanguages: [String] = Locale.preferredLanguages) {
         self.scheduler = scheduler
+        self.subscriptionManager = subscriptionManager
         self.defaults = defaults
         self.seed = seed
         self.languages = AppLanguage.available(in: phoneLanguages)
@@ -118,6 +125,14 @@ final class AlarmStore: ObservableObject {
 
     func tone(for alarm: Alarm) -> AlarmTone {
         AlarmTone.tone(id: alarm.toneID, in: tones)
+    }
+
+    /// Whether another alarm can be added under the current plan. The editor itself
+    /// does not enforce this — the alarm list checks it before opening one, showing
+    /// the paywall instead once a free account is at its limit.
+    var canAddAlarm: Bool {
+        guard let limit = settings.subscriptionTier.alarmLimit else { return true }
+        return alarms.count < limit
     }
 
     /// How many alarms use a given tone — shown in the Sounds tab.
@@ -282,6 +297,44 @@ final class AlarmStore: ObservableObject {
         case .snooze: snooze(alarm)
         case .stop: stop(alarm)
         }
+    }
+
+    // MARK: Subscription
+
+    /// The Premium subscription's localized price, once the App Store has answered.
+    var premiumPriceText: String? {
+        get async { await subscriptionManager.priceText }
+    }
+
+    /// Buys Premium. Updates the plan on success; a cancelled sheet or a failure
+    /// leaves it as it was, the failure reported through `subscriptionError`.
+    func purchasePremium() async {
+        do {
+            if try await subscriptionManager.purchase() {
+                settings.subscriptionTier = .premium
+            }
+        } catch {
+            subscriptionError = settings.language("Couldn't complete the purchase. Try again.")
+        }
+    }
+
+    /// Restores a Premium purchase made elsewhere — a reinstall, a new device, or
+    /// signing in with the account that bought it. Also settles the plan back to
+    /// Free when nothing comes back entitled.
+    func restorePurchases() async {
+        do {
+            settings.subscriptionTier = try await subscriptionManager.restore() ? .premium : .free
+        } catch {
+            subscriptionError = settings.language("Couldn't complete the purchase. Try again.")
+        }
+    }
+
+    /// Confirms the App Store still honours the subscription, so a lapsed or
+    /// refunded one falls back to Free instead of staying Premium forever. Called on
+    /// launch, not under UI test, where it would otherwise overwrite the fixed plan
+    /// the suite launches with.
+    func refreshSubscriptionStatus() async {
+        settings.subscriptionTier = await subscriptionManager.isEntitled() ? .premium : .free
     }
 
     // MARK: Scheduling

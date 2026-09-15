@@ -5,6 +5,9 @@ struct SettingsView: View {
     @EnvironmentObject private var store: AlarmStore
     @Environment(\.appLanguage) private var t
     @State private var criticalAlertsGranted: Bool?
+    @State private var isWorking = false
+    @State private var premiumPrice: String?
+    @State private var errorMessage: String?
 
     var body: some View {
         NavigationStack {
@@ -91,6 +94,42 @@ struct SettingsView: View {
                             }
                         }
                     }
+
+                    section(t("Subscription")) {
+                        CardGroup {
+                            SettingsRow(
+                                title: t("Plan"),
+                                subtitle: planSubtitle,
+                                showsDivider: store.settings.subscriptionTier == .free
+                            ) {
+                                RowValue(value: t(store.settings.subscriptionTier.label), showsChevron: false)
+                            }
+
+                            if store.settings.subscriptionTier == .free {
+                                Button {
+                                    purchase()
+                                } label: {
+                                    SettingsRow(title: upgradeTitle, subtitle: t("Unlimited alarms")) {
+                                        trailingIndicator
+                                    }
+                                }
+                                .buttonStyle(.plain)
+                                .opacity(isWorking ? 0.6 : 1)
+                                .disabled(isWorking)
+                            }
+
+                            Button {
+                                restore()
+                            } label: {
+                                SettingsRow(title: t("Restore purchases"), showsDivider: false) {
+                                    trailingIndicator
+                                }
+                            }
+                            .buttonStyle(.plain)
+                            .opacity(isWorking ? 0.6 : 1)
+                            .disabled(isWorking)
+                        }
+                    }
                 }
                 .padding(.horizontal, Metrics.gutter)
                 .padding(.vertical, 12)
@@ -101,6 +140,9 @@ struct SettingsView: View {
             .task {
                 criticalAlertsGranted = await RingPermission.isGranted()
             }
+            .task {
+                premiumPrice = await store.premiumPriceText
+            }
             .onChange(of: store.settings.showOnLockScreen) { _ in
                 store.rescheduleAll()
             }
@@ -109,7 +151,64 @@ struct SettingsView: View {
             .onChange(of: store.settings.language) { _ in
                 store.rescheduleAll()
             }
+            .alert(
+                t("Couldn't complete the purchase"),
+                isPresented: Binding(get: { errorMessage != nil }, set: { if !$0 { errorMessage = nil } })
+            ) {
+                Button(t("OK")) { errorMessage = nil }
+            } message: {
+                Text(errorMessage ?? "")
+            }
         }
+    }
+
+    // MARK: Subscription
+
+    private var planSubtitle: String {
+        store.settings.subscriptionTier == .premium
+            ? t("Unlimited alarms")
+            : t("Up to {0} alarms", AppSettings.maxFreeAlarms)
+    }
+
+    private var upgradeTitle: String {
+        premiumPrice.map { t("Upgrade · {0}", $0) } ?? t("Upgrade to Premium")
+    }
+
+    @ViewBuilder
+    private var trailingIndicator: some View {
+        if isWorking {
+            ProgressView()
+        } else {
+            Image(systemName: "chevron.right")
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundStyle(Tokens.textFaint)
+        }
+    }
+
+    private func purchase() {
+        guard !isWorking else { return }
+        isWorking = true
+        Task {
+            await store.purchasePremium()
+            isWorking = false
+            reportErrorIfAny()
+        }
+    }
+
+    private func restore() {
+        guard !isWorking else { return }
+        isWorking = true
+        Task {
+            await store.restorePurchases()
+            isWorking = false
+            reportErrorIfAny()
+        }
+    }
+
+    private func reportErrorIfAny() {
+        guard let message = store.subscriptionError else { return }
+        errorMessage = message
+        store.subscriptionError = nil
     }
 
     @ViewBuilder
