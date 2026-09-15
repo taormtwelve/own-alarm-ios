@@ -79,7 +79,7 @@ const THAI = {
   'Music or Files': 'เพลงหรือไฟล์',
   'All tones': 'เสียงทั้งหมด',
   'Try it for real': 'ลองฟังของจริง',
-  'Hear a tone for real before you trust it to wake you': 'ฟังเสียงของจริงก่อนไว้ใจให้ปลุกคุณ',
+  'Hear a tone for real before you trust it to wake you': 'ฟังเสียงจริงให้มั่นใจก่อนใช้ปลุก',
   'Tap a tone below to hear it &middot; set a level and it rings in 5 s as a real alarm. The maximum volume depends on your Ringer &amp; Alerts volume &mdash; adjust it in Settings &rsaquo; Sounds &amp; Haptics.':
     'แตะเสียงด้านล่างเพื่อฟัง &middot; ตั้งระดับแล้วจะดังเป็นการปลุกจริงในอีก 5 วินาที ระดับเสียงสูงสุดขึ้นอยู่กับระดับเสียงเรียกเข้าและการแจ้งเตือนของคุณ &mdash; สามารถปรับได้ที่ การตั้งค่า &rsaquo; เสียงและการสั่น',
   'Test level': 'ระดับทดสอบ',
