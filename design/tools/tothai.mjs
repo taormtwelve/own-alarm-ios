@@ -33,7 +33,7 @@ const THAI = {
   'Stand-up call': 'ประชุมสแตนด์อัพ',
   'Wind down &amp; charge phone': 'ผ่อนคลายและชาร์จโทรศัพท์',
   'Morning run &middot; 85%': 'วิ่งตอนเช้า &middot; 85%',
-  '4 active &middot; volume set per task': 'เปิดอยู่ 4 รายการ &middot; ตั้งระดับเสียงแยกตามงาน',
+  '4 active &middot; volume set per task': 'เปิดอยู่ 4 รายการ &middot; ตั้งระดับเสียงแยกตามการปลุก',
 
   // Repeat days
   'Every day': 'ทุกวัน',
