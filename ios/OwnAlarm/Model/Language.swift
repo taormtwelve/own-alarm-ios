@@ -221,7 +221,7 @@ enum AppLanguage: String, Codable, CaseIterable, Identifiable, Sendable {
         ("All tones", "เสียงทั้งหมด"),
         ("Try it for real", "ลองฟังของจริง"),
         ("Tap a tone below to hear it · set a level and it rings in {0} s as a real alarm. The maximum volume depends on your Ringer & Alerts volume — adjust it in Settings › Sounds & Haptics.",
-         "แตะเสียงด้านล่างเพื่อฟัง · ตั้งระดับเสียง แล้วจะปลุกจริงให้ฟังใน {0} วินาที ระดับเสียงสูงสุดขึ้นอยู่กับระดับเสียงเรียกเข้าและการแจ้งเตือนของคุณ — สามารถปรับได้ที่ การตั้งค่า › เสียงและการสั่น"),
+         "แตะเสียงด้านล่างเพื่อฟัง · ปรับระดับเสียง แล้วทดลองปลุกในอีก {0} วินาที ระดับเสียงสูงสุดขึ้นอยู่กับระดับเสียงเรียกเข้าและการแจ้งเตือนของคุณ — สามารถปรับได้ที่ การตั้งค่า › เสียงและการสั่น"),
         ("Test level", "ระดับทดสอบ"),
         ("Sound test", "ทดสอบเสียง"),
         ("{0} · not used yet", "{0} · ยังไม่ได้ใช้"),
